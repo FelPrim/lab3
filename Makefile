@@ -20,13 +20,15 @@ SRC := $(filter-out $(MAIN) $(TEST), $(ALL_CPP_FILES))
 
 HEADERS = $(wildcard $(SRC_DIR)/*.hpp)
 
-ALLWAYS_ARE_CPPFLAGS = -std=c++23 -Wall -Wextra -flto=auto -fipa-pta -I$(INCLUDE_DIR)
+#ALLWAYS_ARE_CPPFLAGS = -std=c++23 -Wall -Wextra -flto=auto -fipa-pta -I$(INCLUDE_DIR)
+ALLWAYS_ARE_CPPFLAGS = -std=c++23 -Wall -Wextra -I$(INCLUDE_DIR)
 CPPFLAGS_DEBUG = $(ALLWAYS_ARE_CPPFLAGS) -O0 -g
 RELEASE_FLAGS = $(ALLWAYS_ARE_CPPFLAGS) -Ofast -march=native -mtune=native
 CPPFLAGS_PGO_GEN = $(RELEASE_FLAGS) -fprofile-generate
 CPPFLAGS_PGO_USE = $(RELEASE_FLAGS) -fprofile-use
+
 ifeq ($(OS), Windows_NT)
-	LDFLAGS := -lstdc++exp
+	LDFLAGS := -lstdc++exp -lws2_32
 else
 	LDFLAGS := 
 endif
