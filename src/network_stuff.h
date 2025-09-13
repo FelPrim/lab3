@@ -1,21 +1,14 @@
 #pragma once
+// оборачивает функции взаимодействия с ОС таким образом, что в client.c остаётся только логика
 
-#include <string_view>
-#include <format>
-#include <vector>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-// https://beej.us/guide/bgnet/html/
-
-/*
-Сама идея:
-Сервер использует 2 сокета: TCP и UDP
-По TCP происходит "handshake" и настройка шифрования
-После этого идёт подсоединение к UDP
-
-
-*/
-
+// includes
 #ifdef _WIN32
+// windows.h инклудит winsock.h, а я хочу иметь возможность использовать новейший winsock2 (1994)
+    #define WIN32_LEAN_AND_MEAN
     #include <winsock2.h>
     #include <ws2tcpip.h>
 #else
@@ -25,67 +18,57 @@
     #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <netdb.h>
+    #include <fcntl.h>
+    #include <sys/epoll.h>
 #endif
 
-const size_t BFR_SZ = 1024;
-enum class NetworkMode{SERVER, CLIENT, CLIENTANDSERVER};
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef _WIN32
-typedef SOCKET xsocket;
+    typedef SOCKET xsocket;
 #else
-typedef int xsocket;
+    typedef int xsocket;
 #endif
 
-#define FQDN_SZ 256
+inline void network_start(){
+#ifdef _WIN32
+    WSADATA wsaData;
 
-class NetworkStuff{
-public:
-    explicit NetworkStuff() = default;
-    void Init(NetworkMode mode);
-    ~NetworkStuff();
-    void run();
-private:
-    NetworkMode mode = NetworkMode::CLIENT;
-};
-
-class Server{
-public:
-    explicit Server() = default;
-    ~Server() = default;
-    void run();
-private:
-    char TCPPORT[6];
-    char UDPPORT[6];
-
-};
-
-class Client{
-public:
-    explicit Client(void) = default;
-    ~Client() = default;
-    void run();
-private:
-    
-};
-
-class ServerAndClient{
-public:
-    explicit ServerAndClient(void) = default;
-    ~ServerAndClient() = default;
-    void run();
-private:
-};
-
-template<>
-struct std::formatter<NetworkMode>: std::formatter<std::string_view> {
-    auto format(NetworkMode mode, std::format_context& ctx) const {
-        std::string_view str;
-        switch (mode) {
-            case NetworkMode::CLIENT:  str = "CLIENT"; break;
-            case NetworkMode::SERVER:  str = "SERVER"; break;
-            case NetworkMode::CLIENTANDSERVER: str = "CLIENTANDSERVER"; break;
-            default:                   str = "UNKNOWN"; break;
-        }
-        return std::formatter<std::string_view>::format(str, ctx);
+    if (WSAStartup(MAKEWORD(2,2) &wsaData) != 0){
+        perror("WSAStartup");
+        exit(1);
     }
-};
+
+    if (LOBYTE(wsaData.wVersion) != 2 ||
+        HIBYTE(wsaData.wVersion) != 2){
+        
+        perror("Version 2.2 of Winsock not available");
+        WSACleanup();
+        exit(2);
+    }
+#endif
+}
+
+inline void network_finish(){
+#ifdef _WIN32
+    WSACleanup();
+#endif
+}
+
+// inline bool xaddress_in_use(xsocket sockfd){
+// #ifdef _WIN32
+//    char yes = 1;
+//    return setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == SOCKET_ERROR;
+// }
+// #else
+//    int yes = 1;
+//    return setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1;
+// #endif
+// }
+
+
+#ifdef __cplusplus
+}
+#endif
