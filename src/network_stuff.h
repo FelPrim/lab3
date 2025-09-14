@@ -20,6 +20,8 @@ extern "C" {
     #include <netdb.h>
     #include <fcntl.h>
     #include <sys/epoll.h>
+    #include <openssl/ssl.h>
+    #include <openssl/err.h>
 #endif
 
 #include <stdio.h>
@@ -28,15 +30,17 @@ extern "C" {
 
 #ifdef _WIN32
     typedef SOCKET xsocket;
+    #define xclose closesocket
 #else
     typedef int xsocket;
+    #define xclose close
 #endif
 
-inline void network_start(){
+void network_start(){
 #ifdef _WIN32
     WSADATA wsaData;
 
-    if (WSAStartup(MAKEWORD(2,2) &wsaData) != 0){
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0){
         perror("WSAStartup");
         exit(1);
     }
@@ -51,23 +55,33 @@ inline void network_start(){
 #endif
 }
 
-inline void network_finish(){
+void network_finish(){
 #ifdef _WIN32
     WSACleanup();
 #endif
 }
 
-// inline bool xaddress_in_use(xsocket sockfd){
-// #ifdef _WIN32
-//    char yes = 1;
-//    return setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == SOCKET_ERROR;
-// }
-// #else
-//    int yes = 1;
-//    return setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1;
-// #endif
-// }
+bool address_in_use(xsocket sockfd){
+#ifdef _WIN32
+   char yes = 1;
+   return setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == SOCKET_ERROR;
+#else
+   int yes = 1;
+   return setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1;
+#endif
+}
 
+inline bool make_nonblocking(xsocket sockfd){
+#ifdef _WIN32
+    unsigned long ul = 1;
+    return ioctlsocket(sockfd, FIONBIO, &ul) == SOCKET_ERROR;
+#else
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    if (flags < 0)
+        return false;
+    return fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0;
+#endif
+}
 
 #ifdef __cplusplus
 }
