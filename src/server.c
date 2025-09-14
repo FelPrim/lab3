@@ -2,14 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include <errno.h>
 #include <unistd.h>
+#include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netdb.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
 
@@ -28,8 +29,9 @@ int main(int argc, char *argv[]){
     int tfd;
 
     {
-    struct addrinfo hints, *result;
-    memset(&hints, sizeof(hints));
+    struct addrinfo hints;
+    struct addrinfo *result;
+    memset(&hints, 0, sizeof(hints));
 
     hints.ai_family = AF_INET;
     hints.ai_flags = AI_PASSIVE;
@@ -72,16 +74,17 @@ int main(int argc, char *argv[]){
     int epfd = epoll_create1(0);
     if (epfd < 0)
         goto epfd_error;
-    unsigned int eventslen = 0, eventscap = 64;
-    static_assert(events_cap >= 1);
-    struct epoll_event *events = (struct epoll_event*) calloc(eventscap*sizeof(struct epoll_event)); 
+    unsigned int eventslen = 0;
+    unsigned int eventscap = 64;
+    assert(eventscap >= 1);
+    struct epoll_event *events = (struct epoll_event*) calloc(eventscap, sizeof(struct epoll_event)); 
     events[0].events = EPOLLIN | EPOLLOUT; // не уверен
     events[0].data.fd = tfd;
 
     if (epoll_ctl(epfd, EPOLL_CTL_ADD, tfd, events) < 0)
         goto tepoll_ctl_error;
     
-    int *clients = (int*) calloc((eventscap-2)*sizeof(int));
+    int *clients = (int*) calloc((eventscap-2), sizeof(int));
     int client_count = 0;
 
     eventslen = 2;
@@ -100,7 +103,7 @@ int main(int argc, char *argv[]){
             goto epoll_wait_error;
         }
         for (int i = 0; i < n; ++i){
-            inf fd = events[i].data.fd;
+            int fd = events[i].data.fd;
             
             if (fd == tfd){
                 // новое подключение
@@ -131,7 +134,7 @@ int main(int argc, char *argv[]){
                 client_count++;
 
                 char msg[128];
-                snprintf(msg, sizeof(msg) "New client connected! (fd=%d)\n", conn_fd);
+                snprintf(msg, sizeof(msg), "New client connected! (fd=%d)\n", conn_fd);
 
                 for (int j = 0; j < client_count; ++j)
                     send(clients[j], msg, strlen(msg), 0);
@@ -157,8 +160,8 @@ int main(int argc, char *argv[]){
 
                     continue;
                 }
-                if (likely(events[i].events & EPOLLIN){
-                    har buf[512];
+                if (likely(events[i].events & EPOLLIN)){
+                    char buf[512];
                     ssize_t count = recv(fd, buf, sizeof(buf), 0);
                     if (unlikely(count <= 0)){
                         //client closed connection

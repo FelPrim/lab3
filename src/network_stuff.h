@@ -15,9 +15,9 @@ extern "C" {
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/socket.h>
+    #include <netdb.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
-    #include <netdb.h>
     #include <fcntl.h>
     #include <sys/epoll.h>
     #include <openssl/ssl.h>

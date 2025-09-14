@@ -37,12 +37,12 @@ int main(int argc, char *argv[]){
         return 2;
     }
 
-    if (bind(tfd, result->ai_addr, result->ai_addrlen) < 0){
-        freeaddrinfo(result);
-        perror("TCP bind");
-        xclose(tfd);
-        return 3;
-    }
+    //if (bind(tfd, result->ai_addr, result->ai_addrlen) < 0){
+    //    freeaddrinfo(result);
+    //    perror("TCP bind");
+    //    xclose(tfd);
+    //    return 3;
+    //}
     
     //if (make_nonblocking(tfd)){
     //    freeaddrinfo(result);
