@@ -38,6 +38,16 @@ Notes:
 #include <string.h>
 #include <inttypes.h>
 
+#define SDL_MAIN_HANDLED
+
+#include <signal.h>
+
+volatile sig_atomic_t sigint_received = 0;
+
+static void handle_sigint(int signo) {
+    (void)signo;
+    sigint_received = 1;
+}
 #include <SDL3/SDL.h>
 
 #include <libavformat/avformat.h>
@@ -255,7 +265,8 @@ int main(int argc, char *argv[]) {
     int quit = 0;
     SDL_Event event;
 
-    while (!quit) {
+    signal(SIGINT, handle_sigint);
+    while (!quit && !sigint_received) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) quit = 1;
             else if (event.type == SDL_EVENT_KEY_DOWN) {

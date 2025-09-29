@@ -218,13 +218,13 @@ int main(int argc, char **argv)
     av_channel_layout_default(&dst_ch_layout, out_spec.channels);
 
     // Создадим swr контекст: вход — codec_ctx, выход — dst_ch_layout / S16 / out_spec.freq
-    SwrContext *swr = swr_alloc_set_opts2(
-        NULL,
+    SwrContext *swr =  NULL;
+    if (swr_alloc_set_opts2(
+        &swr,
         &dst_ch_layout, AV_SAMPLE_FMT_S16, out_spec.freq,
         &src_ch_layout, codec_ctx->sample_fmt, codec_ctx->sample_rate,
-        0, NULL
-    );
-    if (!swr) {
+        0, NULL) < 0){
+
         fprintf(stderr, "swr_alloc_set_opts2 failed (проверьте версию libswresample)\n");
         SDL_DestroyAudioStream(stream);
         SDL_Quit();
