@@ -71,7 +71,7 @@ bool address_in_use(xsocket sockfd){
 #endif
 }
 
-inline bool make_nonblocking(xsocket sockfd){
+bool make_nonblocking(xsocket sockfd){
 #ifdef _WIN32
     unsigned long ul = 1;
     return ioctlsocket(sockfd, FIONBIO, &ul) == SOCKET_ERROR;
@@ -82,6 +82,16 @@ inline bool make_nonblocking(xsocket sockfd){
     return fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0;
 #endif
 }
+
+bool recv_errorhandling(){
+#ifdef _WIN32
+    int err = WSAGetLastError();
+    return err == WSAEINTR || err == WSAEWOULDBLOCK;
+#else
+    return errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK;
+#endif
+}
+
 
 #ifdef __cplusplus
 }

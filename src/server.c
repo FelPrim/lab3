@@ -114,6 +114,7 @@ int main(int argc, char *argv[]){
                     perror("accept");
                     continue;
                 }
+                
 
                 {
                 int flags = fcntl(conn_fd, F_GETFL, 0);
@@ -122,7 +123,7 @@ int main(int argc, char *argv[]){
                 }
                 //if (eventslen > eventscap){
                 //}
-                events[eventslen].events = EPOLLIN | EPOLLRDHUP; // WTF?
+                events[eventslen].events = EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR; // WTF?
                 events[eventslen].data.fd = conn_fd;
                 if (unlikely(epoll_ctl(epfd, EPOLL_CTL_ADD, conn_fd, events+eventslen) < 0)){
                     perror("epoll ctl: conn_fd");

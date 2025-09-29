@@ -63,13 +63,20 @@ int main(int argc, char *argv[]){
     
     while (1){
         char buffer[BUFSZ];
-        ssize_t count = recv(tfd, buffer, sizeof(buffer), 0);
-        if (count < 0){
-            perror("TCP recv");
+        ssize_t count = recv(tfd, buffer, BUFSZ-1, 0);
+        if (count > 0){
+            buffer[count] = '\0';
+            puts(buffer);
             continue;
         }
-        buffer[BUFSZ] = '\0';
-        puts(buffer);
+        if (count == 0){
+            fprintf(stderr, "Server closed connection\n");
+            break;
+        }
+        if (!recv_errorhandling()){
+            perror("TCP recv");
+            break;
+        }
     }
     
     network_finish();

@@ -1,0 +1,391 @@
+SDL3
+cd /t/GitHub/SDL3
+
+mkdir build-default && cd build-default
+cmake .. -G "MinGW Makefiles" \
+  -DCMAKE_SYSTEM_NAME=Windows \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/default/sdl3 \
+  -DSDL_STATIC=ON \
+  -DSDL_SHARED=OFF \
+  -DSDL_AVX2=OFF\
+  -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_PIPEWIRE=OFF -DSDL_PULSEAUDIO=OFF -DSDL_ALSA=OFF -DSDL_DBUS=OFF
+mingw32-make -j$(nproc)
+mingw32-make install
+
+mkdir build-avx && cd build-avx
+cmake .. -G "MinGW Makefiles" \
+  -DCMAKE_SYSTEM_NAME=Windows \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/avx2/sdl3 \
+  -DSDL_STATIC=ON \
+  -DSDL_SHARED=OFF \
+  -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_PIPEWIRE=OFF -DSDL_PULSEAUDIO=OFF -DSDL_ALSA=OFF -DSDL_DBUS=OFF\
+  -DCMAKE_C_FLAGS="-mavx2 -mfma"
+mingw32-make -j$(nproc)
+mingw32-make install
+
+mkdir build-march && cd build-march
+cmake .. -G "MinGW Makefiles" \
+  -DCMAKE_SYSTEM_NAME=Windows \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/pc/sdl3 \
+  -DSDL_STATIC=ON \
+  -DSDL_SHARED=OFF \
+  -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_PIPEWIRE=OFF -DSDL_PULSEAUDIO=OFF -DSDL_ALSA=OFF -DSDL_DBUS=OFF\
+  -DCMAKE_C_FLAGS="-O3 -march=native"
+mingw32-make -j$(nproc)
+mingw32-make install
+
+
+OPUS
+cd /t/GitHub/opus
+./autogen.sh
+./configure --prefix=$HOME/static-libraries/Windows/default/ffmpeg/opus \
+    --enable-static --disable-shared CFLAGS="-O3"
+make -j$(nproc)
+make install
+
+./configure --prefix=$HOME/static-libraries/Windows/avx2/ffmpeg/opus \
+    --enable-static --disable-shared CFLAGS="-O3 -mavx2"
+make -j$(nproc)
+make install
+
+./configure --prefix=$HOME/static-libraries/Windows/pc/ffmpeg/opus \
+    --enable-static --disable-shared CFLAGS="-O3 -march=native"
+make -j$(nproc)
+make install
+ 
+ Меняешь только --prefix=... и CFLAGS=... (или -DCMAKE_C_FLAGS="..." для cmake, или -Dc_args=... для meson).
+ 
+DAV1D
+cd /t/GitHub/dav1d
+meson setup build --prefix=$HOME/static-libraries/Windows/default/ffmpeg/dav1d --default-library=static -Dc_args="-O3" \
+    --buildtype=release
+ninja -C build
+ninja -C build install
+
+ninja -C build clean
+meson setup build --prefix=$HOME/static-libraries/Windows/avx2/ffmpeg/dav1d --default-library=static -Dc_args="-O3 -mavx2" \
+    --buildtype=release
+ninja -C build
+ninja -C build install
+
+ninja -C build clean
+meson setup build --prefix=$HOME/static-libraries/Windows/pc/ffmpeg/dav1d --default-library=static -Dc_args="-Ofast -march=native" \
+    --buildtype=release
+ninja -C build
+ninja -C build install
+
+SVT-AV1
+cd /t/GitHub/SVT-AV1
+mkdir build && cd build
+cmake -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/default/ffmpeg/svtav1 \
+    -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release ..
+make -j$(nproc)
+make install
+
+make clean
+cmake -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/avx2/ffmpeg/svtav1 \
+    -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release  -DCMAKE_C_FLAGS="-O3 -mavx2" ..
+make -j$(nproc)
+make install
+
+make clean
+cmake -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/pc/ffmpeg/svtav1 \
+    -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-Ofast -march=native" ..
+make -j$(nproc)
+make install
+
+x265
+
+cd /t/GitHub/x265_git/build/msys
+cmake -G "Unix Makefiles" \
+  -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/default/ffmpeg/x265 \
+  -DENABLE_SHARED=OFF \
+  -DCMAKE_BUILD_TYPE=Release \
+  ../../source
+make -j$(nproc)
+make install
+
+make clean
+cmake -G "Unix Makefiles" \
+  -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/avx2/ffmpeg/x265 \
+  -DENABLE_SHARED=OFF \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-O3 -mavx2" \
+  -DCMAKE_CXX_FLAGS="-O3 -mavx2" \
+  ../../source
+make -j$(nproc)
+make install
+
+make clean
+cmake -G "Unix Makefiles" \
+  -DCMAKE_INSTALL_PREFIX=$HOME/static-libraries/Windows/pc/ffmpeg/x265 \
+  -DENABLE_SHARED=OFF \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-Ofast -march=native" \
+  -DCMAKE_CXX_FLAGS="-Ofast -march=native" \
+  ../../source
+make -j$(nproc)
+make install
+
+FFMPEG
+cd /t/GitHub/ffmpeg
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/default/ffmpeg/opus/lib/pkgconfig:$HOME/static-libraries/Windows/default/ffmpeg/dav1d/lib/pkgconfig:$HOME/static-libraries/Windows/default/ffmpeg/svtav1/lib/pkgconfig:$HOME/static-libraries/Windows/default/ffmpeg/x265/lib/pkgconfig"
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/default/ffmpeg/ffnvcodec/lib/pkgconfig:$PKG_CONFIG_PATH"
+./configure \
+	\
+  --extra-cflags="-I$HOME/static-libraries/Windows/default/ffmpeg/opus/include \
+                  -I$HOME/static-libraries/Windows/default/ffmpeg/dav1d/include \
+                  -I$HOME/static-libraries/Windows/default/ffmpeg/svtav1/include \
+                  -I$HOME/static-libraries/Windows/default/ffmpeg/x265/include" \
+  --extra-ldflags="-L$HOME/static-libraries/Windows/default/ffmpeg/opus/lib \
+                   -L$HOME/static-libraries/Windows/default/ffmpeg/dav1d/lib \
+                   -L$HOME/static-libraries/Windows/default/ffmpeg/svtav1/lib \
+                   -L$HOME/static-libraries/Windows/default/ffmpeg/x265/lib" \
+  --pkg-config-flags="--static" \
+  --extra-cflags="$CFLAGS -I$PREFIX/include" \
+  --extra-ldflags="$LDFLAGS" \
+  --extra-libs="-lpthread -lm" \
+  --enable-static \
+  --disable-shared \
+  --disable-debug \
+  --disable-doc \
+  --disable-ffplay \
+  --disable-ffprobe \
+  --enable-gpl \
+  --enable-libx265\
+  --enable-libopus \
+  --enable-libdav1d \
+  --enable-libsvtav1 \
+  --enable-small \
+  --enable-pic \
+  --enable-avdevice \
+  --enable-network \
+  --disable-vaapi \
+  --disable-libpulse \
+  --disable-alsa \
+  --enable-small \
+  --enable-pic \
+   --enable-avdevice \
+  --enable-network \
+  --disable-libpulse \
+  --disable-alsa \
+  --disable-vaapi \
+  --disable-vulkan \
+  --disable-libdrm \
+  --enable-dxva2 \
+  --enable-d3d11va \
+  --enable-amf \
+  --enable-cuda \
+  --enable-nvenc \
+  --enable-nvdec
+make -j$(nproc)
+make install
+
+make clean
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/avx2/ffmpeg/opus/lib/pkgconfig:$HOME/static-libraries/Windows/avx2/ffmpeg/dav1d/lib/pkgconfig:$HOME/static-libraries/Windows/avx2/ffmpeg/svtav1/lib/pkgconfig:$HOME/static-libraries/Windows/avx2/ffmpeg/x265/lib/pkgconfig"
+./configure \
+  --prefix=$HOME/static-libraries/Windows/avx2/ffmpeg \
+  --extra-cflags="-I$HOME/static-libraries/Windows/avx2/ffmpeg/opus/include \
+                  -I$HOME/static-libraries/Windows/avx2/ffmpeg/dav1d/include \
+                  -I$HOME/static-libraries/Windows/avx2/ffmpeg/svtav1/include \
+                  -I$HOME/static-libraries/Windows/avx2/ffmpeg/x265/include \
+				  -O3 -mavx2" \
+  --extra-ldflags="-L$HOME/static-libraries/Windows/avx2/ffmpeg/opus/lib \
+                   -L$HOME/static-libraries/Windows/avx2/ffmpeg/dav1d/lib \
+                   -L$HOME/static-libraries/Windows/avx2/ffmpeg/svtav1/lib \
+                   -L$HOME/static-libraries/Windows/avx2/ffmpeg/x265/lib" \
+  --pkg-config-flags="--static" \
+  --extra-libs="-lpthread -lm" \
+  --enable-static \
+  --disable-shared \
+  --disable-debug \
+  --disable-doc \
+  --disable-ffplay \
+  --disable-ffprobe \
+  --enable-gpl \
+  --enable-libx265\
+  --enable-libopus \
+  --enable-libdav1d \
+  --enable-libsvtav1 \
+  --enable-small \
+  --enable-pic \
+  --enable-avdevice \
+  --enable-network \
+  --disable-libpulse \
+  --disable-vaapi \
+  --disable-alsa \
+  --enable-small \
+  --enable-pic
+make -j$(nproc)
+make install
+
+make clean
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/pc/ffmpeg/opus/lib/pkgconfig:$HOME/static-libraries/Windows/pc/ffmpeg/dav1d/lib/pkgconfig:$HOME/static-libraries/Windows/pc/ffmpeg/svtav1/lib/pkgconfig:$HOME/static-libraries/Windows/pc/ffmpeg/x265/lib/pkgconfig"
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/default/ffmpeg/ffnvcodec/lib/pkgconfig:$PKG_CONFIG_PATH"
+./configure \
+  --prefix=$HOME/static-libraries/Windows/pc/ffmpeg \
+  --extra-cflags="-I$HOME/static-libraries/Windows/pc/ffmpeg/opus/include \
+                  -I$HOME/static-libraries/Windows/pc/ffmpeg/dav1d/include \
+                  -I$HOME/static-libraries/Windows/pc/ffmpeg/svtav1/include \
+                  -I$HOME/static-libraries/Windows/pc/ffmpeg/x265/include \
+				  -Ofast -march=native" \
+  --extra-ldflags="-L$HOME/static-libraries/Windows/pc/ffmpeg/opus/lib \
+                   -L$HOME/static-libraries/Windows/pc/ffmpeg/dav1d/lib \
+                   -L$HOME/static-libraries/Windows/pc/ffmpeg/svtav1/lib \
+                   -L$HOME/static-libraries/Windows/pc/ffmpeg/x265/lib" \
+  --pkg-config-flags="--static" \
+  --extra-libs="-lpthread -lm" \
+  --enable-static \
+  --disable-shared \
+  --disable-debug \
+  --disable-doc \
+  --disable-ffplay \
+  --disable-ffprobe \
+  --enable-gpl \
+  --enable-libx265 \
+  --enable-libopus \
+  --enable-libdav1d \
+  --enable-libsvtav1 \
+  --enable-small \
+  --enable-pic \
+  --enable-avdevice \
+  --enable-network \
+  --disable-libpulse \
+  --disable-alsa \
+  --disable-vaapi \
+  --disable-vulkan \
+  --disable-libdrm \
+  --enable-dxva2 \
+  --enable-d3d11va \
+  --enable-amf \
+  --enable-cuda \
+  --enable-nvenc \
+  --enable-nvdec
+make -j1
+make install
+
+Для смешного флага можно CUDA скачать
+https://developer.nvidia.com/cuda-downloads?target_os=Windows&target_arch=x86_64&target_version=11
+cd /t/GitHub/
+git clone https://github.com/FFmpeg/nv-codec-headers.git
+cd nv-codec-headers
+make
+make install PREFIX=$HOME/static-libraries/Windows/default/ffmpeg/ffnvcodec
+
+git clone https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git ~/mingw64/include
+
+
+Я ГЛУПЫЙ И FFMPEG САМ ВЫБИРАЕТ ЧТО ИСПОЛЬЗОВАТЬ - AVX2/БЕЗ AVX и ТД
+ffmpeg - runtime
+opus - runtime
+x265 - static
+dav1d - runtime
+svt-av1 - static
+
+
+
+FFMPEG FR
+BUILD.sh
+#!/usr/bin/env bash
+set -o pipefail
+MAKE_CMD="mingw32-make"
+MAKE_FLAGS="-j1 V=1"
+MAX_RETRIES=8
+BUILD_LOG="build.log"
+
+export SHELL=/usr/bin/bash
+export MSYS2_ARG_CONV_EXCL="*"
+
+attempt=1
+while [ $attempt -le $MAX_RETRIES ]; do
+  rm -f "$BUILD_LOG"
+  if ! $MAKE_CMD $MAKE_FLAGS 2>&1 | tee "$BUILD_LOG"; then
+    echo "make failed — анализируем лог..."
+  else
+    echo "make OK"; exit 0
+  fi
+
+  missing_files=$(grep -oE 'ar: @[A-Za-z0-9_./-]+\.a\.objs' "$BUILD_LOG" || true)
+  [ -n "$missing_files" ] || { echo "Нет ar:@*.a.objs ошибок — см. $BUILD_LOG"; exit 1; }
+
+  echo "$missing_files" | sed 's/^ar: @//' | sort -u | while read -r entry; do
+    entry=${entry#@}
+    libdir=$(dirname "$entry")
+    libfile=$(basename "$entry")
+    archive="${libfile%.a.objs}.a"
+
+    [ -d "$libdir" ] || { echo "Каталог $libdir не найден, пропускаю"; continue; }
+
+    echo "Fixing $libdir/$archive ..."
+
+    # переход в каталог и сборка рекурсивного списка .o (относительные пути внутри каталога)
+    pushd "$libdir" > /dev/null
+    # find выдаёт ./sub/obj.o — удаляем ведущий ./ чтобы ar видел относительные пути без лишних префиксов
+    find . -type f -name '*.o' -print | sed 's|^\./||' > "$libfile"
+    cnt=$(wc -l < "$libfile" | tr -d ' ')
+    if [ "$cnt" -eq 0 ]; then
+      echo "В $libdir нет .o — пропускаем"
+      popd > /dev/null
+      continue
+    fi
+
+    /mingw64/bin/ar rc "$archive" @"$libfile" && /mingw64/bin/ranlib "$archive"
+    popd > /dev/null
+  done
+
+  attempt=$((attempt+1))
+done
+
+echo "Превышено количество попыток ($MAX_RETRIES). Смотри $BUILD_LOG."
+exit 1
+
+make install
+
+Сборка программы
+
+gcc main3.c -o camera.exe \
+  -I"$HOME/static-libraries/Windows/default/sdl3/include" \
+  -I"$HOME/static-libraries/Windows/default/ffmpeg/include" \
+  "$HOME/static-libraries/Windows/default/sdl3/lib/libSDL3.a" \
+  -L"$HOME/static-libraries/Windows/default/ffmpeg/lib" \
+  -lavdevice -lavformat -lavcodec -lswscale -lavutil \
+  -lws2_32 -lwinmm -lole32 -lshlwapi -lbcrypt -lz -lm -lpthread -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lversion -luuid -ladvapi32 -lsetupapi -lshell32\
+  -Wl,--enable-auto-import -static-libgcc -static-libstdc++
+
+
+gcc main3.c -o mic_to_speaker.exe \
+  -I"$HOME/static-libraries/Windows/default/sdl3/include" \
+  -I"$HOME/static-libraries/Windows/default/ffmpeg/include" \
+  "$HOME/static-libraries/Windows/default/sdl3/lib/libSDL3.a" \
+  -L"$HOME/static-libraries/Windows/default/ffmpeg/lib" \
+  -lavdevice -lavformat -lavcodec -lswresample -lavutil -lSDL3 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lversion -luuid -ladvapi32 -lsetupapi -lshell32
+
+
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/default/ffmpeg/lib/pkgconfig:$PKG_CONFIG_PATH"
+
+gcc main3.c -o camera.exe \
+  -I"$HOME/static-libraries/Windows/default/sdl3/include" \
+  -I"$HOME/static-libraries/Windows/default/ffmpeg/include" \
+  "$HOME/static-libraries/Windows/default/sdl3/lib/libSDL3.a" \
+  $(pkg-config --cflags --static libavformat libavcodec libavutil libswscale libavdevice libavfilter) \
+  $(pkg-config --libs --static libavformat libavcodec libavutil libswscale libavdevice libavfilter) \
+  -Wl,--enable-auto-import -static-libgcc -static-libstdc++
+
+
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/default/ffmpeg/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/default/sdl3/lib/pkgconfig:$PKG_CONFIG_PATH"
+gcc main3.c -o camera.exe \
+  $(pkg-config --cflags --static sdl3 libavformat libavcodec libavutil libswscale libavdevice libavfilter) \
+  $(pkg-config --libs --static sdl3 libavformat libavcodec libavutil libswscale libavdevice libavfilter) \
+  -Wl,--enable-auto-import -static-libgcc -static-libstdc++
+
+
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/default/ffmpeg/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PKG_CONFIG_PATH="$HOME/static-libraries/Windows/default/sdl3/lib/pkgconfig:$PKG_CONFIG_PATH"
+gcc main3.c -o sound.exe \
+  $(pkg-config --cflags --static sdl3 libavformat libavcodec libavutil libswscale libavdevice libavfilter) \
+  $(pkg-config --libs --static sdl3 libavformat libavcodec libavutil libswscale libavdevice libavfilter) \
+  -Wl,--enable-auto-import -static-libgcc -static-libstdc++
