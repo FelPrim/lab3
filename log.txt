@@ -439,7 +439,7 @@ git clone -b release-3.2.x git@github.com:libsdl-org/SDL.git SDL3
 cd SDL3
 mkdir build
 cd build
-cmake .. \
+cmake .. -G "MinGW Makefiles" \
   -DCMAKE_INSTALL_PREFIX="T:/GitHub/my_scripts/lab3/deps/Windows/sdl3" \
   -DSDL_STATIC=ON \
   -DSDL_SHARED=ON \
@@ -452,9 +452,8 @@ cmake .. \
   -DSDL_JOYSTICK=ON \
   -DSDL_HAPTIC=ON \
   -DSDL_RENDER=ON
-
-make -j$(nproc)
-make install
+  
+cmake --build . --config Release --target install
 
 OPUS
 cd /t/GitHub/opus
