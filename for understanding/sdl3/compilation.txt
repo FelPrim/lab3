@@ -1,7 +1,6 @@
-gcc -I"$HOME/static-libraries/Windows/default/sdl3/include" \
+gcc -I/t/GitHub/my_scripts/lab3/deps/Windows/sdl3/include \
   sdl3_simple.c \
-  -L"$HOME/static-libraries/Windows/default/sdl3/lib" -Wl,-Bstatic -lSDL3 -Wl,-Bdynamic \
-  -lmingw32 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -luuid \
+  -L/t/GitHub/my_scripts/lab3/deps/Windows/sdl3/lib -Wl,-Bstatic -lSDL3 -Wl,-Bdynamic \               -lmingw32 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -luuid \
   -lsetupapi -lcfgmgr32 -lshlwapi -ladvapi32 -lversion \
   -lmfplat -lmfuuid -lmfreadwrite -lpropsys \
-  -o sdl3_simple.exe
+  -o sdl3_simple2.exe

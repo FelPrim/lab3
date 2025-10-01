@@ -1,0 +1,14 @@
+prefix=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg
+exec_prefix=${prefix}
+libdir=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/lib
+includedir=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/include
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: 62.16.100
+Requires: 
+Requires.private: libswresample >= 6.2.100, libavutil >= 60.13.100
+Conflicts:
+Libs: -L${libdir}  -lavcodec 
+Libs.private: -pthread -lm -latomic -L/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/dav1d/lib/x86_64-linux-gnu -ldav1d -pthread -ldl -L/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/opus/lib -lopus -lm -L/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/svtav1/lib -lSvtAv1Enc -lm -L/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/x265/lib -lx265 -lstdc++ -lm -lgcc_s -lgcc -lgcc_s -lgcc -lrt -ldl -lz
+Cflags: -I${includedir}

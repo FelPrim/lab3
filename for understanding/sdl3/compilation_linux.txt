@@ -1,0 +1,1 @@
+gcc -I/mnt/t/GitHub/my_scripts/lab3/deps/Linux/sdl3/include sdl3_simple.c -L/mnt/t/GitHub/my_scripts/lab3/deps/Linux/sdl3/lib -Wl,-Bstatic -lSDL3 -Wl,-Bdynamic -lm -o sdl3_linux

@@ -1,0 +1,9 @@
+prefix=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/dav1d
+includedir=${prefix}/include
+libdir=${prefix}/lib/x86_64-linux-gnu
+
+Name: libdav1d
+Description: AV1 decoding library
+Version: 1.5.2
+Libs: -L${libdir} -ldav1d -pthread -ldl
+Cflags: -I${includedir} -pthread

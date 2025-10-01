@@ -1,0 +1,14 @@
+prefix=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg
+exec_prefix=${prefix}
+libdir=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/lib
+includedir=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/include
+
+Name: libswscale
+Description: FFmpeg image rescaling library
+Version: 9.3.100
+Requires: 
+Requires.private: libavutil >= 60.13.100
+Conflicts:
+Libs: -L${libdir}  -lswscale 
+Libs.private: -lm -latomic
+Cflags: -I${includedir}

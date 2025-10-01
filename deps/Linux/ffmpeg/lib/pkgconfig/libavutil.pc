@@ -1,0 +1,14 @@
+prefix=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg
+exec_prefix=${prefix}
+libdir=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/lib
+includedir=/mnt/t/GitHub/my_scripts/lab3/deps/Linux/ffmpeg/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 60.13.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -lm -latomic -pthread -lX11 -lpthread -lxcb -lXau -lXdmcp
+Cflags: -I${includedir}
