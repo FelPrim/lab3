@@ -1,0 +1,14 @@
+prefix=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg
+exec_prefix=${prefix}
+libdir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/lib
+includedir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/include
+
+Name: libavdevice
+Description: FFmpeg device handling library
+Version: 62.2.100
+Requires: libavfilter >= 11.9.100, libswscale >= 9.3.100, libavformat >= 62.6.101, libavcodec >= 62.16.100, libswresample >= 6.2.100, libavutil >= 60.13.100
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavdevice -framework Foundation -framework AudioToolbox -framework CoreAudio -lm -framework AVFoundation -framework CoreVideo -framework CoreMedia -framework CoreGraphics -L/usr/local/Cellar/libxcb/1.17.0/lib -lxcb -L/usr/local/Cellar/libxau/1.0.12/lib -lXau -L/usr/local/Cellar/libxdmcp/1.1.5/lib -lXdmcp -L/usr/local/Cellar/libxcb/1.17.0/lib -lxcb-shm -lxcb -L/usr/local/Cellar/libxau/1.0.12/lib -lXau -L/usr/local/Cellar/libxdmcp/1.1.5/lib -lXdmcp -L/usr/local/Cellar/libxcb/1.17.0/lib -lxcb-shape -lxcb -L/usr/local/Cellar/libxau/1.0.12/lib -lXau -L/usr/local/Cellar/libxdmcp/1.1.5/lib -lXdmcp -L/usr/local/Cellar/libxcb/1.17.0/lib -lxcb-xfixes -lxcb-render -lxcb-shape -lxcb -L/usr/local/Cellar/libxau/1.0.12/lib -lXau -L/usr/local/Cellar/libxdmcp/1.1.5/lib -lXdmcp -framework AudioToolbox -pthread
+Libs.private: 
+Cflags: -I${includedir}

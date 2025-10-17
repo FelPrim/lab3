@@ -1,0 +1,14 @@
+prefix=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg
+exec_prefix=${prefix}
+libdir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/lib
+includedir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/include
+
+Name: libswresample
+Description: FFmpeg audio resampling library
+Version: 6.2.100
+Requires: libavutil >= 60.13.100
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lswresample -lm
+Libs.private: 
+Cflags: -I${includedir}

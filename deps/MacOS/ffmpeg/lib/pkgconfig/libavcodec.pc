@@ -1,0 +1,14 @@
+prefix=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg
+exec_prefix=${prefix}
+libdir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/lib
+includedir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/include
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: 62.16.100
+Requires: libswresample >= 6.2.100, libavutil >= 60.13.100
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavcodec -liconv -lm -llzma -L/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/dav1d/lib -ldav1d -framework AudioToolbox -L/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/opus/lib -lopus -L/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/svtav1/lib -lSvtAv1Enc -L/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/x265/lib -lx265 -lc++ -ldl -pthread -lz -framework VideoToolbox -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
+Libs.private: 
+Cflags: -I${includedir}

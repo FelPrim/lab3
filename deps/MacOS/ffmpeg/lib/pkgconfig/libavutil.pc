@@ -1,0 +1,14 @@
+prefix=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg
+exec_prefix=${prefix}
+libdir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/lib
+includedir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 60.13.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil -lm -framework VideoToolbox -pthread -L/usr/local/Cellar/libx11/1.8.12/lib -lX11 -L/usr/local/Cellar/libxcb/1.17.0/lib -lxcb -L/usr/local/Cellar/libxau/1.0.12/lib -lXau -L/usr/local/Cellar/libxdmcp/1.1.5/lib -lXdmcp -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework CoreServices
+Libs.private: 
+Cflags: -I${includedir}

@@ -1,0 +1,14 @@
+prefix=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg
+exec_prefix=${prefix}
+libdir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/lib
+includedir=/Users/felprim/t/GitHub/my_scripts/lab3/deps/MacOS/ffmpeg/include
+
+Name: libswscale
+Description: FFmpeg image rescaling library
+Version: 9.3.100
+Requires: libavutil >= 60.13.100
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lswscale -lm
+Libs.private: 
+Cflags: -I${includedir}

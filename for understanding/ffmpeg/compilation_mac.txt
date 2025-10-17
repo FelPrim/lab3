@@ -1,0 +1,5 @@
+export PKG_CONFIG_PATH=../../deps/MacOS/ffmpeg/lib/pkgconfig
+
+clang -c ffcheck.c -o ffcheck_mac.o -I../../deps/MacOS/ffmpeg/include
+
+clang++ ffcheck_mac.o -o ffcheck_mac $(pkg-config --libs --static libavformat libavcodec libavutil)
