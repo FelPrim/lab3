@@ -1,0 +1,7 @@
+export PKG_CONFIG_PATH=../../deps/Windows/ffmpeg_static/lib/pkgconfig
+
+gcc -c -o ffcheck.o ./ffcheck.c $(pkg-config --cflags libavformat libavcodec libavutil) 
+
+g++ -static -o ffcheck_static.exe ffcheck.o $(pkg-config --libs --static libavformat libavcodec libavutil)
+
+

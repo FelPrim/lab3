@@ -1,0 +1,14 @@
+prefix=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg
+exec_prefix=${prefix}
+libdir=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg/lib
+includedir=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg/include
+
+Name: libavformat
+Description: FFmpeg container format library
+Version: 62.6.100
+Requires: 
+Requires.private: libavcodec >= 62.16.100, libswresample >= 6.2.100, libavutil >= 60.13.100
+Conflicts:
+Libs: -L${libdir}  -lavformat 
+Libs.private: -lm -latomic -lbz2 -LC:/msys64/mingw64/bin/../lib -lz -lsecur32 -lncrypt -lcrypt32 -lws2_32
+Cflags: -I${includedir}

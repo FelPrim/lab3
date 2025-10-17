@@ -1,0 +1,14 @@
+prefix=T:/GitHub/my_scripts/lab3/deps/Windows/ffmpeg
+exec_prefix=${prefix}
+libdir=T:/GitHub/my_scripts/lab3/deps/Windows/ffmpeg/lib
+includedir=T:/GitHub/my_scripts/lab3/deps/Windows/ffmpeg/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 60.13.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -lm -luser32 -lbcrypt -latomic
+Cflags: -I${includedir}

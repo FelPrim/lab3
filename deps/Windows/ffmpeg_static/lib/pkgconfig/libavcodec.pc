@@ -1,0 +1,14 @@
+prefix=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg_static
+exec_prefix=${prefix}
+libdir=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg_static/lib
+includedir=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg_static/include
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: 62.16.100
+Requires: libswresample >= 6.2.100, libavutil >= 60.13.100
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavcodec -liconv -lm -latomic -llzma -LT:/GitHub/my_scripts/lab3/deps/Windows/ffmpeg_static/dav1d/lib -ldav1d -LT:/GitHub/my_scripts/lab3/deps/Windows/ffmpeg_static/opus/lib -lopus -LT:/GitHub/my_scripts/lab3/deps/Windows/ffmpeg_static/svtav1/lib -lSvtAv1Enc -LT:/GitHub/my_scripts/lab3/deps/Windows/ffmpeg_static/x265/lib -lx265 -lmfuuid -lole32 -lstrmiids -lole32 -luser32 -LC:/msys64/mingw64/bin/../lib -lz
+Libs.private: 
+Cflags: -I${includedir}

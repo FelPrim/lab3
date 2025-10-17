@@ -1,0 +1,14 @@
+prefix=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg
+exec_prefix=${prefix}
+libdir=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg/lib
+includedir=/t/GitHub/my_scripts/lab3/deps/Windows/ffmpeg/include
+
+Name: libswscale
+Description: FFmpeg image rescaling library
+Version: 9.3.100
+Requires: 
+Requires.private: libavutil >= 60.13.100
+Conflicts:
+Libs: -L${libdir}  -lswscale 
+Libs.private: -lm -latomic
+Cflags: -I${includedir}
