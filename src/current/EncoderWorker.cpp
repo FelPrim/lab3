@@ -28,6 +28,10 @@ EncoderWorker::~EncoderWorker()
 
 void EncoderWorker::initFFmpeg(int width, int height, int fps)
 {
+    if (width <= 0 || height <= 0) {
+        emit errorOccurred(QString("EncoderWorker: invalid dimensions %1x%2").arg(width).arg(height));
+        return;
+    }
     // Try libx264 first, fallback to builtin H264 encoder
     const AVCodec *enc_codec = avcodec_find_encoder_by_name("libx264");
     if (!enc_codec) enc_codec = avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -131,6 +135,9 @@ void EncoderWorker::cleanupFFmpeg()
 
 void EncoderWorker::processFrame(const cv::Mat &frame_in)
 {
+    if (!m_enc_ctx) { // если initFFmpeg не удался — просто пропускаем
+        return;
+    }
     bool expected = false;
     if (!busy.compare_exchange_strong(expected, true)) {
         // drop frame if busy to keep latency low

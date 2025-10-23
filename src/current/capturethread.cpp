@@ -81,12 +81,40 @@ void CaptureThread::run()
         m_running = false;
         return;
     }
-
+   
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, DEFAULT_WIDTH);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, DEFAULT_HEIGHT);
     cap.set(cv::CAP_PROP_FPS, m_fps);
-
+    /*
     int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
     int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
     if (width <= 0 || height <= 0) { width = DEFAULT_WIDTH; height = DEFAULT_HEIGHT; }
+    */
+    
+    // Попробуем прочитать несколько кадров, чтобы драйвер "поднял" поток и вернул реальные размеры.
+    cv::Mat probe;
+    int attempts = 0;
+    const int max_attempts = 10;
+    while (attempts < max_attempts && (!cap.read(probe) || probe.empty())) {
+        attempts++;
+        QThread::msleep(50);
+    }
+
+    int width = DEFAULT_WIDTH;
+    int height = DEFAULT_HEIGHT;
+    if (!probe.empty()) {
+        width = probe.cols;
+        height = probe.rows;
+        qDebug() << "Probe frame size:" << width << "x" << height;
+    } else {
+        // Если не удалось получить кадр — используем дефолты, но логгируем это.
+        qDebug() << "Не удалось получить probe-кадр, используем значения по умолчанию:"
+                 << DEFAULT_WIDTH << "x" << DEFAULT_HEIGHT;
+    }
+
+    // Дополнительно: если размеры нечётные, привести к чётным (нужно для YUV420)
+    if (width % 2) --width;
+    if (height % 2) --height;
 
     // setup encoder and decoder threads/workers
     m_encoderThread = new QThread();
