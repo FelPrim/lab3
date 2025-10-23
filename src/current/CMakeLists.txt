@@ -149,6 +149,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconf
         endforeach()
     endif()
 
-    # Standard platform libraries for static build
-    target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl m)
+    # Standard platform libraries for static build.
+    # IMPORTANT: order matters — put libraries that others depend on (z, bz2, lzma, pthread, dl, m) AFTER ffmpeg/libs.
+    # Add z (zlib) to resolve inflateEnd and similar symbols.
+    # You can extend this list if your ffmpeg build depends on bz2, lzma, iconv, etc.
+    set(FF_SYSTEM_LIBS pthread dl m z)
+    foreach(syslib IN LISTS FF_SYSTEM_LIBS)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${syslib})
+    endforeach()
 endif()
