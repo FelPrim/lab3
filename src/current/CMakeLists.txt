@@ -112,9 +112,11 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconf
         set(CODEC_INCLUDE_DIR "${FFMPEG_ROOT}/${codec}/include")
         if(EXISTS "${CODEC_LIB_DIR}")
             file(GLOB LIBS "${CODEC_LIB_DIR}/*.a" "${CODEC_LIB_DIR}/*.so")
-            list(APPEND ORDERED_FF_LIBS ${LIBS})
-            target_include_directories(${PROJECT_NAME} PRIVATE "${CODEC_INCLUDE_DIR}")
-            message(STATUS "Added external codec include: ${CODEC_INCLUDE_DIR}")
+            if(LIBS)
+                list(APPEND ORDERED_FF_LIBS ${LIBS})
+                target_include_directories(${PROJECT_NAME} PRIVATE "${CODEC_INCLUDE_DIR}")
+                message(STATUS "Added external codec include: ${CODEC_INCLUDE_DIR}")
+            endif()
         endif()
     endforeach()
 
@@ -129,7 +131,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconf
         endif()
     endforeach()
 
-    # Link all libs
+    # Link all FFmpeg and codec libs
     if (DEDUP)
         message(STATUS "Linking FFmpeg and external codec libs:")
         foreach(libpath IN LISTS DEDUP)
@@ -140,13 +142,13 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconf
         message(WARNING "No libraries detected in ${FF_LIB_DIR} or external codec folders")
     endif()
 
-    # Extra external libs if needed (z, pthread, etc.)
+    # Extra external libs if specified (zlib, etc.)
     if (FFMPEG_EXTRA_LIBS)
         foreach(x IN LISTS FFMPEG_EXTRA_LIBS)
             target_link_libraries(${PROJECT_NAME} PRIVATE "${x}")
         endforeach()
     endif()
 
-    # Standard platform libs for static build
+    # Standard platform libraries for static build
     target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl m)
 endif()
