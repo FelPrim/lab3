@@ -70,64 +70,142 @@ else()
     message(WARNING "FFMPEG_ROOT/include not found: ${FFMPEG_ROOT}/include")
 endif()
 
-# If the user provided explicit full paths in FFMPEG_LIBS, use them (explicit override).
-if (FFMPEG_LIBS)
-    message(STATUS "Using user-specified FFMPEG_LIBS:")
-    foreach(p IN LISTS FFMPEG_LIBS)
-        message(STATUS "  ${p}")
-        target_link_libraries(${PROJECT_NAME} PRIVATE "${p}")
-    endforeach()
-else()
-    # try to autodetect libraries in FFMPEG_ROOT/lib
+# ---------- FFmpeg linking (cross-platform, explicit external deps handling) ----------
+# Предполагается, что FFMPEG_ROOT уже задан (как вы делали ранее)
+
+# Allow user to provide extra libs explicitly (full names without -l or full paths)
+# Example: -DFFMPEG_EXTRA_LIBS="opus;z;pthread"
+if(NOT DEFINED FFMPEG_EXTRA_LIBS)
+    set(FFMPEG_EXTRA_LIBS "" CACHE STRING "Semicolon-separated list of extra libs required by static FFmpeg (e.g. opus;z;pthread).")
+endif()
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    message(STATUS "Platform: Windows — will try using .pc files in ${FFMPEG_ROOT}/lib/pkgconfig if present, otherwise manual linking")
+    if (EXISTS "${FFMPEG_ROOT}/lib/pkgconfig")
+        # Use pkg-config files on Windows if you want
+        find_package(PkgConfig QUIET)
+        if (PkgConfig_FOUND)
+            set(ENV{PKG_CONFIG_LIBDIR} "${FFMPEG_ROOT}/lib/pkgconfig")
+            pkg_check_modules(AVCODEC REQUIRED IMPORTED_TARGET libavcodec libavutil libswscale)
+            target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::AVCODEC)
+        else()
+            message(WARNING "pkg-config not found on Windows; using manual linking fallback.")
+            # fallthrough to manual linking below
+        endif()
+    endif()
+endif()
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconfig")
+    message(STATUS "Platform: Linux or ignoring .pc — try pkg-config (static) and manual fallback if needed")
+
+    # set PKG_CONFIG_PATH to local FFmpeg pkgconfig dir so pkg-config can find .pc if present
+    if (EXISTS "${FFMPEG_ROOT}/lib/pkgconfig")
+        set(ENV{PKG_CONFIG_LIBDIR} "${FFMPEG_ROOT}/lib/pkgconfig")
+        message(STATUS "PKG_CONFIG_LIBDIR=${FFMPEG_ROOT}/lib/pkgconfig")
+    endif()
+
+    # Try to get static link flags via pkg-config (this may list transitive deps)
+    find_package(PkgConfig QUIET)
+    if (PkgConfig_FOUND)
+        # Try to find libavcodec with static flags (pkg-config should be configured to search our .pc)
+        # Note: pkg_check_modules in CMake doesn't expose --static flag easily; but if PKG_CONFIG_LIBDIR points to your static .pc which contain proper Libs.private, this will pull transitive deps.
+        pkg_check_modules(AVCODEC QUIET IMPORTED_TARGET libavcodec libavutil libswscale)
+        if (AVCODEC_FOUND)
+            message(STATUS "Found FFmpeg via pkg-config (may include transitive libs). Linking PkgConfig::AVCODEC")
+            target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::AVCODEC)
+        else()
+            message(STATUS "pkg-config did not find libav* (or .pc missing). Will attempt manual linking from ${FFMPEG_ROOT}/lib")
+        endif()
+    else()
+        message(STATUS "pkg-config not available on system; will use manual linking fallback.")
+    endif()
+
+    # Manual fallback: add include and link libs found in FFMPEG_ROOT/lib
+    if (EXISTS "${FFMPEG_ROOT}/include")
+        target_include_directories(${PROJECT_NAME} PRIVATE "${FFMPEG_ROOT}/include")
+        message(STATUS "Added FFmpeg include: ${FFMPEG_ROOT}/include")
+    endif()
+
     set(FF_LIB_DIR "${FFMPEG_ROOT}/lib")
     if (EXISTS "${FF_LIB_DIR}")
-        message(STATUS "Searching for ffmpeg libs in: ${FF_LIB_DIR}")
+        # Collect known ffmpeg libs (prefer exact candidates)
+        file(GLOB FF_AVCODEC   "${FF_LIB_DIR}/*avcodec*.*")
+        file(GLOB FF_AVFORMAT  "${FF_LIB_DIR}/*avformat*.*")
+        file(GLOB FF_AVUTIL    "${FF_LIB_DIR}/*avutil*.*")
+        file(GLOB FF_SWSCALE   "${FF_LIB_DIR}/*swscale*.*")
+        file(GLOB FF_SWRESAMPLE "${FF_LIB_DIR}/*swresample*.*")
+        file(GLOB FF_POSTPROC  "${FF_LIB_DIR}/*postproc*.*")
+        # optional: libx264, libopus, libvpx etc. we will try to find them
+        file(GLOB FF_X264 "${FF_LIB_DIR}/*x264*.*")
+        file(GLOB FF_OPUS "${FF_LIB_DIR}/*opus*.*")
 
-        # try to find common ffmpeg libraries (static or shared)
-        file(GLOB FF_AVCODEC   "${FF_LIB_DIR}/*avcodec*.a"  "${FF_LIB_DIR}/*avcodec*.lib"  "${FF_LIB_DIR}/*avcodec*.so"  "${FF_LIB_DIR}/*avcodec*.dll"  "${FF_LIB_DIR}/*avcodec*.dylib")
-        file(GLOB FF_AVFORMAT  "${FF_LIB_DIR}/*avformat*.a" "${FF_LIB_DIR}/*avformat*.lib" "${FF_LIB_DIR}/*avformat*.so" "${FF_LIB_DIR}/*avformat*.dll" "${FF_LIB_DIR}/*avformat*.dylib")
-        file(GLOB FF_AVUTIL    "${FF_LIB_DIR}/*avutil*.a"   "${FF_LIB_DIR}/*avutil*.lib"   "${FF_LIB_DIR}/*avutil*.so"   "${FF_LIB_DIR}/*avutil*.dll"   "${FF_LIB_DIR}/*avutil*.dylib")
-        file(GLOB FF_SWSCALE   "${FF_LIB_DIR}/*swscale*.a"  "${FF_LIB_DIR}/*swscale*.lib"  "${FF_LIB_DIR}/*swscale*.so"  "${FF_LIB_DIR}/*swscale*.dll"  "${FF_LIB_DIR}/*swscale*.dylib")
-        file(GLOB FF_SWRESAMPLE "${FF_LIB_DIR}/*swresample*.a" "${FF_LIB_DIR}/*swresample*.lib" "${FF_LIB_DIR}/*swresample*.so" "${FF_LIB_DIR}/*swresample*.dll" "${FF_LIB_DIR}/*swresample*.dylib")
-        file(GLOB FF_POSTPROC  "${FF_LIB_DIR}/*postproc*.a" "${FF_LIB_DIR}/*postproc*.lib" "${FF_LIB_DIR}/*postproc*.so" "${FF_LIB_DIR}/*postproc*.dll" "${FF_LIB_DIR}/*postproc*.dylib")
-        file(GLOB FF_OTHER     "${FF_LIB_DIR}/*av*.*" "${FF_LIB_DIR}/*libx264*.*" "${FF_LIB_DIR}/*libsvtav1*.*" "${FF_LIB_DIR}/*dav1d*.*")
-
-        # build ordered list: prefer avcodec -> avformat -> avutil -> swscale -> swresample -> postproc -> others
         set(ORDERED_FF_LIBS)
-        list(APPEND ORDERED_FF_LIBS ${FF_AVCODEC} ${FF_AVFORMAT} ${FF_AVUTIL} ${FF_SWSCALE} ${FF_SWRESAMPLE} ${FF_POSTPROC} ${FF_OTHER})
+        list(APPEND ORDERED_FF_LIBS ${FF_AVCODEC} ${FF_AVFORMAT} ${FF_AVUTIL} ${FF_SWSCALE} ${FF_SWRESAMPLE} ${FF_POSTPROC})
+        # append codec externals if present (e.g. libx264, opus)
+        list(APPEND ORDERED_FF_LIBS ${FF_X264} ${FF_OPUS})
 
-        # deduplicate and filter existing files
+        # deduplicate and add
         set(DEDUP)
-        foreach(f IN LISTS ORDERED_FF_LIBS)
-            if (f AND NOT f STREQUAL "")
-                list(FIND DEDUP "${f}" _idx)
-                if (_idx EQUAL -1)
-                    list(APPEND DEDUP "${f}")
+        foreach(p IN LISTS ORDERED_FF_LIBS)
+            if(p AND NOT p STREQUAL "")
+                list(FIND DEDUP "${p}" _idx)
+                if(_idx EQUAL -1)
+                    list(APPEND DEDUP "${p}")
                 endif()
             endif()
         endforeach()
 
         if (DEDUP)
-            message(STATUS "Linking FFmpeg libs (detected):")
-            foreach(p IN LISTS DEDUP)
-                message(STATUS "  ${p}")
-                target_link_libraries(${PROJECT_NAME} PRIVATE "${p}")
+            message(STATUS "Linking detected FFmpeg libs from ${FF_LIB_DIR}:")
+            foreach(libpath IN LISTS DEDUP)
+                message(STATUS "  ${libpath}")
+                target_link_libraries(${PROJECT_NAME} PRIVATE "${libpath}")
             endforeach()
         else()
-            message(WARNING "No FFmpeg libraries auto-detected in ${FF_LIB_DIR}. If your FFmpeg libs are present, consider setting FFMPEG_LIBS manually.")
+            message(WARNING "No ffmpeg libraries auto-detected in ${FF_LIB_DIR}")
         endif()
     else()
-        message(WARNING "FFmpeg lib dir not found: ${FF_LIB_DIR}")
+        message(WARNING "FFMPEG lib dir not found: ${FF_LIB_DIR}")
+    endif()
+
+    # Now ensure we link extra external libs that ffmpeg may depend on (e.g. opus).
+    # Try pkg-config for opus first, otherwise try to find library in FFMPEG_ROOT/lib or system paths.
+    find_package(PkgConfig QUIET)
+    if (PkgConfig_FOUND)
+        pkg_check_modules(OPUS_PKG QUIET opus)
+        if (OPUS_PKG_FOUND)
+            message(STATUS "Found opus via pkg-config; linking it")
+            target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::OPUS_PKG)
+        endif()
+    endif()
+
+    # Manual search for libopus (in FFMPEG_ROOT/lib or system)
+    if (NOT OPUS_PKG_FOUND)
+        find_library(OPUS_LIB NAMES opus PATHS "${FF_LIB_DIR}" "/usr/lib" "/usr/local/lib" NO_DEFAULT_PATH)
+        if (NOT OPUS_LIB)
+            # try default system paths
+            find_library(OPUS_LIB NAMES opus PATHS "/usr/lib" "/usr/local/lib")
+        endif()
+        if (OPUS_LIB)
+            message(STATUS "Found libopus: ${OPUS_LIB} -> linking")
+            target_link_libraries(${PROJECT_NAME} PRIVATE "${OPUS_LIB}")
+        else()
+            if (FFMPEG_EXTRA_LIBS)
+                message(STATUS "User requested extra libs: ${FFMPEG_EXTRA_LIBS}; linking them")
+                foreach(x IN LISTS FFMPEG_EXTRA_LIBS)
+                    target_link_libraries(${PROJECT_NAME} PRIVATE "${x}")
+                endforeach()
+            else()
+                message(WARNING "libopus not found automatically. If your ffmpeg static build depends on opus, set -DFFMPEG_EXTRA_LIBS=opus or provide full paths.")
+            endif()
+        endif()
+    endif()
+
+    # Finally add platform system libs often required for static builds
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl m)
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 bcrypt user32 gdi32 ole32)
     endif()
 endif()
-
-# Link platform-specific system libs that are commonly required by static ffmpeg builds
-if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    message(STATUS "Linking Windows system libs: ws2_32 bcrypt user32 gdi32 ole32")
-    target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 bcrypt user32 gdi32 ole32)
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    message(STATUS "Linking Linux system libs: pthread dl m")
-    target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl m)
-endif()
-
-# End of CMakeLists.txt
+# ---------------------------------------------------------------------------
