@@ -103,14 +103,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconfi
     )
     message(STATUS "Added FFmpeg and codec includes")
 
-    # Собираем список статических библиотек FFmpeg
+    # Собираем список статических библиотек FFmpeg (убрал libpostproc.a)
     set(FF_LIBS
         "${FFMPEG_ROOT}/lib/libavcodec.a"
         "${FFMPEG_ROOT}/lib/libavformat.a"
         "${FFMPEG_ROOT}/lib/libavutil.a"
         "${FFMPEG_ROOT}/lib/libswscale.a"
         "${FFMPEG_ROOT}/lib/libswresample.a"
-        "${FFMPEG_ROOT}/lib/libpostproc.a"
     )
 
     # Внешние кодеки
@@ -121,7 +120,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconfi
         "${FFMPEG_ROOT}/x265/lib/libx265.a"
     )
 
-    # Линкуем все библиотеки в правильном порядке
+    # Линкуем все библиотеки
     target_link_libraries(${PROJECT_NAME} PRIVATE ${FF_LIBS})
 
     # Добавляем системные библиотеки для статической линковки
