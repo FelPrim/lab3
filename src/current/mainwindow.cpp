@@ -59,7 +59,14 @@ void MainWindow::refreshDevices()
             continue;
         }
 #else
-        if (!cap.open(i)) continue;
+#ifdef __linux__
+    if (!cap.open(i, cv::CAP_V4L2)) continue;
+#else
+#ifdef __APPLE__
+    if (!cap.open(i, cv::CAP_CAP_AVFOUNDATION)) continue;
+#endif
+    if (!cap.open(i)) continue;
+#endif
 #endif
         if (cap.isOpened()) {
             QString name = QString("Device #%1").arg(i);
