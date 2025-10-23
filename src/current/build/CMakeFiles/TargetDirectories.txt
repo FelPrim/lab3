@@ -1,0 +1,5 @@
+T:/GitHub/my_scripts/lab3/src/current/build/CMakeFiles/VideoCapture.dir
+T:/GitHub/my_scripts/lab3/src/current/build/CMakeFiles/edit_cache.dir
+T:/GitHub/my_scripts/lab3/src/current/build/CMakeFiles/rebuild_cache.dir
+T:/GitHub/my_scripts/lab3/src/current/build/CMakeFiles/VideoCapture_autogen_timestamp_deps.dir
+T:/GitHub/my_scripts/lab3/src/current/build/CMakeFiles/VideoCapture_autogen.dir
