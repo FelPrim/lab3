@@ -47,7 +47,16 @@ void CaptureThread::run()
         m_running = false;
         return;
     }
+#elif __linux__
+    try {
+    	cap.open(m_deviceIndex, cv::CAP_V4L2);
+    } catch (const cv::Exception &e) {
+        emit errorOccurred(QString("OpenCV exception: %1").arg(e.what()));
+        m_running = false;
+        return;
+    }
 #else
+
     if (!cap.open(m_deviceIndex)) {
         emit errorOccurred(QString("Не удалось открыть устройство: %1").arg(m_deviceIndex));
         m_running = false;
