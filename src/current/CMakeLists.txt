@@ -86,7 +86,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     endif()
 endif()
 
-# Linux or fallback
+
+
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconfig")
     message(STATUS "Linux or ignoring .pc files — manual linking")
 
@@ -96,64 +97,37 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconf
 
     # Collect FFmpeg static libs
     set(FF_LIB_DIR "${FFMPEG_ROOT}/lib")
-    file(GLOB FF_AVCODEC   "${FF_LIB_DIR}/*avcodec*.*")
-    file(GLOB FF_AVFORMAT  "${FF_LIB_DIR}/*avformat*.*")
-    file(GLOB FF_AVUTIL    "${FF_LIB_DIR}/*avutil*.*")
-    file(GLOB FF_SWSCALE   "${FF_LIB_DIR}/*swscale*.*")
-    file(GLOB FF_SWRESAMPLE "${FF_LIB_DIR}/*swresample*.*")
-    file(GLOB FF_POSTPROC  "${FF_LIB_DIR}/*postproc*.*")
+    file(GLOB FF_LIBS "${FF_LIB_DIR}/*.a")
 
-    set(ORDERED_FF_LIBS)
-    list(APPEND ORDERED_FF_LIBS ${FF_AVCODEC} ${FF_AVFORMAT} ${FF_AVUTIL} ${FF_SWSCALE} ${FF_SWRESAMPLE} ${FF_POSTPROC})
-
-    # External codec libraries: opus, x265, svt, dav1d
+    # External codec libraries (opus, x265, svt, dav1d)
     foreach(codec IN ITEMS opus x265 svt dav1d)
         set(CODEC_LIB_DIR "${FFMPEG_ROOT}/${codec}/lib")
         set(CODEC_INCLUDE_DIR "${FFMPEG_ROOT}/${codec}/include")
         if(EXISTS "${CODEC_LIB_DIR}")
-            file(GLOB LIBS "${CODEC_LIB_DIR}/*.a" "${CODEC_LIB_DIR}/*.so")
-            if(LIBS)
-                list(APPEND ORDERED_FF_LIBS ${LIBS})
-                target_include_directories(${PROJECT_NAME} PRIVATE "${CODEC_INCLUDE_DIR}")
-                message(STATUS "Added external codec include: ${CODEC_INCLUDE_DIR}")
-            endif()
+            file(GLOB CODEC_LIBS "${CODEC_LIB_DIR}/*.a")
+            list(APPEND FF_LIBS ${CODEC_LIBS})
+            target_include_directories(${PROJECT_NAME} PRIVATE "${CODEC_INCLUDE_DIR}")
+            message(STATUS "Added external codec include: ${CODEC_INCLUDE_DIR}")
         endif()
     endforeach()
 
-    # Deduplicate libraries
-    set(DEDUP)
-    foreach(p IN LISTS ORDERED_FF_LIBS)
-        if(p AND NOT p STREQUAL "")
-            list(FIND DEDUP "${p}" _idx)
-            if(_idx EQUAL -1)
-                list(APPEND DEDUP "${p}")
-            endif()
-        endif()
-    endforeach()
+    # Deduplicate
+    list(REMOVE_DUPLICATES FF_LIBS)
 
-    # Link all FFmpeg and codec libs
-    if (DEDUP)
-        message(STATUS "Linking FFmpeg and external codec libs:")
-        foreach(libpath IN LISTS DEDUP)
-            message(STATUS "  ${libpath}")
-            target_link_libraries(${PROJECT_NAME} PRIVATE "${libpath}")
+    # Link all static libs first
+    if(FF_LIBS)
+        message(STATUS "Linking FFmpeg and external codec static libs:")
+        foreach(lib IN LISTS FF_LIBS)
+            message(STATUS "  ${lib}")
+            target_link_libraries(${PROJECT_NAME} PRIVATE "${lib}")
         endforeach()
     else()
-        message(WARNING "No libraries detected in ${FF_LIB_DIR} or external codec folders")
+        message(WARNING "No FFmpeg libraries detected in ${FF_LIB_DIR} or codec folders")
     endif()
 
-    # Extra external libs if specified (zlib, etc.)
-    if (FFMPEG_EXTRA_LIBS)
-        foreach(x IN LISTS FFMPEG_EXTRA_LIBS)
-            target_link_libraries(${PROJECT_NAME} PRIVATE "${x}")
-        endforeach()
-    endif()
-
-    # Standard platform libraries for static build.
-    # IMPORTANT: order matters — put libraries that others depend on (z, bz2, lzma, pthread, dl, m) AFTER ffmpeg/libs.
-    # Add z (zlib) to resolve inflateEnd and similar symbols.
-    # You can extend this list if your ffmpeg build depends on bz2, lzma, iconv, etc.
-    set(FF_SYSTEM_LIBS pthread dl m z)
+    # System libs required for static linking
+    # ORDER MATTERS: libraries that others depend on should come after them
+    set(FF_SYSTEM_LIBS z pthread dl m rt)
     foreach(syslib IN LISTS FF_SYSTEM_LIBS)
         target_link_libraries(${PROJECT_NAME} PRIVATE ${syslib})
     endforeach()
