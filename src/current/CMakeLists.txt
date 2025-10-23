@@ -87,49 +87,50 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
 
+# ---------------------------------------------------------------------------
+# Linux: ручная линковка статического FFmpeg и зависимостей
+# ---------------------------------------------------------------------------
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconfig")
+    message(STATUS "Linux — manual linking of FFmpeg and external codecs")
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT EXISTS "${FFMPEG_ROOT}/lib/pkgconfig")
-    message(STATUS "Linux or ignoring .pc files — manual linking")
+    # Добавляем include директории FFmpeg
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "${FFMPEG_ROOT}/include"
+        "${FFMPEG_ROOT}/dav1d/include"
+        "${FFMPEG_ROOT}/opus/include"
+        "${FFMPEG_ROOT}/svtav1/include"
+        "${FFMPEG_ROOT}/x265/include"
+    )
+    message(STATUS "Added FFmpeg and codec includes")
 
-    # FFmpeg include
-    target_include_directories(${PROJECT_NAME} PRIVATE "${FFMPEG_ROOT}/include")
-    message(STATUS "Using FFmpeg include: ${FFMPEG_ROOT}/include")
+    # Собираем список статических библиотек FFmpeg
+    set(FF_LIBS
+        "${FFMPEG_ROOT}/lib/libavcodec.a"
+        "${FFMPEG_ROOT}/lib/libavformat.a"
+        "${FFMPEG_ROOT}/lib/libavutil.a"
+        "${FFMPEG_ROOT}/lib/libswscale.a"
+        "${FFMPEG_ROOT}/lib/libswresample.a"
+        "${FFMPEG_ROOT}/lib/libpostproc.a"
+    )
 
-    # Collect FFmpeg static libs
-    set(FF_LIB_DIR "${FFMPEG_ROOT}/lib")
-    file(GLOB FF_LIBS "${FF_LIB_DIR}/*.a")
+    # Внешние кодеки
+    list(APPEND FF_LIBS
+        "${FFMPEG_ROOT}/dav1d/lib/libdav1d.a"
+        "${FFMPEG_ROOT}/opus/lib/libopus.a"
+        "${FFMPEG_ROOT}/svtav1/lib/libSvtAv1Enc.a"
+        "${FFMPEG_ROOT}/x265/lib/libx265.a"
+    )
 
-    # External codec libraries (opus, x265, svt, dav1d)
-	foreach(codec IN ITEMS opus x265 svt dav1d)
-		set(CODEC_LIB_DIR "${FFMPEG_ROOT}/${codec}/lib")
-		set(CODEC_INCLUDE_DIR "${FFMPEG_ROOT}/${codec}/include")
-		if(EXISTS "${CODEC_LIB_DIR}")
-			file(GLOB CODEC_LIBS "${CODEC_LIB_DIR}/*.a" "${CODEC_LIB_DIR}/*.so")
-			list(APPEND FF_LIBS ${CODEC_LIBS})
-			target_include_directories(${PROJECT_NAME} PRIVATE "${CODEC_INCLUDE_DIR}")
-			message(STATUS "Added external codec include: ${CODEC_INCLUDE_DIR}")
-			message(STATUS "Linking codec libs: ${CODEC_LIBS}")
-		endif()
-	endforeach()
+    # Линкуем все библиотеки в правильном порядке
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${FF_LIBS})
 
-    # Deduplicate
-    list(REMOVE_DUPLICATES FF_LIBS)
+    # Добавляем системные библиотеки для статической линковки
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        pthread
+        dl
+        m
+        z
+    )
 
-    # Link all static libs first
-    if(FF_LIBS)
-        message(STATUS "Linking FFmpeg and external codec static libs:")
-        foreach(lib IN LISTS FF_LIBS)
-            message(STATUS "  ${lib}")
-            target_link_libraries(${PROJECT_NAME} PRIVATE "${lib}")
-        endforeach()
-    else()
-        message(WARNING "No FFmpeg libraries detected in ${FF_LIB_DIR} or codec folders")
-    endif()
-
-    # System libs required for static linking
-    # ORDER MATTERS: libraries that others depend on should come after them
-    set(FF_SYSTEM_LIBS z pthread dl m rt)
-    foreach(syslib IN LISTS FF_SYSTEM_LIBS)
-        target_link_libraries(${PROJECT_NAME} PRIVATE ${syslib})
-    endforeach()
+    message(STATUS "Linked FFmpeg, external codecs and system libraries")
 endif()
