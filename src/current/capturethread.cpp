@@ -55,6 +55,14 @@ void CaptureThread::run()
         m_running = false;
         return;
     }
+#elif __APPLE__
+    try {
+        cap.open(m_deviceIndex, cv::CAP_AVFOUNDATION);
+    } catch (const cv::Exception &e) {
+        emit errorOccurred(QString("OpenCV exception: %1").arg(e.what()));
+        m_running = false;
+        return;
+    }
 #else
 
     if (!cap.open(m_deviceIndex)) {
