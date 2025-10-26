@@ -14,20 +14,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 # ---------------------------------------------------------------------------
-# FFmpeg root (локальная сборка)
-# ---------------------------------------------------------------------------
-if (NOT DEFINED FFMPEG_ROOT)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/../../deps/Windows/ffmpeg_static" CACHE PATH "FFmpeg root")
-    elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/../../deps/MacOS/ffmpeg" CACHE PATH "FFmpeg root")
-    else()
-        set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/../../deps/Linux/ffmpeg" CACHE PATH "FFmpeg root")
-    endif()
-endif()
-message(STATUS "FFMPEG_ROOT = ${FFMPEG_ROOT}")
-
-# ---------------------------------------------------------------------------
 # Other dependencies
 # ---------------------------------------------------------------------------
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
@@ -58,15 +44,15 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets ${OpenCV_LIBS})
 
 # ---------------------------------------------------------------------------
-# FFmpeg includes
+# FFmpeg
 # ---------------------------------------------------------------------------
-if(EXISTS "${FFMPEG_ROOT}/include")
-    target_include_directories(${PROJECT_NAME} PRIVATE "${FFMPEG_ROOT}/include")
-    message(STATUS "Using FFmpeg include: ${FFMPEG_ROOT}/include")
-endif()
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    # Windows — можно использовать pkg-config или локальные libs
+    # Windows — используем локальный FFMPEG_ROOT
+    if(NOT DEFINED FFMPEG_ROOT)
+        set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/../../deps/Windows/ffmpeg_static" CACHE PATH "FFmpeg root")
+    endif()
+    message(STATUS "Using local FFmpeg root: ${FFMPEG_ROOT}")
+
     if(EXISTS "${FFMPEG_ROOT}/lib/pkgconfig")
         find_package(PkgConfig QUIET)
         if(PkgConfig_FOUND)
@@ -76,21 +62,20 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         endif()
     endif()
     target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 bcrypt user32 gdi32 ole32)
+
 else()
-     # Не линкуем локальные статические ffmpeg, используем системные (pkg-config)
+    # Linux / macOS — используем системный FFmpeg через pkg-config
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(AV REQUIRED libavcodec libavformat libavutil libswscale)
 
-    if (AV_FOUND)
+    if(AV_FOUND)
         message(STATUS "Using system FFmpeg via pkg-config")
         target_include_directories(${PROJECT_NAME} PRIVATE ${AV_INCLUDE_DIRS})
         target_link_libraries(${PROJECT_NAME} PRIVATE ${AV_LIBRARIES})
-        # гарантируем, что флаги компиляции pkg-config тоже пропадут в цели
         target_compile_options(${PROJECT_NAME} PRIVATE ${AV_CFLAGS_OTHER})
     else()
         message(FATAL_ERROR "pkg-config can't find libav* — install libav* -dev packages or set FFMPEG_ROOT")
     endif()
 
-    # лишние системные либы (если нужно)
     target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl m z)
 endif()
