@@ -149,6 +149,10 @@ void CaptureThread::run()
     m_encoderThread->start();
     m_decoderThread->start();
 
+
+    QMetaObject::invokeMethod(enc, "initialize", Qt::BlockingQueuedConnection);
+    QMetaObject::invokeMethod(dec, "initialize", Qt::BlockingQueuedConnection);
+
     cv::Mat frame;
     while (m_running) {
         if (!cap.read(frame) || frame.empty()) {

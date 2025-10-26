@@ -20,6 +20,7 @@ public:
     ~EncoderWorker() override;
 
 public slots:
+    void initialize();               
     void processFrame(const cv::Mat &frame);
 
 signals:
