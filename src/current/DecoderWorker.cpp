@@ -1,4 +1,5 @@
 #include "DecoderWorker.h"
+#include <QThread> 
 #include <QDebug>
 
 extern "C" {

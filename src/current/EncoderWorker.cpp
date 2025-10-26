@@ -1,4 +1,5 @@
 #include "EncoderWorker.h"
+#include <QThread> 
 #include <QDebug>
 #include <thread>
 #include <algorithm>
