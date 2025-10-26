@@ -63,7 +63,7 @@ void MainWindow::refreshDevices()
     if (!cap.open(i, cv::CAP_V4L2)) continue;
 #else
 #ifdef __APPLE__
-    if (!cap.open(i, cv::CAP_CAP_AVFOUNDATION)) continue;
+    if (!cap.open(i, cv::CAP_AVFOUNDATION)) continue;
 #endif
     if (!cap.open(i)) continue;
 #endif
