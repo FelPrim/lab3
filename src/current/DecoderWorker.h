@@ -19,11 +19,13 @@ public:
     ~DecoderWorker() override;
 
 public slots:
+    void initialize();               // <- новый слот
     void processPacket(const QByteArray &packet);
 
 signals:
     void frameReady(const QImage &img);
     void errorOccurred(const QString &msg);
+    void initialized();
 
 private:
     void initFFmpeg();

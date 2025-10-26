@@ -27,7 +27,15 @@ EncoderWorker::~EncoderWorker()
 
 void EncoderWorker::initialize()
 {
+    qDebug() << "EncoderWorker::initialize() in thread" << QThread::currentThread();
     initFFmpeg(m_width, m_height, m_fps);
+    if (!m_enc_ctx) {
+        emit errorOccurred("EncoderWorker: initFFmpeg failed");
+    } else {
+        qDebug() << "Encoder initialized: ctx=" << (void*)m_enc_ctx
+                 << "frame=" << (void*)m_enc_frame << "pkt=" << (void*)m_pkt;
+        emit initialized();
+    }
 }
 
 void EncoderWorker::initFFmpeg(int width, int height, int fps)
@@ -36,6 +44,9 @@ void EncoderWorker::initFFmpeg(int width, int height, int fps)
         emit errorOccurred(QString("EncoderWorker: invalid dimensions %1x%2").arg(width).arg(height));
         return;
     }
+
+    // Defensive cleanup if previously something was left
+    cleanupFFmpeg();
 
     // Try libx264 first, fallback to builtin H264
     const AVCodec *enc_codec = avcodec_find_encoder_by_name("libx264");
@@ -65,10 +76,9 @@ void EncoderWorker::initFFmpeg(int width, int height, int fps)
     unsigned int hc = std::thread::hardware_concurrency();
     unsigned int hw_threads = 1;
     if (hc > DEFAULT_HW_THREADS_SUBTRACT) hw_threads = hc - DEFAULT_HW_THREADS_SUBTRACT;
-    else hw_threads = 1;
     m_enc_ctx->thread_count = hw_threads;
 
-    // encoder options: preset + tune for low-latency if using x264
+    // encoder options for x264
     AVDictionary *enc_opts = nullptr;
     if (enc_codec && strcmp(enc_codec->name, "libx264") == 0) {
         av_dict_set(&enc_opts, "preset", DEFAULT_X264_PRESET, 0);
@@ -82,17 +92,17 @@ void EncoderWorker::initFFmpeg(int width, int height, int fps)
     av_dict_free(&enc_opts);
 
     if (ret < 0) {
-        // Clean up context and try fallback to builtin H264 (if we tried libx264 first)
         QString err = ffmpegErrStr(ret);
-        avcodec_free_context(&m_enc_ctx); // safe even if partially initialised
-        // Try builtin H264 encoder if initial codec was libx264
+        // try fallback to builtin h264 if different codec available
         const AVCodec *fallback = avcodec_find_encoder(AV_CODEC_ID_H264);
         if (fallback && fallback != enc_codec) {
+            avcodec_free_context(&m_enc_ctx); // free partially initialised context
             m_enc_ctx = avcodec_alloc_context3(fallback);
             if (!m_enc_ctx) {
                 emit errorOccurred("Failed to allocate encoder context (fallback).");
                 return;
             }
+            // reapply settings
             m_enc_ctx->width = width;
             m_enc_ctx->height = height;
             m_enc_ctx->time_base = AVRational{1, fps};
@@ -108,76 +118,94 @@ void EncoderWorker::initFFmpeg(int width, int height, int fps)
             if (ret < 0) {
                 QString err2 = ffmpegErrStr(ret);
                 avcodec_free_context(&m_enc_ctx);
+                m_enc_ctx = nullptr;
                 emit errorOccurred(QString("avcodec_open2 failed (primary: %1, fallback: %2)").arg(err, err2));
                 return;
             }
         } else {
+            avcodec_free_context(&m_enc_ctx);
+            m_enc_ctx = nullptr;
             emit errorOccurred(QString("avcodec_open2 encoder failed: %1").arg(err));
             return;
         }
     }
 
-    // sws: BGR24 (OpenCV) -> YUV420P
+    // Create sws context: BGR24 -> target pix_fmt
     m_sws_enc = sws_getContext(width, height, AV_PIX_FMT_BGR24,
                                width, height, m_enc_ctx->pix_fmt,
                                SWS_BILINEAR, nullptr, nullptr, nullptr);
     if (!m_sws_enc) {
         emit errorOccurred("sws_getContext (encoder) failed");
-        avcodec_free_context(&m_enc_ctx);
+        cleanupFFmpeg();
         return;
     }
 
+    // Allocate frame (YUV420P)
     m_enc_frame = av_frame_alloc();
     if (!m_enc_frame) {
         emit errorOccurred("av_frame_alloc (enc) failed");
-        sws_freeContext(m_sws_enc);
-        m_sws_enc = nullptr;
-        avcodec_free_context(&m_enc_ctx);
+        cleanupFFmpeg();
         return;
     }
     m_enc_frame->format = m_enc_ctx->pix_fmt;
     m_enc_frame->width  = m_enc_ctx->width;
     m_enc_frame->height = m_enc_ctx->height;
+
     ret = av_frame_get_buffer(m_enc_frame, 32);
     if (ret < 0) {
         emit errorOccurred(QString("av_frame_get_buffer failed: %1").arg(ffmpegErrStr(ret)));
-        av_frame_free(&m_enc_frame);
-        sws_freeContext(m_sws_enc);
-        m_sws_enc = nullptr;
-        avcodec_free_context(&m_enc_ctx);
+        cleanupFFmpeg();
         return;
     }
 
+    // Allocate packet
     m_pkt = av_packet_alloc();
     if (!m_pkt) {
         emit errorOccurred("av_packet_alloc failed");
-        av_frame_free(&m_enc_frame);
-        sws_freeContext(m_sws_enc);
-        m_sws_enc = nullptr;
-        avcodec_free_context(&m_enc_ctx);
+        cleanupFFmpeg();
         return;
     }
 
-    qDebug() << "EncoderWorker initialized: codec=" << m_enc_ctx->codec->name
+    // reset pts
+    m_pts = 0;
+    busy = false;
+
+    qDebug() << "EncoderWorker initialized: codec=" << (m_enc_ctx && m_enc_ctx->codec ? m_enc_ctx->codec->name : "<null>")
              << " bitrate=" << m_enc_ctx->bit_rate
-             << " threads=" << m_enc_ctx->thread_count
-             << " preset=" << DEFAULT_X264_PRESET
-             << " tune=" << DEFAULT_X264_TUNE;
+             << " threads=" << m_enc_ctx->thread_count;
 }
 
 void EncoderWorker::cleanupFFmpeg()
 {
     if (m_enc_ctx) {
         avcodec_send_frame(m_enc_ctx, nullptr);
-        while (avcodec_receive_packet(m_enc_ctx, m_pkt) == 0) {
-            av_packet_unref(m_pkt);
+        if (m_pkt) {
+            while (avcodec_receive_packet(m_enc_ctx, m_pkt) == 0) {
+                av_packet_unref(m_pkt);
+            }
         }
+        avcodec_free_context(&m_enc_ctx);
+        m_enc_ctx = nullptr;
     }
 
-    if (m_pkt) { av_packet_free(&m_pkt); m_pkt = nullptr; }
-    if (m_enc_frame) { av_frame_free(&m_enc_frame); m_enc_frame = nullptr; }
-    if (m_sws_enc) { sws_freeContext(m_sws_enc); m_sws_enc = nullptr; }
-    if (m_enc_ctx) { avcodec_free_context(&m_enc_ctx); m_enc_ctx = nullptr; }
+    if (m_pkt) {
+        av_packet_free(&m_pkt);
+        m_pkt = nullptr;
+    }
+
+    if (m_enc_frame) {
+        av_frame_free(&m_enc_frame);
+        m_enc_frame = nullptr;
+    }
+
+    if (m_sws_enc) {
+        sws_freeContext(m_sws_enc);
+        m_sws_enc = nullptr;
+    }
+
+    // reset pts and busy flag
+    m_pts = 0;
+    busy = false;
 }
 
 void EncoderWorker::processFrame(const cv::Mat &frame_in)

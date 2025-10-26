@@ -149,9 +149,12 @@ void CaptureThread::run()
     m_encoderThread->start();
     m_decoderThread->start();
 
-
-    QMetaObject::invokeMethod(enc, "initialize", Qt::BlockingQueuedConnection);
-    QMetaObject::invokeMethod(dec, "initialize", Qt::BlockingQueuedConnection);
+    if(!QMetaObject::invokeMethod(enc, "initialize", Qt::BlockingQueuedConnection)) {
+        qWarning() << "Failed to invoke initialize on encoder";
+    }
+    if(!QMetaObject::invokeMethod(dec, "initialize", Qt::BlockingQueuedConnection)) {
+        qWarning() << "Failed to invoke initialize on decoder";
+    }
 
     cv::Mat frame;
     while (m_running) {

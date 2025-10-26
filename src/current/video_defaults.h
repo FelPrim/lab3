@@ -1,7 +1,7 @@
 #pragma once
 
 // C++17 inline constants (safe to include)
-inline constexpr int DEFAULT_BITRATE = 400000; // 400 kb/s
+inline constexpr int DEFAULT_BITRATE = 100000; // 400 kb/s
 inline constexpr int DEFAULT_FPS     = 60;
 inline constexpr int DEFAULT_WIDTH   = 1920;
 inline constexpr int DEFAULT_HEIGHT  = 1080;

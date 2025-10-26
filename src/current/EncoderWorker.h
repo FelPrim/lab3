@@ -20,12 +20,13 @@ public:
     ~EncoderWorker() override;
 
 public slots:
-    void initialize();               
+    void initialize();                 
     void processFrame(const cv::Mat &frame);
 
 signals:
     void packetReady(const QByteArray &packet);
     void errorOccurred(const QString &msg);
+    void initialized();                 
 
 private:
     void initFFmpeg(int width, int height, int fps);

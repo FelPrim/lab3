@@ -16,7 +16,18 @@ static QString ffmpegErrStr(int errnum) {
 DecoderWorker::DecoderWorker(int targetWidth, int targetHeight, QObject *parent)
     : QObject(parent), m_targetWidth(targetWidth), m_targetHeight(targetHeight)
 {
+}
+
+void DecoderWorker::initialize()
+{
+    qDebug() << "DecoderWorker::initialize() in thread" << QThread::currentThread();
     initFFmpeg();
+    if (!m_dec_ctx || !m_dec_frame) {
+        emit errorOccurred("DecoderWorker: initFFmpeg failed");
+    } else {
+        qDebug() << "Decoder initialized: ctx=" << (void*)m_dec_ctx;
+        emit initialized();
+    }
 }
 
 DecoderWorker::~DecoderWorker()
@@ -26,6 +37,9 @@ DecoderWorker::~DecoderWorker()
 
 void DecoderWorker::initFFmpeg()
 {
+    // Defensive cleanup
+    cleanupFFmpeg();
+
     const AVCodec *dec_codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if (!dec_codec) {
         emit errorOccurred("H.264 decoder not found in linked libavcodec.");
@@ -40,17 +54,21 @@ void DecoderWorker::initFFmpeg()
 
     int ret = avcodec_open2(m_dec_ctx, dec_codec, nullptr);
     if (ret < 0) {
-        emit errorOccurred(QString("avcodec_open2(dec) failed: %1").arg(ffmpegErrStr(ret)));
+        QString err = ffmpegErrStr(ret);
+        avcodec_free_context(&m_dec_ctx);
+        m_dec_ctx = nullptr;
+        emit errorOccurred(QString("avcodec_open2(dec) failed: %1").arg(err));
         return;
     }
 
     m_dec_frame = av_frame_alloc();
     if (!m_dec_frame) {
         emit errorOccurred("av_frame_alloc (dec) failed");
+        cleanupFFmpeg();
         return;
     }
 
-    qDebug() << "DecoderWorker initialized: codec=" << m_dec_ctx->codec->name;
+    qDebug() << "DecoderWorker initialized: codec=" << (m_dec_ctx && m_dec_ctx->codec ? m_dec_ctx->codec->name : "<null>");
 }
 
 void DecoderWorker::cleanupFFmpeg()
@@ -60,15 +78,28 @@ void DecoderWorker::cleanupFFmpeg()
         while (avcodec_receive_frame(m_dec_ctx, m_dec_frame) == 0) {
             av_frame_unref(m_dec_frame);
         }
+        avcodec_free_context(&m_dec_ctx);
+        m_dec_ctx = nullptr;
     }
 
-    if (m_dec_frame) { av_frame_free(&m_dec_frame); m_dec_frame = nullptr; }
-    if (m_sws_dec) { sws_freeContext(m_sws_dec); m_sws_dec = nullptr; }
-    if (m_dec_ctx) { avcodec_free_context(&m_dec_ctx); m_dec_ctx = nullptr; }
+    if (m_dec_frame) {
+        av_frame_free(&m_dec_frame);
+        m_dec_frame = nullptr;
+    }
+
+    if (m_sws_dec) {
+        sws_freeContext(m_sws_dec);
+        m_sws_dec = nullptr;
+    }
+
+    busy = false;
 }
 
 void DecoderWorker::processPacket(const QByteArray &packet)
 {
+    if (!m_dec_ctx || !m_dec_frame) {
+        return;
+    }
     bool expected = false;
     if (!busy.compare_exchange_strong(expected, true)) {
         // drop packet if busy
