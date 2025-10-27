@@ -34,7 +34,7 @@ void PacketBuffer::insertFrame(int frameNumber, const QByteArray &packet)
     m_frameNumbers[index] = frameNumber;
 }
 
-bool PacketBuffer::getFrame(int frameNumber, QByteArray &out)
+bool PacketBuffer::getFrame(int frameNumber, QByteArray &out) const
 {
     QMutexLocker locker(&m_mutex);
     
@@ -113,4 +113,35 @@ bool PacketBuffer::hasFrame(int frameNumber) const
 int PacketBuffer::getBufferIndex(int frameNumber) const
 {
     return frameNumber % m_capacity;
+}
+
+void PacketBuffer::cloneFrom(const PacketBuffer* source, int maxFrames)
+{
+    QMutexLocker locker(&m_mutex);
+    if (!source) return;
+    
+    // Блокируем исходный буфер для чтения
+    QMutexLocker sourceLocker(&source->m_mutex);
+    
+    clear();
+    
+    int sourceMin = source->getMinFrameNumber();
+    int sourceMax = source->getMaxFrameNumber();
+    
+    if (sourceMax < sourceMin) return; // Буфер пуст
+    
+    // Определяем диапазон фреймов для клонирования
+    int startFrame = sourceMin;
+    int endFrame = sourceMax;
+    if (maxFrames > 0 && (endFrame - startFrame + 1) > maxFrames) {
+        startFrame = endFrame - maxFrames + 1;
+    }
+    
+    // Копируем фреймы
+    for (int frameNum = startFrame; frameNum <= endFrame; ++frameNum) {
+        QByteArray packet;
+        if (source->getFrame(frameNum, packet)) {
+            insertFrame(frameNum, packet);
+        }
+    }
 }

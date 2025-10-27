@@ -1,11 +1,15 @@
 #pragma once
 
 #include <QMainWindow>
-#include <QComboBox>
 #include <QPushButton>
 #include <QLabel>
-#include <opencv2/opencv.hpp>
+#include <QGridLayout>
+#include <QResizeEvent>
 #include "capturethread.h"
+#include "videolayoutcalculator.h"
+
+class VideoSelectionDialog;
+class RemoveVideoDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -14,21 +18,32 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
 
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
 private slots:
     void refreshDevices();
-    void startCapture();
-    void stopCapture();
-    void onFrame(const QImage &img);
+    void addVideo();
+    void removeVideo();
+    void onFrame(int streamIndex, const QImage &img);
     void onError(const QString &msg);
+    void updateVideoLayout();
 
 private:
-    QComboBox *m_comboDevices;
-    QPushButton *m_btnStart;
-    QPushButton *m_btnStop;
+    void setupUI();
+    void setupConnections();
+    
+    QPushButton *m_btnAddVideo;
+    QPushButton *m_btnRemoveVideo;
     QPushButton *m_btnRefresh;
-    QLabel *m_videoLabel;
     QLabel *m_infoLabel;
+    QWidget *m_videoContainer;
+    QGridLayout *m_videoLayout;
 
-    CaptureThread *m_thread = nullptr;
-    QList<int> m_deviceIndices;
+    QVector<QLabel*> m_videoLabels;
+    QVector<CaptureThread*> m_captureThreads;
+    QList<int> m_availableDevices;
+    QList<int> m_usedDevices;
+    
+    const int MARGIN = 5;
 };

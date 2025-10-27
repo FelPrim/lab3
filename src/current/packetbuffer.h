@@ -15,8 +15,11 @@ public:
     void insertFrame(int frameNumber, const QByteArray &packet);
     
     // Получение фрейма по номеру
-    bool getFrame(int frameNumber, QByteArray &out);
+    bool getFrame(int frameNumber, QByteArray &out) const;
     bool getLatestPacket(QByteArray &out);
+    
+    // Клонирование буфера (для многопоточного использования)
+    void cloneFrom(const PacketBuffer* source, int maxFrames = -1);
     
     void clear();
     int size() const;

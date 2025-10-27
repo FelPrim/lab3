@@ -29,6 +29,10 @@ set(SOURCES
     EncoderWorker.cpp
     DecoderWorker.cpp
 	packetbuffer.cpp
+	videoselectiondialog.cpp
+	videolayoutcalculator.cpp
+	darktheme.cpp
+	removevideodialog.cpp
 )
 
 set(HEADERS
@@ -39,6 +43,10 @@ set(HEADERS
     video_defaults.h
 	bufferreaderthread.h
 	packetbuffer.h
+	videoselectiondialog.h
+	videolayoutcalculator.h
+	darktheme.h
+	removevideodialog.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
