@@ -1,10 +1,11 @@
 #pragma once
 
 // C++17 inline constants (safe to include)
-inline constexpr int DEFAULT_BITRATE = 10000000; // 400 kb/s
-inline constexpr int DEFAULT_FPS     = 60;
-inline constexpr int DEFAULT_WIDTH   = 1920;
-inline constexpr int DEFAULT_HEIGHT  = 1080;
+inline constexpr int DEFAULT_BITRATE = 4000000; // 400 kb/s
+inline constexpr int DEFAULT_FPS     = 15;
+inline constexpr int DEFAULT_WIDTH   = 640;
+inline constexpr int DEFAULT_HEIGHT  = 480;
+inline constexpr float DEFAULT_BUFFERSECONDS = 0.1;
 
 // x264 presets: use "ultrafast" for lowest latency/CPU cost, and "zerolatency" tune
 inline constexpr const char DEFAULT_X264_PRESET[] = "ultrafast";

@@ -28,6 +28,7 @@ set(SOURCES
     capturethread.cpp
     EncoderWorker.cpp
     DecoderWorker.cpp
+	packetbuffer.cpp
 )
 
 set(HEADERS
@@ -36,6 +37,8 @@ set(HEADERS
     EncoderWorker.h
     DecoderWorker.h
     video_defaults.h
+	bufferreaderthread.h
+	packetbuffer.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})

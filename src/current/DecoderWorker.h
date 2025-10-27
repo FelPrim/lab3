@@ -19,8 +19,8 @@ public:
     ~DecoderWorker() override;
 
 public slots:
-    void initialize();               // <- новый слот
-    void processPacket(const QByteArray &packet);
+    void initialize();               
+    void processPacket(const QByteArray &packet, int frameNumber);
 
 signals:
     void frameReady(const QImage &img);

@@ -1,5 +1,5 @@
-
 #include "capturethread.h"
+#include "packetbuffer.h"
 #include "video_defaults.h"
 #include "EncoderWorker.h"
 #include "DecoderWorker.h"
@@ -13,6 +13,12 @@ CaptureThread::CaptureThread(QObject *parent)
 
 CaptureThread::~CaptureThread()
 {
+
+    if (m_packetBuffer) {
+        m_packetBuffer->clear();
+        delete m_packetBuffer;
+        m_packetBuffer = nullptr;
+    }
     stopCapture();
     wait();
 }
@@ -25,11 +31,23 @@ void CaptureThread::startCapture(int deviceIndex)
     }
 
     if (isRunning()) {
-        m_running = false;
+        stopCapture(); 
         wait();
     }
 
+    int bufferCapacity = qMax(1, static_cast<int>(m_fps * m_bufferSeconds * 2));
+    if (!m_packetBuffer) {
+        m_packetBuffer = new PacketBuffer(bufferCapacity);
+    } else {
+        m_packetBuffer->setCapacity(bufferCapacity);
+        m_packetBuffer->clear();
+    }
+
+    qDebug() << "Buffer capacity:" << bufferCapacity 
+             << "packets (" << m_bufferSeconds << "seconds at" << m_fps << "FPS)";
+    
     m_deviceIndex = deviceIndex;
+    m_encoderFrameCount = 0;  
     m_running = true;
     start();
 }
@@ -37,18 +55,23 @@ void CaptureThread::startCapture(int deviceIndex)
 void CaptureThread::stopCapture()
 {
     m_running = false;
+    wait();  
+	
+    if (m_packetBuffer) {
+        m_packetBuffer->clear();
+    }
 }
 
 void CaptureThread::run()
 {
-    qDebug() << "CaptureThread: старт, устройство =" << m_deviceIndex;
+    qDebug() << "capturethread: старт, устройство =" << m_deviceIndex;
 
     cv::VideoCapture cap;
 #ifdef _WIN32
     try {
         cap.open(m_deviceIndex, cv::CAP_DSHOW);
     } catch (const cv::Exception &e) {
-        emit errorOccurred(QString("OpenCV exception: %1").arg(e.what()));
+        emit errorOccurred(QString("opencv exception: %1").arg(e.what()));
         m_running = false;
         return;
     }
@@ -56,7 +79,7 @@ void CaptureThread::run()
     try {
         cap.open(m_deviceIndex, cv::CAP_V4L2);
     } catch (const cv::Exception &e) {
-        emit errorOccurred(QString("OpenCV exception: %1").arg(e.what()));
+        emit errorOccurred(QString("opencv exception: %1").arg(e.what()));
         m_running = false;
         return;
     }
@@ -64,20 +87,20 @@ void CaptureThread::run()
     try {
         cap.open(m_deviceIndex, cv::CAP_AVFOUNDATION);
     } catch (const cv::Exception &e) {
-        emit errorOccurred(QString("OpenCV exception: %1").arg(e.what()));
+        emit errorOccurred(QString("opencv exception: %1").arg(e.what()));
         m_running = false;
         return;
     }
 #else
     if (!cap.open(m_deviceIndex)) {
-        emit errorOccurred(QString("Не удалось открыть устройство: %1").arg(m_deviceIndex));
+        emit errorOccurred(QString("не удалось открыть устройство: %1").arg(m_deviceIndex));
         m_running = false;
         return;
     }
 #endif
 
     if (!cap.isOpened()) {
-        emit errorOccurred(QString("Не удалось открыть устройство: %1").arg(m_deviceIndex));
+        emit errorOccurred(QString("не удалось открыть устройство: %1").arg(m_deviceIndex));
         m_running = false;
         return;
     }
@@ -85,13 +108,7 @@ void CaptureThread::run()
     cap.set(cv::CAP_PROP_FRAME_WIDTH, DEFAULT_WIDTH);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, DEFAULT_HEIGHT);
     cap.set(cv::CAP_PROP_FPS, m_fps);
-    /*
-    int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
-    int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
-    if (width <= 0 || height <= 0) { width = DEFAULT_WIDTH; height = DEFAULT_HEIGHT; }
-    */
     
-    // Попробуем прочитать несколько кадров, чтобы драйвер "поднял" поток и вернул реальные размеры.
     cv::Mat probe;
     int attempts = 0;
     const int max_attempts = 10;
@@ -105,14 +122,14 @@ void CaptureThread::run()
     if (!probe.empty()) {
         width = probe.cols;
         height = probe.rows;
-        qDebug() << "Probe frame size:" << width << "x" << height;
+        qDebug() << "probe frame size:" << width << "x" << height;
     } else {
-        // Если не удалось получить кадр — используем дефолты, но логгируем это.
-        qDebug() << "Не удалось получить probe-кадр, используем значения по умолчанию:"
+        // если не удалось получить кадр — используем дефолты, но логгируем это.
+        qDebug() << "не удалось получить probe-кадр, используем значения по умолчанию:"
                  << DEFAULT_WIDTH << "x" << DEFAULT_HEIGHT;
     }
 
-    // Дополнительно: если размеры нечётные, привести к чётным (нужно для YUV420)
+    // дополнительно: если размеры нечётные, привести к чётным (нужно для yuv420)
     if (width % 2) --width;
     if (height % 2) --height;
 
@@ -133,10 +150,8 @@ void CaptureThread::run()
     // capture -> encoder
     connect(this, &CaptureThread::frameCaptured, enc, &EncoderWorker::processFrame, Qt::QueuedConnection);
 
-    // encoder -> decoder
-    connect(enc, &EncoderWorker::packetReady, dec, &DecoderWorker::processPacket, Qt::QueuedConnection);
 
-    // decoder -> capture (forward to GUI)
+    // decoder -> capture (forward to gui)
     connect(dec, &DecoderWorker::frameReady, this, &CaptureThread::frameReady, Qt::QueuedConnection);
 
     // pass errors up
@@ -145,44 +160,91 @@ void CaptureThread::run()
 
     m_encoderWorker = enc;
     m_decoderWorker = dec;
+	
+	float delaySeconds = m_bufferSeconds;  // это уже float
+    m_bufferReaderThread = new BufferReaderThread(m_packetBuffer, m_fps, delaySeconds, this);
+
+    qDebug() << "Delay seconds:" << delaySeconds << "-> frames:" << delaySeconds * m_fps;
+
+    // Подключаем сигнал из потока к декодеру
+    connect(m_bufferReaderThread, &BufferReaderThread::packetReady,
+        dec, &DecoderWorker::processPacket,
+        Qt::QueuedConnection);
 
     m_encoderThread->start();
     m_decoderThread->start();
-
+		
     if(!QMetaObject::invokeMethod(enc, "initialize", Qt::BlockingQueuedConnection)) {
-        qWarning() << "Failed to invoke initialize on encoder";
+        qWarning() << "failed to invoke initialize on encoder";
     }
     if(!QMetaObject::invokeMethod(dec, "initialize", Qt::BlockingQueuedConnection)) {
-        qWarning() << "Failed to invoke initialize on decoder";
+        qWarning() << "failed to invoke initialize on decoder";
     }
+	
+	QThread::sleep(1);
+	qDebug() << "Starting BufferReaderThread, current buffer size:" << m_packetBuffer->size();
+    m_bufferReaderThread->start();
 
-    cv::Mat frame;
+    connect(m_encoderWorker, &EncoderWorker::packetReady,
+        this, [this](const QByteArray &packet){
+            if (m_packetBuffer && m_running) {
+                m_packetBuffer->insertFrame(m_encoderFrameCount, packet);
+                m_encoderFrameCount++;
+                
+                if (m_encoderFrameCount % 30 == 0) {
+                    qDebug() << "Encoder frame" << m_encoderFrameCount 
+                             << "added. Buffer:" << m_packetBuffer->size() 
+                             << "/" << m_packetBuffer->capacity()
+                             << "frames, range:" << m_packetBuffer->getMinFrameNumber()
+                             << "-" << m_packetBuffer->getMaxFrameNumber();
+                }
+            }
+        }, Qt::QueuedConnection);
+	    cv::Mat frame;
+    QElapsedTimer frameTimer;
+    
+	qDebug() << "Settings - FPS:" << m_fps 
+         << "Buffer seconds:" << m_bufferSeconds
+         << "Expected delay:" << (m_bufferSeconds * 1000) << "ms";
+	
     while (m_running) {
+        frameTimer.restart();
+        
         if (!cap.read(frame) || frame.empty()) {
             QThread::msleep(5);
             continue;
         }
 
-        // ensure BGR 3 channels
         cv::Mat bgr;
-        if (frame.channels() == 3) {
+        if (frame.channels() == 3)
             bgr = frame;
-        } else if (frame.channels() == 1) {
+        else if (frame.channels() == 1)
             cv::cvtColor(frame, bgr, cv::COLOR_GRAY2BGR);
-        } else if (frame.channels() == 4) {
+        else if (frame.channels() == 4)
             cv::cvtColor(frame, bgr, cv::COLOR_BGRA2BGR);
-        } else {
-            QThread::msleep(5);
+        else
             continue;
-        }
 
-        // emit to encoder (queued copy of cv::Mat header)
+        // Отправляем кадр в энкодер
         emit frameCaptured(bgr);
 
-        QThread::msleep(1);
+        // Точный контроль FPS
+        int elapsed = frameTimer.elapsed();
+        int frameTime = 1000 / m_fps;
+        int remaining = frameTime - elapsed;
+        if (remaining > 0) {
+            QThread::msleep(remaining);
+        }
     }
-
-    // stop threads
+    
+    // ОСТАНАВЛИВАЕМ потоки в правильном порядке
+    if (m_bufferReaderThread) {
+        m_bufferReaderThread->stop();
+        m_bufferReaderThread->wait();
+        delete m_bufferReaderThread;
+        m_bufferReaderThread = nullptr;
+    }
+    
     if (m_encoderThread) {
         m_encoderThread->quit();
         m_encoderThread->wait();
@@ -190,6 +252,7 @@ void CaptureThread::run()
         m_encoderThread = nullptr;
         m_encoderWorker = nullptr;
     }
+    
     if (m_decoderThread) {
         m_decoderThread->quit();
         m_decoderThread->wait();
@@ -199,5 +262,5 @@ void CaptureThread::run()
     }
 
     cap.release();
-    qDebug() << "CaptureThread: завершён";
+    qDebug() << "capturethread: завершён";
 }

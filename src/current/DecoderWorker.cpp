@@ -96,11 +96,19 @@ void DecoderWorker::cleanupFFmpeg()
     busy = false;
 }
 
-void DecoderWorker::processPacket(const QByteArray &packet)
-{
+void DecoderWorker::processPacket(const QByteArray &packet, int frameNumber) {
+	qDebug() << "DecoderWorker::processPacket called, frame:" << frameNumber << "size:" << packet.size();
+    
     if (!m_dec_ctx || !m_dec_frame) {
+        qWarning() << "DecoderWorker: decoder not initialized";
         return;
     }
+
+    if (packet.isEmpty()) {
+        qDebug() << "DecoderWorker: empty packet";
+        return;
+    }
+
     bool expected = false;
     if (!busy.compare_exchange_strong(expected, true)) {
         // drop packet if busy
@@ -187,4 +195,5 @@ void DecoderWorker::processPacket(const QByteArray &packet)
     av_packet_free(&pkt);
 
     busy = false;
+	qDebug() << "DecoderWorker::processPacket finished for frame:" << frameNumber;
 }
