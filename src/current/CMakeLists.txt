@@ -35,12 +35,14 @@ set(SOURCES
 	removevideodialog.cpp
 	videodecoder.cpp
 	networkdisplaybuffer.cpp
+	xorfec.cpp
 #    capturethread.cpp
 #    EncoderWorker.cpp
 #    DecoderWorker.cpp
 #	packetbuffer.cpp
 #	networkcapturethread.cpp
 	framebuffer.cpp
+	
 )
 
 set(HEADERS
@@ -56,6 +58,7 @@ set(HEADERS
 	removevideodialog.h
 	videodecoder.h
 	networkdisplaybuffer.h
+	xorfec.h
 #    capturethread.h
 #    EncoderWorker.h
 #    DecoderWorker.h

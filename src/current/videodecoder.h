@@ -20,6 +20,7 @@ public:
 
     void initialize();
     void cleanup();
+    bool isBusy() const { return m_busy.load(); }  // Добавляем метод проверки состояния
 
 public slots:
     void decodeFrame(const QByteArray &frameData, int frameNumber);

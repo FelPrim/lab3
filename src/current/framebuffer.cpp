@@ -2,7 +2,7 @@
 #include <QDebug>
 
 FrameBuffer::FrameBuffer(int capacity)
-    : m_capacity(capacity), m_buffer(capacity), m_frameNumbers(capacity, -1)
+    : m_capacity(DEFAULT_BUFFERSZ), m_buffer(DEFAULT_BUFFERSZ), m_frameNumbers(DEFAULT_BUFFERSZ, -1)
 {
 }
 

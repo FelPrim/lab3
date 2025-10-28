@@ -146,48 +146,6 @@ void NetworkManager::setServerAddress(const QString &address, quint16 port)
     qDebug() << "NetworkManager: Server address set to" << address << ":" << port;
 }
 
-void NetworkManager::sendVideoFrame(int streamId, int frameNumber, const QByteArray &frameData)
-{
-    if (!m_initialized || !m_udpSocket) {
-        qWarning() << "NetworkManager not initialized, cannot send frame";
-        return;
-    }
-    
-    if (frameData.isEmpty()) {
-        qWarning() << "Attempt to send empty frame data";
-        return;
-    }
-    
-    try {
-        // Разбиваем фрейм на пакеты
-        int dataSize = frameData.size();
-        int totalParts = (dataSize + MAX_PAYLOAD_SIZE - 1) / MAX_PAYLOAD_SIZE;
-        
-        qDebug() << "Sending frame" << frameNumber << "from stream" << streamId 
-                 << "size:" << dataSize << "bytes, parts:" << totalParts;
-        
-        // Отправляем каждый пакет
-        for (int partIndex = 0; partIndex < totalParts; partIndex++) {
-            int start = partIndex * MAX_PAYLOAD_SIZE;
-            int length = qMin(MAX_PAYLOAD_SIZE, dataSize - start);
-            
-            QByteArray payload = frameData.mid(start, length);
-            sendPacket(payload, streamId, frameNumber, partIndex, totalParts);
-        }
-        
-        // Обновляем статистику
-        updateSendStats(totalParts, dataSize);
-        m_stats.framesSent++;
-        m_stats.expectedFrames.insert(qMakePair(streamId, frameNumber));
-        
-        qDebug() << "Successfully sent frame" << frameNumber << "from stream" << streamId;
-        
-    } catch (const std::exception &e) {
-        qCritical() << "Exception in sendVideoFrame:" << e.what();
-        emit errorOccurred(QString("Send video frame failed: %1").arg(e.what()));
-    }
-}
-
 void NetworkManager::sendPacket(const QByteArray &data, int streamId, int frameNumber, int partIndex, int totalParts)
 {
     if (!m_udpSocket || m_udpSocket->state() != QAbstractSocket::BoundState) {
@@ -243,11 +201,51 @@ void NetworkManager::onPacketReceived()
                 continue;
             }
             
-            processIncomingPacket(datagram);
+            processPacketWithSize(datagram);
             
         } catch (const std::exception &e) {
             qCritical() << "Exception in onPacketReceived:" << e.what();
         }
+    }
+}
+
+void NetworkManager::processPacketWithSize(const QNetworkDatagram &datagram)
+{
+    QByteArray data = datagram.data();
+    
+    if (data.size() < HEADER_SIZE) {
+        qWarning() << "Received datagram too small:" << data.size() << "bytes";
+        return;
+    }
+    
+    try {
+        QDataStream stream(data);
+        int streamId, frameNumber, totalParts, partIndex, originalSize;
+        
+        // Читаем расширенный заголовок
+        stream >> streamId;
+        stream >> frameNumber;
+        stream >> totalParts;
+        stream >> partIndex;
+        stream >> originalSize;
+        
+        // Читаем данные
+        QByteArray payload = data.mid(HEADER_SIZE);
+        
+        qDebug() << "📥 Received part" << partIndex << "/" << totalParts 
+                 << "for frame" << frameNumber
+                 << "size:" << payload.size() << "original:" << originalSize << "bytes";
+        
+        // Сохраняем данные с информацией о размере
+        QPair<QByteArray, int> packetWithSize = qMakePair(payload, originalSize);
+        
+        // Обрабатываем пакет
+        addPacketToAssembly(streamId, frameNumber, partIndex, totalParts, packetWithSize);
+        
+        updateReceiveStats(1, payload.size());
+        
+    } catch (const std::exception &e) {
+        qCritical() << "Exception processing packet:" << e.what();
     }
 }
 
@@ -287,50 +285,174 @@ void NetworkManager::processIncomingPacket(const QNetworkDatagram &datagram)
     }
 }
 
-void NetworkManager::addPacketToAssembly(int streamId, int frameNumber, int partIndex, int totalParts, const QByteArray &packetData)
+void NetworkManager::sendVideoFrame(int streamId, int frameNumber, const QByteArray &frameData)
 {
-	 if (totalParts <= 0 || partIndex < 0 || partIndex >= totalParts || packetData.isEmpty()) {
-        qWarning() << "Invalid packet parameters";
+    if (!m_initialized || !m_udpSocket) {
+        qWarning() << "NetworkManager not initialized, cannot send frame";
         return;
     }
     
+    try {
+        // Разбиваем фрейм на части
+        int dataSize = frameData.size();
+        int dataParts = (dataSize + MAX_PAYLOAD_SIZE - 1) / MAX_PAYLOAD_SIZE;
+        
+        qDebug() << "📦 Splitting frame" << frameNumber << "of size" << dataSize 
+                 << "into" << dataParts << "data parts";
+        
+        // Создаем сегменты данных и запоминаем их оригинальные размеры
+        std::vector<QByteArray> dataShards;
+        std::vector<int> originalSizes;
+        
+        for (int i = 0; i < dataParts; i++) {
+            int start = i * MAX_PAYLOAD_SIZE;
+            int length = qMin(MAX_PAYLOAD_SIZE, dataSize - start);
+            QByteArray shard = frameData.mid(start, length);
+            
+            dataShards.push_back(shard);
+            originalSizes.push_back(length);
+            
+            qDebug() << "  Part" << i << "size:" << length << "bytes";
+        }
+        
+        // Вычисляем XOR-пакет для всех сегментов данных (с дополнением)
+        QByteArray xorPacket = XORFEC::computeXOR(dataShards);
+        
+        // Общее количество пакетов: данные + XOR
+        int totalParts = dataParts + 1;
+        
+        qDebug() << "🔒 XOR protection: data parts =" << dataParts 
+                 << "xor size =" << xorPacket.size() << "total parts =" << totalParts;
+        
+        // Отправляем все сегменты данных с информацией об оригинальном размере
+        for (int partIndex = 0; partIndex < dataParts; partIndex++) {
+            // В заголовок добавляем информацию об оригинальном размере
+            sendPacketWithSize(dataShards[partIndex], streamId, frameNumber, 
+                             partIndex, totalParts, originalSizes[partIndex]);
+        }
+        
+        // Отправляем XOR-пакет (последний пакет)
+        sendPacketWithSize(xorPacket, streamId, frameNumber, dataParts, totalParts, xorPacket.size());
+        
+        updateSendStats(totalParts, frameData.size());
+        m_stats.framesSent++;
+        m_stats.expectedFrames.insert(qMakePair(streamId, frameNumber));
+        
+        qDebug() << "✅ XOR protected frame" << frameNumber << "sent successfully";
+        
+    } catch (const std::exception &e) {
+        qCritical() << "XOR encoding failed:" << e.what();
+        emit errorOccurred(QString("XOR encoding failed: %1").arg(e.what()));
+    }
+}
+
+void NetworkManager::sendPacketWithSize(const QByteArray &data, int streamId, int frameNumber, 
+                                      int partIndex, int totalParts, int originalSize)
+{
+    if (!m_udpSocket || m_udpSocket->state() != QAbstractSocket::BoundState) {
+        return;
+    }
+    
+    try {
+        QByteArray datagram;
+        QDataStream stream(&datagram, QIODevice::WriteOnly);
+        
+        // Расширенный заголовок с информацией о размере
+        stream << streamId;
+        stream << frameNumber;
+        stream << totalParts;
+        stream << partIndex;
+        stream << originalSize;  // Добавляем оригинальный размер
+        
+        stream.writeRawData(data.constData(), data.size());
+        
+        if (datagram.size() > MAX_UDP_PACKET_SIZE) {
+            qCritical() << "Datagram too large:" << datagram.size() << "bytes";
+            return;
+        }
+        
+        qint64 sent = m_udpSocket->writeDatagram(datagram, m_serverAddress, m_serverPort);
+        
+        if (sent == -1) {
+            qCritical() << "Failed to send packet:" << m_udpSocket->errorString();
+        } else {
+            qDebug() << "📤 Sent part" << partIndex << "/" << totalParts 
+                     << "size:" << data.size() << "original:" << originalSize << "bytes";
+        }
+        
+    } catch (const std::exception &e) {
+        qCritical() << "Exception in sendPacketWithSize:" << e.what();
+    }
+}
+
+void NetworkManager::addPacketToAssembly(int streamId, int frameNumber, int partIndex, 
+                                       int totalParts, const QPair<QByteArray, int>& packetWithSize)
+{
     QPair<int, int> key = qMakePair(streamId, frameNumber);
     
-    // Находим или создаем сборку - теперь работает с конструктором по умолчанию
+    // Находим или создаем сборку
     if (!m_assemblies.contains(key)) {
         m_assemblies[key] = FrameAssembly(streamId, frameNumber, totalParts);
+        qDebug() << "🔄 Starting assembly for frame" << frameNumber << "with" << totalParts << "parts";
     }
     
     FrameAssembly &assembly = m_assemblies[key];
     
-    // Если это новая сборка
-    if (assembly.totalParts == 0) {
-        assembly = FrameAssembly(streamId, frameNumber, totalParts);
-        qDebug() << "Starting assembly for stream" << streamId << "frame" << frameNumber 
-                 << "with" << totalParts << "parts";
-    }
-    
     // Проверяем согласованность
     if (assembly.totalParts != totalParts) {
-        qWarning() << "Total parts mismatch for stream" << streamId << "frame" << frameNumber 
-                   << ":" << assembly.totalParts << "vs" << totalParts;
+        qWarning() << "Part count mismatch for frame" << frameNumber 
+                   << "expected:" << assembly.totalParts << "got:" << totalParts;
         m_stats.assembliesDropped++;
         m_assemblies.remove(key);
         return;
     }
     
-    // Добавляем пакет (если он еще не был добавлен)
-    if (assembly.parts[partIndex].isEmpty()) {
-        assembly.parts[partIndex] = packetData;
+    // Добавляем сегмент (только если он еще не был добавлен)
+    if (assembly.parts[partIndex].first.isEmpty()) {
+        assembly.parts[partIndex] = packetWithSize;
         assembly.receivedParts++;
-        qDebug() << "Stream" << streamId << "frame" << frameNumber 
-                 << "part" << partIndex + 1 << "/" << totalParts << "added";
+        
+        qDebug() << "📥 Part" << partIndex + 1 << "/" << totalParts 
+                 << "received for frame" << frameNumber 
+                 << "size:" << packetWithSize.first.size() 
+                 << "original:" << packetWithSize.second << "bytes";
+        
+        // Статистика прогресса
+        int received = 0;
+        for (const auto& part : assembly.parts) {
+            if (!part.first.isEmpty()) received++;
+        }
+        qDebug() << "📊 Frame" << frameNumber << "progress:" << received << "/" << totalParts;
+        
+        // Проверяем возможность восстановления с помощью XOR
+        checkAndRecoverFrame(assembly);
+    }
+}
+
+void NetworkManager::checkAndRecoverFrame(FrameAssembly &assembly)
+{
+    // Преобразуем в вектор QByteArray для XORFEC (игнорируем размеры)
+    std::vector<QByteArray> shards;
+    int missingIndex = -1;
+    
+    for (int i = 0; i < assembly.parts.size(); i++) {
+        if (assembly.parts[i].first.isEmpty()) {
+            shards.push_back(QByteArray());
+            if (missingIndex == -1) {
+                missingIndex = i;
+            }
+        } else {
+            shards.push_back(assembly.parts[i].first);
+        }
     }
     
-    // Проверяем, собран ли фрейм
-    if (assembly.isComplete()) {
-        qDebug() << "Stream" << streamId << "frame" << frameNumber << "completed";
-        completeFrameAssembly(streamId, frameNumber);
+    // Проверяем возможность восстановления
+    if (XORFEC::canRecover(shards)) {
+        qDebug() << "🎯 Can recover missing part" << missingIndex << "using XOR for frame" << assembly.frameNumber;
+        completeFrameAssembly(assembly.streamId, assembly.frameNumber);
+    } else if (assembly.isComplete()) {
+        qDebug() << "✅ All parts received for frame" << assembly.frameNumber;
+        completeFrameAssembly(assembly.streamId, assembly.frameNumber);
     }
 }
 
@@ -339,26 +461,82 @@ void NetworkManager::completeFrameAssembly(int streamId, int frameNumber)
     QPair<int, int> key = qMakePair(streamId, frameNumber);
     
     if (!m_assemblies.contains(key)) {
-        qWarning() << "Attempt to complete non-existent assembly";
         return;
     }
     
     FrameAssembly &assembly = m_assemblies[key];
-    QByteArray completedFrame = assembly.assembleFrame();
     
-    // Эмитируем сигнал о собранном фрейме
-    emit frameAssembled(streamId, frameNumber, completedFrame);
+    try {
+        QByteArray recoveredFrame;
+        
+        if (assembly.isComplete()) {
+            // Все сегменты получены - просто собираем
+            recoveredFrame = assembly.assembleFrame();
+            qDebug() << "✅ Frame" << frameNumber << "assembled without recovery, size:" << recoveredFrame.size();
+        } else {
+            // Используем XOR для восстановления одного отсутствующего сегмента
+            qDebug() << "🔧 Recovering frame" << frameNumber << "using XOR";
+            
+            // Подготавливаем данные для XOR восстановления
+            std::vector<QByteArray> shards;
+            int missingIndex = -1;
+            
+            for (int i = 0; i < assembly.parts.size(); i++) {
+                if (assembly.parts[i].first.isEmpty()) {
+                    shards.push_back(QByteArray());
+                    missingIndex = i;
+                } else {
+                    shards.push_back(assembly.parts[i].first);
+                }
+            }
+            
+            if (missingIndex == -1) {
+                throw std::runtime_error("No missing part found but assembly is incomplete");
+            }
+            
+            // Восстанавливаем недостающий сегмент
+            QByteArray recoveredData = XORFEC::recover(shards, missingIndex);
+            
+            // Определяем оригинальный размер восстановленного сегмента
+            int originalSize = recoveredData.size();
+            if (missingIndex < assembly.parts.size() - 1) {
+                // Для данных сегментов используем типичный размер
+                originalSize = MAX_PAYLOAD_SIZE;
+            } else {
+                // Для XOR сегмента используем фактический размер
+                originalSize = recoveredData.size();
+            }
+            
+            // Заменяем недостающий сегмент
+            assembly.parts[missingIndex] = qMakePair(recoveredData, originalSize);
+            assembly.receivedParts++;
+            
+            // Теперь собираем фрейм
+            recoveredFrame = assembly.assembleFrame();
+            qDebug() << "✅ Frame" << frameNumber << "recovered using XOR, size:" << recoveredFrame.size();
+        }
+        
+        // Проверяем целостность восстановленного фрейма
+        if (recoveredFrame.isEmpty()) {
+            throw std::runtime_error("Recovered frame is empty");
+        }
+        
+        emit frameAssembled(streamId, frameNumber, recoveredFrame);
+        
+        // Обновляем статистику
+        m_stats.framesReceived++;
+        m_stats.assembliesCompleted++;
+        m_stats.receivedFrames.insert(key);
+        
+        qDebug() << "🎉 Frame" << frameNumber << "successfully processed";
+        
+    } catch (const std::exception &e) {
+        qCritical() << "Frame recovery failed for frame" << frameNumber << ":" << e.what();
+        m_stats.assembliesDropped++;
+        emit errorOccurred(QString("Frame %1 recovery failed: %2").arg(frameNumber).arg(e.what()));
+    }
     
-    // Обновляем статистику
-    m_stats.framesReceived++;
-    m_stats.assembliesCompleted++;
-    m_stats.receivedFrames.insert(key);
-    
-    // Удаляем сборку из хештаблицы
     m_assemblies.remove(key);
-    
-    qDebug() << "Frame assembly completed - Stream:" << streamId << "Frame:" << frameNumber 
-             << "Size:" << completedFrame.size() << "bytes";
 }
 
 void NetworkManager::cleanupOldAssemblies()

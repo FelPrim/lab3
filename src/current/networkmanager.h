@@ -18,25 +18,38 @@ struct FrameAssembly {
     int frameNumber;
     int totalParts;
     int receivedParts;
-    QVector<QByteArray> parts;
+    QVector<QPair<QByteArray, int>> parts;  // Данные + оригинальный размер
     qint64 creationTime;
     
-	FrameAssembly() : streamId(-1), frameNumber(-1), totalParts(0), receivedParts(0), creationTime(0) {} 
-	
     FrameAssembly(int stream, int frameNum, int total) 
         : streamId(stream), frameNumber(frameNum), totalParts(total), 
           receivedParts(0), creationTime(QDateTime::currentMSecsSinceEpoch()) 
     {
-        parts.resize(totalParts);
+        parts.resize(total);
+        // Инициализируем все части как пустые
+        for (int i = 0; i < total; i++) {
+            parts[i] = qMakePair(QByteArray(), 0);
+        }
     }
     
-    bool isComplete() const { return receivedParts >= totalParts; }
+    bool isComplete() const { 
+        return receivedParts >= totalParts; 
+    }
     
     QByteArray assembleFrame() const {
         QByteArray result;
-        for (const QByteArray& part : parts) {
-            result.append(part);
+        int dataParts = totalParts - 1; // Все части кроме XOR
+        
+        for (int i = 0; i < dataParts; i++) {
+            const auto& part = parts[i];
+            if (!part.first.isEmpty()) {
+                // Обрезаем до оригинального размера
+                result.append(part.first.left(part.second));
+            } else {
+                qWarning() << "Attempting to assemble incomplete frame - missing part" << i;
+            }
         }
+        
         return result;
     }
 };
@@ -125,6 +138,11 @@ private:
     
     // Константы протокола
     static const int MAX_UDP_PACKET_SIZE = 1200;
-    static const int HEADER_SIZE = sizeof(int) * 4; // streamId, frameNumber, totalParts, partIndex
+    static const int HEADER_SIZE = sizeof(int) * 5; // streamId, frameNumber, totalParts, partIndex, originalSize
+    
+    void sendPacketWithSize(const QByteArray &data, int streamId, int frameNumber, 
+                          int partIndex, int totalParts, int originalSize);
+    void processPacketWithSize(const QNetworkDatagram &datagram);
+	void checkAndRecoverFrame(FrameAssembly &assembly);
     static const int MAX_PAYLOAD_SIZE = MAX_UDP_PACKET_SIZE - HEADER_SIZE;
 };

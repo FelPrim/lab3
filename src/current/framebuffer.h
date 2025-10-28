@@ -9,7 +9,7 @@
 class FrameBuffer
 {
 public:
-    explicit FrameBuffer(int capacity = DEFAULT_FPS * DEFAULT_BUFFERSECONDS * 2);
+    explicit FrameBuffer(int capacity = DEFAULT_BUFFERSZ);
     
     // Основной метод - вставка фрейма по номеру
     void insertFrame(int frameNumber, const QByteArray &frameData);

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QObject>
-#include "framebuffer.h"
+#include <QTimer>
+#include <QElapsedTimer>
+#include <QMap>
 #include "videodecoder.h"
 #include "video_defaults.h"
 
@@ -15,32 +17,41 @@ public:
 
     void initialize();
     void cleanup();
+    void forceResync(); 
 
 public slots:
     void addFrame(int frameNumber, const QByteArray &frameData);
-    void startPlayback();
-    void stopPlayback();
 
 signals:
     void frameReady(const QImage &image, int streamId);
+    void errorOccurred(const QString &message);
 
 private slots:
     void onFrameDecoded(const QImage &image, int frameNumber);
-    void playbackNextFrame();
+    void processNextFrameImmediately();
 
 private:
     void setupDecoder();
-    void setupPlaybackTimer();
+    int findBestFrameToPlay();
+    void cleanupOldFrames();
+    int calculateDelayFrames() const;
 
     int m_streamId;
     int m_width;
     int m_height;
     int m_fps;
     
-    FrameBuffer *m_frameBuffer;
+    QMap<int, QByteArray> m_frameMap;
+    int m_bufferCapacity;
+    
     VideoDecoder *m_videoDecoder;
-    QTimer *m_playbackTimer;
     
     int m_currentPlaybackFrame;
     bool m_playbackActive;
+    bool m_processingFrame;
+    
+    // Статистика
+    QElapsedTimer m_latencyTimer;
+    int m_totalFramesProcessed;
+    int m_droppedFrames;
 };

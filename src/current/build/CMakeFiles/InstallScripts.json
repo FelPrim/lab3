@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"T:/GitHub/my_scripts/lab3/src/current/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

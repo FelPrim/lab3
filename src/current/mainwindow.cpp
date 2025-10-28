@@ -32,7 +32,15 @@ MainWindow::MainWindow(QWidget *parent)
     }
     
     refreshDevices();
-    updateVideoLayout();
+    
+    // Принудительно устанавливаем минимальный размер окна
+    setMinimumSize(800, 600);
+    
+    // Показываем окно ДО обновления layout
+    show();
+    
+    // Небольшая задержка для инициализации GUI, затем обновляем layout
+    QTimer::singleShot(100, this, &MainWindow::updateVideoLayout);
 }
 
 MainWindow::~MainWindow()
@@ -323,16 +331,25 @@ void MainWindow::updateVideoLayout()
     }
     
     int sourceCount = m_sourceDisplays.size();
-    int totalCount = sourceCount * 2; // Каждый источник имеет 2 окна
+    int totalCount = sourceCount * 2;
     
     if (totalCount == 0) {
         m_infoLabel->setText("No active video streams. Click 'Add Video' to start.");
         m_btnRemoveVideo->setEnabled(false);
+        
+        // Принудительно обновляем контейнер когда нет видео
+        m_videoContainer->updateGeometry();
         return;
     }
     
-    // Calculate optimal layout
-    auto layout = VideoLayoutCalculator::calculateLayout(totalCount, m_videoContainer->size());
+    // Calculate optimal layout - используем минимальные размеры для расчета
+    QSize containerSize = m_videoContainer->size();
+    if (containerSize.isEmpty()) {
+        // Если контейнер еще не имеет размера, используем размер окна
+        containerSize = size() - QSize(40, 120); // Отступы
+    }
+    
+    auto layout = VideoLayoutCalculator::calculateLayout(totalCount, containerSize);
     
     // Setup new grid dimensions
     for (int i = 0; i < layout.rows; ++i) {
@@ -351,7 +368,7 @@ void MainWindow::updateVideoLayout()
         display->setVisible(true);
         
         auto pos = layout.positions[displayIndex];
-        m_videoLayout->addWidget(display, pos.first, pos.second, 1, 1, Qt::AlignCenter);
+        m_videoLayout->addWidget(display, pos.first, pos.second, 1, 1);
         displayIndex++;
     }
     
@@ -361,12 +378,15 @@ void MainWindow::updateVideoLayout()
         display->setVisible(true);
         
         auto pos = layout.positions[displayIndex];
-        m_videoLayout->addWidget(display, pos.first, pos.second, 1, 1, Qt::AlignCenter);
+        m_videoLayout->addWidget(display, pos.first, pos.second, 1, 1);
         displayIndex++;
     }
     
-    // Force update layout
+    // Принудительные обновления геометрии
     m_videoLayout->update();
+    m_videoLayout->activate();  // Важно: активируем layout
+    
+    m_videoContainer->updateGeometry();
     m_videoContainer->update();
     
     // Update UI state
@@ -376,7 +396,8 @@ void MainWindow::updateVideoLayout()
                         .arg(totalCount).arg(sourceCount));
     
     qDebug() << "Video layout updated. Container size:" << m_videoContainer->size()
-             << "Total displays:" << totalCount << "Source displays:" << sourceCount;
+             << "Video size:" << layout.videoSize
+             << "Total displays:" << totalCount;
 }
 
 void MainWindow::onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData)
