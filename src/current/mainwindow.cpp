@@ -3,6 +3,7 @@
 #include "removevideodialog.h"
 #include "darktheme.h"
 #include "video_defaults.h"
+#include "networkdisplaybuffer.h"  // Будет реализован позже для сетевого эхо
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -17,11 +18,39 @@ MainWindow::MainWindow(QWidget *parent)
     , m_infoLabel(nullptr)
     , m_videoContainer(nullptr)
     , m_videoLayout(nullptr)
+    , m_networkManager(new NetworkManager(this))
 {
     setupUI();
     setupConnections();
+    
+    // Инициализируем NetworkManager
+    if (m_networkManager->initialize()) {
+        m_networkManager->start();
+        qDebug() << "NetworkManager initialized successfully";
+    } else {
+        qWarning() << "Failed to initialize NetworkManager";
+    }
+    
     refreshDevices();
     updateVideoLayout();
+}
+
+MainWindow::~MainWindow()
+{
+    // Останавливаем все захваты видео
+    for (auto capture : m_videoCaptures) {
+        if (capture) {
+            capture->stopCapture();
+            capture->wait();
+            capture->deleteLater();
+        }
+    }
+    
+    // Останавливаем NetworkManager
+    if (m_networkManager) {
+        m_networkManager->stop();
+        m_networkManager->deleteLater();
+    }
 }
 
 void MainWindow::setupUI()
@@ -75,72 +104,12 @@ void MainWindow::setupConnections()
     connect(m_btnRefresh, &QPushButton::clicked, this, &MainWindow::refreshDevices);
     connect(m_btnAddVideo, &QPushButton::clicked, this, &MainWindow::addVideo);
     connect(m_btnRemoveVideo, &QPushButton::clicked, this, &MainWindow::removeVideo);
-}
-
-void MainWindow::resizeEvent(QResizeEvent *event)
-{
-    QMainWindow::resizeEvent(event);
-    updateVideoLayout();
-}
-
-void MainWindow::updateVideoLayout()
-{
-    // Clear existing layout
-    for (auto label : m_videoLabels) {
-        m_videoLayout->removeWidget(label);
-        label->setVisible(false);
-    }
     
-    int count = m_captureThreads.size();
-    
-    if (count == 0) {
-        m_infoLabel->setText("No active video streams. Click 'Add Video' to start.");
-        m_btnRemoveVideo->setEnabled(false);
-        return;
-    }
-    
-    // Calculate optimal layout
-    auto layout = VideoLayoutCalculator::calculateLayout(count, m_videoContainer->size());
-    
-    // Ensure we have enough labels
-    while (m_videoLabels.size() < count) {
-        QLabel *label = new QLabel(m_videoContainer);
-        label->setAlignment(Qt::AlignCenter);
-        label->setStyleSheet("background-color: #000000;");
-        label->setMinimumSize(160, 120);
-        m_videoLabels.append(label);
-    }
-    
-    // Clear grid layout
-    for (int i = 0; i < m_videoLayout->rowCount(); ++i) {
-        m_videoLayout->setRowStretch(i, 0);
-    }
-    for (int i = 0; i < m_videoLayout->columnCount(); ++i) {
-        m_videoLayout->setColumnStretch(i, 0);
-    }
-    
-    // Setup new grid dimensions
-    for (int i = 0; i < layout.rows; ++i) {
-        m_videoLayout->setRowStretch(i, 1);
-    }
-    for (int i = 0; i < layout.cols; ++i) {
-        m_videoLayout->setColumnStretch(i, 1);
-    }
-    
-    // Position videos according to calculated layout
-    for (int i = 0; i < count; ++i) {
-        QLabel *label = m_videoLabels[i];
-        label->setFixedSize(layout.videoSize);
-        label->setVisible(true);
-        
-        auto pos = layout.positions[i];
-        m_videoLayout->addWidget(label, pos.first, pos.second, 1, 1, Qt::AlignCenter);
-    }
-    
-    // Update UI state
-    m_btnRemoveVideo->setEnabled(true);
-    m_btnAddVideo->setEnabled(m_availableDevices.size() > m_usedDevices.size());
-    m_infoLabel->setText(QString("Displaying %1 video stream(s)").arg(count));
+    // Соединяем NetworkManager с методом обработки собранных фреймов
+    connect(m_networkManager, &NetworkManager::frameAssembled, 
+            this, &MainWindow::onFrameAssembled);
+    connect(m_networkManager, &NetworkManager::errorOccurred,
+            this, &MainWindow::onError);
 }
 
 void MainWindow::refreshDevices()
@@ -158,12 +127,12 @@ void MainWindow::refreshDevices()
         }
 #else
 #ifdef __linux__
-    if (!cap.open(i, cv::CAP_V4L2)) continue;
+        if (!cap.open(i, cv::CAP_V4L2)) continue;
 #else
 #ifdef __APPLE__
-    if (!cap.open(i, cv::CAP_AVFOUNDATION)) continue;
+        if (!cap.open(i, cv::CAP_AVFOUNDATION)) continue;
 #endif
-    if (!cap.open(i)) continue;
+        if (!cap.open(i)) continue;
 #endif
 #endif
         if (cap.isOpened()) {
@@ -209,100 +178,221 @@ void MainWindow::addVideo()
         }
     }
     
-    int streamIndex = m_captureThreads.size();
+    int streamId = m_videoCaptures.size();
     
-    CaptureThread *thread = new CaptureThread(this);
-    connect(thread, &CaptureThread::frameReady, this, 
-            [this, streamIndex](const QImage &img) { onFrame(streamIndex, img); });
-    connect(thread, &CaptureThread::errorOccurred, this, &MainWindow::onError);
+    // 1. Создаем окно для прямого показа
+    VideoDisplay *sourceDisplay = new VideoDisplay(this);
+    sourceDisplay->setStreamId(streamId);
+    m_sourceDisplays.append(sourceDisplay);
     
-    thread->startCapture(selectedDevice);
-    m_captureThreads.append(thread);
+    // 2. Создаем окно для сетевого эхо
+    VideoDisplay *networkDisplay = new VideoDisplay(this);
+    networkDisplay->setStreamId(streamId);
+    m_networkDisplays.append(networkDisplay);
+	
+	// 3. Создаем буфер для сетевого отображения
+    NetworkDisplayBuffer *networkBuffer = new NetworkDisplayBuffer(
+        streamId, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS, this);
+    m_networkBuffers.append(networkBuffer);
+    
+    // 4. Создаем захват видео
+    VideoCapture *videoCapture = new VideoCapture(selectedDevice, this);
+    m_videoCaptures.append(videoCapture);
+    
+    // 5. Создаем кодировщик
+    VideoEncoder *videoEncoder = new VideoEncoder(streamId, this);
+    m_videoEncoders.append(videoEncoder);
+    
+    // Соединяем сигналы:
+    
+    // Прямой показ
+    connect(videoCapture, &VideoCapture::rawFrameReady,
+            sourceDisplay, &VideoDisplay::displayFrame);
+    
+    // Кодирование
+    connect(videoCapture, &VideoCapture::frameForEncodingReady,
+            videoEncoder, &VideoEncoder::encodeFrame);
+    
+    // Отправка по сети
+    connect(videoEncoder, &VideoEncoder::encodedPacketReady,
+            m_networkManager, &NetworkManager::sendVideoFrame);
+    
+	// Получение сетевых фреймов
+    connect(m_networkManager, &NetworkManager::frameAssembled,
+            this, &MainWindow::onFrameAssembled);
+    
+    // Сетевой показ
+    connect(networkBuffer, &NetworkDisplayBuffer::frameReady,
+            networkDisplay, &VideoDisplay::displayFrameFromNetwork);
+	
+    // Обработка ошибок
+    connect(videoCapture, &VideoCapture::errorOccurred,
+            this, &MainWindow::onError);
+    connect(videoEncoder, &VideoEncoder::errorOccurred,
+            this, &MainWindow::onError);
+    
+    // Инициализируем компоненты
+    videoEncoder->initialize(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS);
+    networkBuffer->initialize();
+    
+    // Запускаем захват
+    videoCapture->startCapture();
     m_usedDevices.append(selectedDevice);
     
     updateVideoLayout();
     
     m_infoLabel->setText(QString("Added video from camera #%1").arg(selectedDevice));
+    qDebug() << "Added video stream" << streamId << "from device" << selectedDevice;
 }
 
 void MainWindow::removeVideo()
 {
-    if (m_captureThreads.isEmpty()) {
+    if (m_videoCaptures.isEmpty()) {
         QMessageBox::information(this, "No Videos", "No active video streams to remove.");
         return;
     }
     
     // Show selection dialog for multiple videos
-    if (m_captureThreads.size() > 1) {
-        RemoveVideoDialog dialog(m_captureThreads, this);
+    if (m_videoCaptures.size() > 1) {
+        RemoveVideoDialog dialog(m_videoCaptures, this);
         if (dialog.exec() == QDialog::Accepted && dialog.selectedIndex() >= 0) {
-            int removeIndex = dialog.selectedIndex();
-            CaptureThread *thread = m_captureThreads[removeIndex];
-            int deviceIndex = thread->getDeviceIndex();
-            
-            thread->stopCapture();
-            thread->wait();
-            thread->deleteLater();
-            
-            m_captureThreads.removeAt(removeIndex);
-            m_usedDevices.removeAll(deviceIndex);
-            
-            updateVideoLayout();
-            
-            m_infoLabel->setText(QString("Removed video from camera #%1").arg(deviceIndex));
+            removeVideoAtIndex(dialog.selectedIndex());
         }
     } else {
         // Only one video - remove it directly
-        CaptureThread *thread = m_captureThreads[0];
-        int deviceIndex = thread->getDeviceIndex();
-        
-        thread->stopCapture();
-        thread->wait();
-        thread->deleteLater();
-        
-        m_captureThreads.clear();
-        m_usedDevices.removeAll(deviceIndex);
-        
-        updateVideoLayout();
-        
-        m_infoLabel->setText(QString("Removed video from camera #%1").arg(deviceIndex));
+        removeVideoAtIndex(0);
     }
 }
 
-void MainWindow::onFrame(int streamIndex, const QImage &img)
+void MainWindow::removeVideoAtIndex(int index)
 {
-    if (img.isNull() || streamIndex < 0 || streamIndex >= m_videoLabels.size()) 
+    if (index < 0 || index >= m_videoCaptures.size()) return;
+    
+    qDebug() << "Removing video stream at index:" << index;
+    
+    // Останавливаем и удаляем захват
+    VideoCapture *capture = m_videoCaptures[index];
+    int deviceIndex = capture->getDeviceIndex();
+    
+    capture->stopCapture();
+    capture->wait();
+    capture->deleteLater();
+    m_videoCaptures.removeAt(index);
+    
+    // Удаляем кодировщик
+    VideoEncoder *encoder = m_videoEncoders[index];
+    encoder->cleanup();
+    encoder->deleteLater();
+    m_videoEncoders.removeAt(index);
+    
+    // Удаляем буфер сетевого отображения
+    NetworkDisplayBuffer *buffer = m_networkBuffers[index];
+    buffer->cleanup();
+    buffer->deleteLater();
+    m_networkBuffers.removeAt(index);
+    
+    // Удаляем окна показа
+    VideoDisplay *sourceDisplay = m_sourceDisplays[index];
+    VideoDisplay *networkDisplay = m_networkDisplays[index];
+    sourceDisplay->deleteLater();
+    networkDisplay->deleteLater();
+    m_sourceDisplays.removeAt(index);
+    m_networkDisplays.removeAt(index);
+    
+    // Обновляем used devices
+    m_usedDevices.removeAll(deviceIndex);
+    
+    updateVideoLayout();
+    
+    m_infoLabel->setText(QString("Removed video from camera #%1").arg(deviceIndex));
+    qDebug() << "Removed video stream" << index << "from device" << deviceIndex;
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    updateVideoLayout();
+}
+
+void MainWindow::updateVideoLayout()
+{
+    // Clear existing layout
+    QLayoutItem* item;
+    while ((item = m_videoLayout->takeAt(0)) != nullptr) {
+        delete item;
+    }
+    
+    int sourceCount = m_sourceDisplays.size();
+    int totalCount = sourceCount * 2; // Каждый источник имеет 2 окна
+    
+    if (totalCount == 0) {
+        m_infoLabel->setText("No active video streams. Click 'Add Video' to start.");
+        m_btnRemoveVideo->setEnabled(false);
         return;
+    }
+    
+    // Calculate optimal layout
+    auto layout = VideoLayoutCalculator::calculateLayout(totalCount, m_videoContainer->size());
+    
+    // Setup new grid dimensions
+    for (int i = 0; i < layout.rows; ++i) {
+        m_videoLayout->setRowStretch(i, 1);
+    }
+    for (int i = 0; i < layout.cols; ++i) {
+        m_videoLayout->setColumnStretch(i, 1);
+    }
+    
+    // Position videos according to calculated layout
+    int displayIndex = 0;
+    
+    // Сначала размещаем прямые показы (source displays)
+    for (int i = 0; i < sourceCount; i++) {
+        VideoDisplay *display = m_sourceDisplays[i];
+        display->setVisible(true);
         
-    QLabel *label = m_videoLabels[streamIndex];
+        auto pos = layout.positions[displayIndex];
+        m_videoLayout->addWidget(display, pos.first, pos.second, 1, 1, Qt::AlignCenter);
+        displayIndex++;
+    }
     
-    // Scale image to fit the label while maintaining aspect ratio
-    QPixmap pixmap = QPixmap::fromImage(img);
-    QSize labelSize = label->size();
+    // Затем размещаем сетевые эхо (network displays)
+    for (int i = 0; i < sourceCount; i++) {
+        VideoDisplay *display = m_networkDisplays[i];
+        display->setVisible(true);
+        
+        auto pos = layout.positions[displayIndex];
+        m_videoLayout->addWidget(display, pos.first, pos.second, 1, 1, Qt::AlignCenter);
+        displayIndex++;
+    }
     
-    // Scale to fill the entire label area (will crop if aspect ratios don't match)
-    QPixmap scaledPixmap = pixmap.scaled(labelSize, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    // Force update layout
+    m_videoLayout->update();
+    m_videoContainer->update();
     
-    // Center the image
-    int x = (scaledPixmap.width() - labelSize.width()) / 2;
-    int y = (scaledPixmap.height() - labelSize.height()) / 2;
-    scaledPixmap = scaledPixmap.copy(x, y, labelSize.width(), labelSize.height());
+    // Update UI state
+    m_btnRemoveVideo->setEnabled(true);
+    m_btnAddVideo->setEnabled(m_availableDevices.size() > m_usedDevices.size());
+    m_infoLabel->setText(QString("Displaying %1 video streams (%2 sources + %2 echoes)")
+                        .arg(totalCount).arg(sourceCount));
     
-    label->setPixmap(scaledPixmap);
+    qDebug() << "Video layout updated. Container size:" << m_videoContainer->size()
+             << "Total displays:" << totalCount << "Source displays:" << sourceCount;
+}
+
+void MainWindow::onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData)
+{
+    qDebug() << "Frame assembled - Stream:" << streamId << "Frame:" << frameNumber << "Size:" << frameData.size();
+    
+    // Передаем собранный фрейм в соответствующий буфер для отображения
+    if (streamId >= 0 && streamId < m_networkBuffers.size()) {
+        m_networkBuffers[streamId]->addFrame(frameNumber, frameData);
+    } else {
+        qWarning() << "Received frame for unknown stream:" << streamId;
+    }
 }
 
 void MainWindow::onError(const QString &msg)
 {
-    QMessageBox::warning(this, "Capture Error", msg);
-}
-
-MainWindow::~MainWindow()
-{
-    for (auto thread : m_captureThreads) {
-        if (thread) {
-            thread->stopCapture();
-            thread->wait();
-            thread->deleteLater();
-        }
-    }
+    QMessageBox::warning(this, "Error", msg);
+    qWarning() << "Error occurred:" << msg;
 }

@@ -6,13 +6,13 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 #include <QVector>
-#include "capturethread.h"
+#include "videocapture.h"  
 
 class RemoveVideoDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit RemoveVideoDialog(const QVector<CaptureThread*>& captureThreads, QWidget *parent = nullptr);
+    explicit RemoveVideoDialog(const QVector<VideoCapture*>& videoCaptures, QWidget *parent = nullptr); 
     int selectedIndex() const { return m_selectedIndex; }
 
 private slots:

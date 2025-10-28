@@ -16,7 +16,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Other dependencies
 # ---------------------------------------------------------------------------
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
 find_package(OpenCV REQUIRED)
 
 # ---------------------------------------------------------------------------
@@ -25,34 +25,55 @@ find_package(OpenCV REQUIRED)
 set(SOURCES
     main.cpp
     mainwindow.cpp
-    capturethread.cpp
-    EncoderWorker.cpp
-    DecoderWorker.cpp
-	packetbuffer.cpp
+	videocapture.cpp
+	videodisplay.cpp
+	videoencoder.cpp
+	networkmanager.cpp
 	videoselectiondialog.cpp
 	videolayoutcalculator.cpp
 	darktheme.cpp
 	removevideodialog.cpp
+	videodecoder.cpp
+	networkdisplaybuffer.cpp
+#    capturethread.cpp
+#    EncoderWorker.cpp
+#    DecoderWorker.cpp
+#	packetbuffer.cpp
+#	networkcapturethread.cpp
+	framebuffer.cpp
 )
 
 set(HEADERS
-    mainwindow.h
-    capturethread.h
-    EncoderWorker.h
-    DecoderWorker.h
     video_defaults.h
-	bufferreaderthread.h
-	packetbuffer.h
+    mainwindow.h
+	videocapture.h
+	videodisplay.h
+	videoencoder.h
+	networkmanager.h
 	videoselectiondialog.h
 	videolayoutcalculator.h
 	darktheme.h
 	removevideodialog.h
+	videodecoder.h
+	networkdisplaybuffer.h
+#    capturethread.h
+#    EncoderWorker.h
+#    DecoderWorker.h
+#	bufferreaderthread.h
+#	packetbuffer.h
+#	networkcapturethread.h
+	framebuffer.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 # Link Qt + OpenCV
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets ${OpenCV_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+	Qt6::Core 
+    Qt6::Gui 
+    Qt6::Widgets 
+    Qt6::Network 
+ ${OpenCV_LIBS})
 
 # ---------------------------------------------------------------------------
 # FFmpeg

@@ -13,10 +13,10 @@ class CaptureThread : public QThread
     Q_OBJECT
 public:
     explicit CaptureThread(QObject *parent = nullptr);
-    ~CaptureThread() override;
+    virtual ~CaptureThread() override;
 
-    void startCapture(int deviceIndex);
-    void stopCapture();
+    virtual void startCapture(int deviceIndex);  // Сделано виртуальным
+    virtual void stopCapture();
     
     // Новый метод для получения индекса устройства
     int getDeviceIndex() const { return m_deviceIndex; }
@@ -40,7 +40,22 @@ signals:
 protected:
     void run() override;
 
-private:
+    // Виртуальный метод для обработки пакетов от энкодера
+    virtual void handleEncodedPacket(const QByteArray &packet, int frameNumber) {
+        if (m_packetBuffer && m_running) {
+            m_packetBuffer->insertFrame(frameNumber, packet);
+            
+            if (frameNumber % 30 == 0) {
+                qDebug() << "Encoder frame" << frameNumber 
+                         << "added. Buffer:" << m_packetBuffer->size() 
+                         << "/" << m_packetBuffer->capacity()
+                         << "frames, range:" << m_packetBuffer->getMinFrameNumber()
+                         << "-" << m_packetBuffer->getMaxFrameNumber();
+            }
+        }
+    }
+
+protected:
     int m_bufferSeconds = DEFAULT_BUFFERSECONDS;
     PacketBuffer* m_packetBuffer = nullptr;
     int m_encoderFrameCount = 0;

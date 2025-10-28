@@ -150,6 +150,12 @@ void CaptureThread::run()
     // capture -> encoder
     connect(this, &CaptureThread::frameCaptured, enc, &EncoderWorker::processFrame, Qt::QueuedConnection);
 
+    // encoder -> capture (handle encoded packets)
+    connect(enc, &EncoderWorker::packetReady,
+        this, [this](const QByteArray &packet){
+            handleEncodedPacket(packet, m_encoderFrameCount);
+            m_encoderFrameCount++;
+        }, Qt::QueuedConnection);
 
     // decoder -> capture (forward to gui)
     connect(dec, &DecoderWorker::frameReady, this, &CaptureThread::frameReady, Qt::QueuedConnection);
@@ -161,7 +167,7 @@ void CaptureThread::run()
     m_encoderWorker = enc;
     m_decoderWorker = dec;
 	
-	float delaySeconds = m_bufferSeconds;  // это уже float
+    float delaySeconds = m_bufferSeconds;  // это уже float
     m_bufferReaderThread = new BufferReaderThread(m_packetBuffer, m_fps, delaySeconds, this);
 
     qDebug() << "Delay seconds:" << delaySeconds << "-> frames:" << delaySeconds * m_fps;
@@ -181,29 +187,14 @@ void CaptureThread::run()
         qWarning() << "failed to invoke initialize on decoder";
     }
 	
-	QThread::sleep(1);
-	qDebug() << "Starting BufferReaderThread, current buffer size:" << m_packetBuffer->size();
+    QThread::sleep(1);
+    qDebug() << "Starting BufferReaderThread, current buffer size:" << m_packetBuffer->size();
     m_bufferReaderThread->start();
 
-    connect(m_encoderWorker, &EncoderWorker::packetReady,
-        this, [this](const QByteArray &packet){
-            if (m_packetBuffer && m_running) {
-                m_packetBuffer->insertFrame(m_encoderFrameCount, packet);
-                m_encoderFrameCount++;
-                
-                if (m_encoderFrameCount % 30 == 0) {
-                    qDebug() << "Encoder frame" << m_encoderFrameCount 
-                             << "added. Buffer:" << m_packetBuffer->size() 
-                             << "/" << m_packetBuffer->capacity()
-                             << "frames, range:" << m_packetBuffer->getMinFrameNumber()
-                             << "-" << m_packetBuffer->getMaxFrameNumber();
-                }
-            }
-        }, Qt::QueuedConnection);
-	    cv::Mat frame;
+    cv::Mat frame;
     QElapsedTimer frameTimer;
     
-	qDebug() << "Settings - FPS:" << m_fps 
+    qDebug() << "Settings - FPS:" << m_fps 
          << "Buffer seconds:" << m_bufferSeconds
          << "Expected delay:" << (m_bufferSeconds * 1000) << "ms";
 	
