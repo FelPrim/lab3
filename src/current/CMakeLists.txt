@@ -35,14 +35,8 @@ set(SOURCES
 	removevideodialog.cpp
 	videodecoder.cpp
 	networkdisplaybuffer.cpp
-	xorfec.cpp
-#    capturethread.cpp
-#    EncoderWorker.cpp
-#    DecoderWorker.cpp
-#	packetbuffer.cpp
-#	networkcapturethread.cpp
+	reed_solomon.cpp
 	framebuffer.cpp
-	
 )
 
 set(HEADERS
@@ -58,17 +52,35 @@ set(HEADERS
 	removevideodialog.h
 	videodecoder.h
 	networkdisplaybuffer.h
-	xorfec.h
-#    capturethread.h
-#    EncoderWorker.h
-#    DecoderWorker.h
-#	bufferreaderthread.h
-#	packetbuffer.h
-#	networkcapturethread.h
+	reed_solomon.h
 	framebuffer.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+
+# ---------------------------------------------------------------------------
+# libfec (Reed-Solomon)
+# ---------------------------------------------------------------------------
+find_library(FEC_LIB fec)
+if(FEC_LIB)
+    message(STATUS "Found libfec: ${FEC_LIB}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${FEC_LIB})
+else()
+    # Попробуем найти через pkg-config
+    find_package(PkgConfig)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(FEC_PKG QUIET fec)
+        if(FEC_PKG_FOUND)
+            message(STATUS "Found libfec via pkg-config")
+            target_link_libraries(${PROJECT_NAME} PRIVATE ${FEC_PKG_LIBRARIES})
+            target_include_directories(${PROJECT_NAME} PRIVATE ${FEC_PKG_INCLUDE_DIRS})
+        else()
+            message(WARNING "libfec not found - Reed-Solomon will not be available")
+        endif()
+    else()
+        message(WARNING "libfec not found and pkg-config unavailable")
+    endif()
+endif()
 
 # Link Qt + OpenCV
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -76,7 +88,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Gui 
     Qt6::Widgets 
     Qt6::Network 
- ${OpenCV_LIBS})
+    ${OpenCV_LIBS})
 
 # ---------------------------------------------------------------------------
 # FFmpeg

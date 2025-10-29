@@ -111,7 +111,7 @@ void VideoDecoder::cleanupFFmpeg()
     m_busy = false;
 }
 
-void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
+void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNumber)
 {
     if (!m_initialized || !m_dec_ctx || !m_dec_frame) {
         qWarning() << "VideoDecoder not initialized";
@@ -134,8 +134,7 @@ void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
         std::atomic<bool>& busy;
         BusyGuard(std::atomic<bool>& b) : busy(b) {}
         ~BusyGuard() { 
-            bool expected = true;
-            busy.compare_exchange_strong(expected, false);
+            busy.store(false);
         }
     } guard(m_busy);
 
@@ -162,7 +161,7 @@ void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
         int ret = avcodec_send_packet(m_dec_ctx, pkt);
         if (ret < 0) {
             qDebug() << "avcodec_send_packet failed:" << ffmpegErrStr(ret);
-            av_free(pkt->data);
+           // av_free(pkt->data);  // ДОБАВИТЬ ЭТУ СТРОКУ
             av_packet_free(&pkt);
             return;
         }
@@ -227,5 +226,42 @@ void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
     } catch (...) {
         qCritical() << "Unknown exception in VideoDecoder::decodeFrame";
         emit errorOccurred("Unknown decoder exception");
+    }
+}
+
+void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
+{
+    if (!m_initialized || !m_dec_ctx || !m_dec_frame) {
+        return;
+    }
+
+    // Проверяем данные перед декодированием
+    if (frameData.isEmpty() || frameData.size() < 100) {
+        qDebug() << "Invalid frame data for decoding";
+        return;
+    }
+    
+    // Проверяем наличие H.264 start codes (0x00000001 или 0x000001)
+    bool hasStartCode = false;
+    if (frameData.size() >= 4) {
+        const unsigned char* data = (const unsigned char*)frameData.constData();
+        if ((data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x00 && data[3] == 0x01) ||
+            (data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x01)) {
+            hasStartCode = true;
+        }
+    }
+    
+    if (!hasStartCode) {
+        qDebug() << "No H.264 start code found, attempting to add one";
+        // Попробуем добавить start code
+        QByteArray fixedData;
+        fixedData.append('\x00');
+        fixedData.append('\x00');
+        fixedData.append('\x00');
+        fixedData.append('\x01');
+        fixedData.append(frameData);
+        decodeFrameInternal(fixedData, frameNumber);
+    } else {
+        decodeFrameInternal(frameData, frameNumber);
     }
 }

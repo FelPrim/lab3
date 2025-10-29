@@ -70,31 +70,38 @@ void NetworkDisplayBuffer::addFrame(int frameNumber, const QByteArray &frameData
         return;
     }
     
-    // Измеряем задержку с момента старта
-    int currentLatency = m_latencyTimer.elapsed();
-    
-    qDebug() << "📥 Frame" << frameNumber << "received, latency:" << currentLatency << "ms, size:" << frameData.size();
-    
-    // Сохраняем кадр
     m_frameMap[frameNumber] = frameData;
     
-    // Очищаем старые кадры чтобы поддерживать размер буфера
     while (m_frameMap.size() > m_bufferCapacity) {
         int oldestFrame = m_frameMap.firstKey();
         m_frameMap.erase(m_frameMap.begin());
-        qDebug() << "🧹 Removed old frame:" << oldestFrame;
     }
     
-    // Активируем воспроизведение если еще не активно
     if (!m_playbackActive) {
         m_playbackActive = true;
-        // Начинаем с самого старого кадра в буфере
         m_currentPlaybackFrame = m_frameMap.firstKey();
-        qDebug() << "🚀 Playback activated with frame:" << m_currentPlaybackFrame;
     }
     
-    // Обрабатываем следующий кадр
     processNextFrameImmediately();
+}
+
+void NetworkDisplayBuffer::onFrameDecoded(const QImage &image, int frameNumber)
+{
+    emit frameReady(image, m_streamId);
+    
+    QTimer::singleShot(0, this, &NetworkDisplayBuffer::processNextFrameImmediately);
+    
+    // Периодическая статистика каждые 30 кадров
+    if (m_totalFramesProcessed % 30 == 0) {
+        int currentMaxFrame = m_frameMap.isEmpty() ? 0 : m_frameMap.lastKey();
+        int currentDelay = currentMaxFrame - m_currentPlaybackFrame;
+        float delaySeconds = static_cast<float>(currentDelay) / m_fps;
+        
+        qDebug() << "Stream" << m_streamId 
+                 << "- Processed:" << m_totalFramesProcessed 
+                 << "- Buffer:" << m_frameMap.size() << "/" << m_bufferCapacity
+                 << "- Delay:" << currentDelay << "frames (" << delaySeconds << "s)";
+    }
 }
 
 void NetworkDisplayBuffer::processNextFrameImmediately()
@@ -182,32 +189,6 @@ int NetworkDisplayBuffer::findBestFrameToPlay()
     
     // Фолбэк: воспроизводим самый старый фрейм
     return m_frameMap.firstKey();
-}
-
-void NetworkDisplayBuffer::onFrameDecoded(const QImage &image, int frameNumber)
-{
-    int decodeLatency = m_latencyTimer.elapsed();
-    
-    qDebug() << "✅ Frame" << frameNumber << "decoded, total latency:" << decodeLatency << "ms";
-    
-    // Отправляем на отображение
-    emit frameReady(image, m_streamId);
-    
-    // Обрабатываем следующий кадр
-    QTimer::singleShot(0, this, &NetworkDisplayBuffer::processNextFrameImmediately);
-    
-    // Периодическая статистика
-    if (m_totalFramesProcessed % 30 == 0) {
-        int currentMaxFrame = m_frameMap.isEmpty() ? 0 : m_frameMap.lastKey();
-        int currentDelay = currentMaxFrame - m_currentPlaybackFrame;
-        float delaySeconds = static_cast<float>(currentDelay) / m_fps;
-        
-        qDebug() << "📈 STATS Stream" << m_streamId 
-                 << "- Frames:" << m_totalFramesProcessed 
-                 << "- Dropped:" << m_droppedFrames
-                 << "- Buffer:" << m_frameMap.size() << "/" << m_bufferCapacity
-                 << "- Current delay:" << currentDelay << "frames (" << delaySeconds << "s)";
-    }
 }
 
 void NetworkDisplayBuffer::forceResync()

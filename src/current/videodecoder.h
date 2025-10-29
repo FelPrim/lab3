@@ -24,6 +24,7 @@ public:
 
 public slots:
     void decodeFrame(const QByteArray &frameData, int frameNumber);
+    void decodeFrameInternal(const QByteArray &frameData, int frameNumber);
 
 signals:
     void frameDecoded(const QImage &image, int frameNumber);

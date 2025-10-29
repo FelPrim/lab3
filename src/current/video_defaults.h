@@ -2,11 +2,11 @@
 #include <cstdint>
 
 // C++17 inline constants (safe to include)
-inline constexpr int DEFAULT_BITRATE = 400000; // 400 kb/s
+inline constexpr int DEFAULT_BITRATE = 400000;
 inline constexpr int DEFAULT_FPS     = 15;
 inline constexpr int DEFAULT_WIDTH   = 640;
 inline constexpr int DEFAULT_HEIGHT  = 480;
-inline constexpr float DEFAULT_BUFFERSECONDS = 0.2;
+inline constexpr float DEFAULT_BUFFERSECONDS = 3;
 
 // x264 presets: use "ultrafast" for lowest latency/CPU cost, and "zerolatency" tune
 inline constexpr const char DEFAULT_X264_PRESET[] = "ultrafast";
