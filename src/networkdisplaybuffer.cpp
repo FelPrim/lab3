@@ -59,9 +59,14 @@ void NetworkDisplayBuffer::setupDecoder()
 
 int NetworkDisplayBuffer::calculateDelayFrames() const
 {
-    // Вычисляем задержку в кадрах: FPS * секунды задержки
     int delayFrames = static_cast<int>(m_fps * DEFAULT_BUFFERSECONDS);
-    return qMax(1, delayFrames); // Минимум 1 кадр задержки
+    
+    // Минимальная задержка для стабильного старта
+    if (m_totalFramesProcessed < 100) {
+        delayFrames = qMin(delayFrames, 10); // Меньшая задержка в начале
+    }
+    
+    return qMax(1, delayFrames);
 }
 
 void NetworkDisplayBuffer::addFrame(int frameNumber, const QByteArray &frameData)
@@ -104,93 +109,84 @@ void NetworkDisplayBuffer::onFrameDecoded(const QImage &image, int frameNumber)
     }
 }
 
-void NetworkDisplayBuffer::processNextFrameImmediately()
-{
-    if (!m_playbackActive || m_processingFrame || !m_videoDecoder) {
-        return;
-    }
-    
-    // Защита от рекурсии
-    m_processingFrame = true;
-    
-    // Ищем лучший кадр для воспроизведения с учетом задержки
-    int targetFrame = findBestFrameToPlay();
-    
-    if (targetFrame != -1 && targetFrame != m_currentPlaybackFrame) {
-        QByteArray frameData = m_frameMap[targetFrame];
-        
-        if (!frameData.isEmpty()) {
-            qDebug() << "🎬 Decoding delayed frame:" << targetFrame 
-                     << "(current max:" << m_frameMap.lastKey() << ")";
-            
-            m_currentPlaybackFrame = targetFrame;
-            m_videoDecoder->decodeFrame(frameData, targetFrame);
-            m_totalFramesProcessed++;
-            
-            // Удаляем обработанный кадр чтобы освободить место для новых
-            // Но только если он не нужен для других потоков воспроизведения
-            if (targetFrame < m_frameMap.firstKey() + calculateDelayFrames()) {
-                m_frameMap.remove(targetFrame);
-            }
-        }
-    }
-    
-    m_processingFrame = false;
-}
-
 int NetworkDisplayBuffer::findBestFrameToPlay()
 {
     if (m_frameMap.isEmpty()) {
         return -1;
     }
     
-    int maxFrame = m_frameMap.lastKey();
-    int delayFrames = calculateDelayFrames();
-    int targetFrame = maxFrame - delayFrames;
+    QList<int> frameNumbers = m_frameMap.keys();
+    std::sort(frameNumbers.begin(), frameNumbers.end());
     
-    qDebug() << "🔍 Looking for frame:" << targetFrame 
-             << "(max:" << maxFrame << ", delay:" << delayFrames << "frames)";
-    
-    // Если целевой фрейм существует в буфере, воспроизводим его
-    if (m_frameMap.contains(targetFrame)) {
-        return targetFrame;
+    // Минимальный размер буфера для начала воспроизведения
+    const int MIN_BUFFER_SIZE = 3;
+    if (frameNumbers.size() < MIN_BUFFER_SIZE) {
+        qDebug() << "⏳ Buffer too small:" << frameNumbers.size() << "frames, waiting...";
+        return -1;
     }
     
-    // Если целевой фрейм еще не получен (слишком новый), воспроизводим самый старый доступный
-    if (targetFrame > maxFrame) {
-        qDebug() << "⏳ Target frame too new, playing oldest:" << m_frameMap.firstKey();
-        return m_frameMap.firstKey();
-    }
+    int bestFrame = -1;
+    int maxContinuousSequence = 0;
+    int currentSequence = 0;
     
-    // Если целевой фрейм уже устарел (удален из буфера), воспроизводим самый старый доступный
-    if (targetFrame < m_frameMap.firstKey()) {
-        qDebug() << "📜 Target frame too old, playing oldest:" << m_frameMap.firstKey();
-        return m_frameMap.firstKey();
-    }
-    
-    // Ищем ближайший доступный фрейм к целевому
-    int closestFrame = -1;
-    int minDistance = std::numeric_limits<int>::max();
-    
-    for (auto it = m_frameMap.begin(); it != m_frameMap.end(); ++it) {
-        int frameNum = it.key();
-        int distance = std::abs(frameNum - targetFrame);
+    // Ищем самый длинный непрерывный сегмент
+    for (int i = 0; i < frameNumbers.size() - 1; ++i) {
+        if (frameNumbers[i + 1] == frameNumbers[i] + 1) {
+            currentSequence++;
+            // Предпоследний фрейм в последовательности - кандидат на воспроизведение
+            if (currentSequence >= 1) { // Минимум 2 последовательных фрейма
+                bestFrame = frameNumbers[i];
+            }
+        } else {
+            currentSequence = 0;
+        }
         
-        if (distance < minDistance) {
-            minDistance = distance;
-            closestFrame = frameNum;
+        if (currentSequence > maxContinuousSequence) {
+            maxContinuousSequence = currentSequence;
         }
     }
     
-    if (closestFrame != -1) {
-        qDebug() << "🎯 Using closest frame:" << closestFrame << "(target:" << targetFrame << ")";
-        return closestFrame;
+    if (bestFrame != -1) {
+        qDebug() << "🎯 Playing frame" << bestFrame 
+                 << "(continuous sequence:" << (maxContinuousSequence + 1) << "frames)";
+        return bestFrame;
     }
     
-    // Фолбэк: воспроизводим самый старый фрейм
-    return m_frameMap.firstKey();
+    // Fallback: 6-й самый новый фрейм
+    int targetPositionFromEnd = 6;
+    if (frameNumbers.size() > targetPositionFromEnd) {
+        int fallbackFrame = frameNumbers[frameNumbers.size() - targetPositionFromEnd];
+        qDebug() << "🔄 No good continuous frames, using 6th newest:" << fallbackFrame;
+        return fallbackFrame;
+    }
+    
+    return frameNumbers.first();
 }
 
+void NetworkDisplayBuffer::processNextFrameImmediately()
+{
+    if (!m_playbackActive || m_processingFrame || !m_videoDecoder) {
+        return;
+    }
+    
+    m_processingFrame = true;
+    
+    // Находим 6-й самый новый фрейм
+    int targetFrame = findBestFrameToPlay();
+    
+    if (targetFrame != -1 && targetFrame != m_currentPlaybackFrame) {
+        QByteArray frameData = m_frameMap[targetFrame];
+        
+        if (!frameData.isEmpty()) {
+            m_currentPlaybackFrame = targetFrame;
+            m_videoDecoder->decodeFrame(frameData, targetFrame);
+            m_totalFramesProcessed++;
+            
+        }
+    }
+    
+    m_processingFrame = false;
+}
 void NetworkDisplayBuffer::forceResync()
 {
     qDebug() << "🔄 Force resync for stream" << m_streamId;

@@ -2,11 +2,28 @@
 #include <cstdint>
 
 // C++17 inline constants (safe to include)
-inline constexpr int DEFAULT_BITRATE = 400000;
-inline constexpr int DEFAULT_FPS     = 15;
-inline constexpr int DEFAULT_WIDTH   = 640;
-inline constexpr int DEFAULT_HEIGHT  = 480;
-inline constexpr float DEFAULT_BUFFERSECONDS = 3;
+inline constexpr int BITRATE_1080P_60FPS = 12000000;  
+inline constexpr int BITRATE_1080P_30FPS = 8000000;  
+inline constexpr int BITRATE_1080P_15FPS = 4800000; 
+inline constexpr int BITRATE_720P_60FPS  = 6000000;   
+inline constexpr int BITRATE_720P_30FPS  = 4000000; 
+inline constexpr int BITRATE_720P_15FPS  = 2400000; 
+inline constexpr int BITRATE_480P_60FPS  = 1500000; 
+inline constexpr int BITRATE_480P_30FPS  = 1000000; 
+inline constexpr int BITRATE_480P_15FPS  = 600000;   
+
+inline constexpr int _1080P_WIDTH   = 1920;
+inline constexpr int _1080P_HEIGHT  = 1080;
+inline constexpr int _720P_WIDTH   = 1280;
+inline constexpr int _720P_HEIGHT  = 720;
+inline constexpr int _480P_WIDTH   = 854;
+inline constexpr int _480P_HEIGHT  = 480;
+
+inline constexpr int DEFAULT_BITRATE = BITRATE_480P_60FPS;
+inline constexpr int DEFAULT_FPS     = 60;
+inline constexpr int DEFAULT_WIDTH   = _480P_WIDTH;
+inline constexpr int DEFAULT_HEIGHT  = _480P_HEIGHT;
+inline constexpr float DEFAULT_BUFFERSECONDS = 0.1;
 
 // x264 presets: use "ultrafast" for lowest latency/CPU cost, and "zerolatency" tune
 inline constexpr const char DEFAULT_X264_PRESET[] = "ultrafast";
@@ -20,3 +37,8 @@ inline constexpr uint16_t DEFAULT_UDP_CLIENT_PORT = 23233;
 inline constexpr int MAX_PACKET_SIZE = 1200;
 inline constexpr int DEFAULT_BUFFERSZ = 128;
 inline constexpr int MARGIN = 5;
+
+// Добавляем константы для нового протокола
+inline constexpr int PACKET_HEADER_SIZE = 16; // StreamID(4) + PacketNumber(4) + PacketType(1) + FrameCount(1) + резерв(6)
+inline constexpr int MAX_PAYLOAD_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE;
+inline constexpr int FRAME_HEADER_SIZE = 8; // FrameNumber(4) + FrameSize(4)

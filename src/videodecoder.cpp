@@ -236,32 +236,27 @@ void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
     }
 
     // Проверяем данные перед декодированием
-    if (frameData.isEmpty() || frameData.size() < 100) {
-        qDebug() << "Invalid frame data for decoding";
+    if (frameData.isEmpty() || frameData.size() < 4) {
+        qDebug() << "Invalid frame data for decoding - too small";
         return;
     }
     
-    // Проверяем наличие H.264 start codes (0x00000001 или 0x000001)
-    bool hasStartCode = false;
-    if (frameData.size() >= 4) {
-        const unsigned char* data = (const unsigned char*)frameData.constData();
-        if ((data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x00 && data[3] == 0x01) ||
-            (data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x01)) {
-            hasStartCode = true;
+    // Проверяем наличие NAL unit starters в данных H.264
+    bool hasValidH264Data = false;
+    const char* data = frameData.constData();
+    for (int i = 0; i <= frameData.size() - 4; ++i) {
+        if ((data[i] == 0x00 && data[i+1] == 0x00 && data[i+2] == 0x00 && data[i+3] == 0x01) ||
+            (data[i] == 0x00 && data[i+1] == 0x00 && data[i+2] == 0x01)) {
+            hasValidH264Data = true;
+            break;
         }
     }
     
-    if (!hasStartCode) {
-        qDebug() << "No H.264 start code found, attempting to add one";
-        // Попробуем добавить start code
-        QByteArray fixedData;
-        fixedData.append('\x00');
-        fixedData.append('\x00');
-        fixedData.append('\x00');
-        fixedData.append('\x01');
-        fixedData.append(frameData);
-        decodeFrameInternal(fixedData, frameNumber);
-    } else {
-        decodeFrameInternal(frameData, frameNumber);
+    if (!hasValidH264Data) {
+        qDebug() << "Invalid H.264 data - no NAL unit starters found for frame" << frameNumber;
+        return;
     }
+    
+    // Декодируем только если данные валидны
+    decodeFrameInternal(frameData, frameNumber);
 }

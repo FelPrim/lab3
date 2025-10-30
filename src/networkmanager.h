@@ -12,49 +12,38 @@
 #include <QDateTime> 
 #include <QVariant>
 #include <zlib.h>
-#include "reed_solomon.h"
 
-// Структура для представления собираемого фрейма из сетевых пакетов
-struct FrameAssembly {
+// Типы пакетов
+enum PacketType {
+    START_FRAME = 0x01,
+    CONTINUE_FRAME = 0x02,
+    BOUNDARY_FRAME = 0x03,
+    FAILED_BOUNDARY_FRAME = 0x04
+};
+
+// Структура для сборки фреймов
+struct StreamAssembly {
     int streamId;
     int frameNumber;
-    int totalParts;
-    int receivedParts;
-    QVector<QPair<QByteArray, int>> parts;  // Данные + оригинальный размер
+    int totalSize;
+    int receivedSize;
+    QByteArray data;
     qint64 creationTime;
+    bool hasStartFrame;
     
-    FrameAssembly() 
-        : streamId(0), frameNumber(0), totalParts(0), receivedParts(0), 
-          creationTime(QDateTime::currentMSecsSinceEpoch()) 
-    {
-    }
-
-    FrameAssembly(int stream, int frameNum, int total) 
-        : streamId(stream), frameNumber(frameNum), totalParts(total), 
-          receivedParts(0), creationTime(QDateTime::currentMSecsSinceEpoch()) 
-    {
-        parts.resize(total);
-        // Инициализируем все части как пустые
-        for (int i = 0; i < total; i++) {
-            parts[i] = qMakePair(QByteArray(), 0);
-        }
-    }
+    // Конструктор по умолчанию для QHash
+    StreamAssembly() 
+        : streamId(0), frameNumber(0), totalSize(0), receivedSize(0),
+          creationTime(QDateTime::currentMSecsSinceEpoch()), hasStartFrame(false) 
+    {}
+    
+    StreamAssembly(int stream, int frame) 
+        : streamId(stream), frameNumber(frame), totalSize(0), receivedSize(0),
+          creationTime(QDateTime::currentMSecsSinceEpoch()), hasStartFrame(false) 
+    {}
     
     bool isComplete() const { 
-        return receivedParts >= totalParts; 
-    }
-    
-    QByteArray assembleFrame() const {
-        QByteArray result;
-        
-        for (int i = 0; i < totalParts; i++) {
-            const auto& part = parts[i];
-            if (!part.first.isEmpty() && part.second > 0) {
-                int copySize = qMin(part.second, part.first.size());
-                result.append(part.first.constData(), copySize);
-            }
-        }
-        return result;
+        return hasStartFrame && receivedSize >= totalSize; 
     }
 };
 
@@ -95,37 +84,25 @@ private slots:
     void printStatistics();
 
 private:
-    // Новая конфигурация FEC: N data shards, K = (N+1)/2 parity shards
-    // Начальное значение: N=3, K=2, первый байт=4
-    ReedSolomonFEC::Config m_fecConfig{3, 6};
-    
     // Сетевые методы
     void setupSocket();
     
-    // Методы обработки пакетов
-    void processIncomingPacket(const QNetworkDatagram &datagram);
-    void addPacketToAssembly(int streamId, int frameNumber, int partIndex, int totalParts, const QPair<QByteArray, int>& packetWithSize);
-    void completeFrameAssembly(int streamId, int frameNumber);
+    // Новые методы для протокола с фиксированными пакетами
+    void processPacketNewProtocol(const QNetworkDatagram &datagram);
+    void sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type);
+    void sendBufferedData();
+    
+    // Обработчики типов пакетов
+    void handleStartFrame(int streamId, const QByteArray& data);
+    void handleContinueFrame(int streamId, const QByteArray& data);
+    void handleBoundaryFrame(int streamId, const QByteArray& data);
+    void handleFailedBoundaryFrame(int streamId, const QByteArray& data);
+    void processCompleteFrame(int streamId);
     
     // Статистика
     void updateSendStats(int packets, int bytes);
     void updateReceiveStats(int packets, int bytes);
     uint32_t calculateCRC32(const QByteArray &data);
-    
-    void sendPacketWithSize(const QByteArray &data, int streamId, int frameNumber, 
-                          int partIndex, int totalParts, int originalSize);
-    void processPacketWithSize(const QNetworkDatagram &datagram);
-    std::vector<QByteArray> safeEncodeFrame(const QByteArray &frameData);
-    bool safeDecodeFrame(FrameAssembly &assembly, QByteArray &result);
-    bool canRecoverWithFEC(const FrameAssembly &assembly) const;
-    void sendVideoFrameSimple(int streamId, int frameNumber, const QByteArray &frameData);
-    
-    // Методы для нового протокола
-    int calculateOptimalN(int frame_size);
-    QByteArray createPacketWithHeader(const QByteArray &data, int streamId, int frameNumber, 
-                                    int partIndex, int totalParts, int originalSize);
-    bool parsePacketWithHeader(const QByteArray &packetData, int &streamId, int &frameNumber,
-                             int &partIndex, int &totalParts, int &originalSize, QByteArray &payload);
 
 private:
     QUdpSocket *m_udpSocket = nullptr;
@@ -137,8 +114,12 @@ private:
     QTimer *m_cleanupTimer = nullptr;
     QTimer *m_statsTimer = nullptr;
     
-    // Буфер для сборки фреймов: ключ = (streamId, frameNumber)
-    QHash<QPair<int, int>, FrameAssembly> m_assemblies;
+    // Новые буферы для протокола с фиксированными пакетами
+    QHash<int, StreamAssembly> m_streamAssemblies;
+    QByteArray m_sendBuffer;
+    int m_currentFrameNumber = 0;
+    int m_packetSequence = 0;
+    int m_streamId = 0;
     
     // Статистика
     struct Statistics {
@@ -159,8 +140,9 @@ private:
     QElapsedTimer m_operationTimer;
     bool m_initialized = false;
     
-    // Константы протокола
+    // Константы протокола - ИСПРАВЛЕНО: точные размеры
     static const int MAX_UDP_PACKET_SIZE = 1200;
-    static const int HEADER_SIZE = sizeof(quint8) + sizeof(int) * 5; // firstByte + streamId, frameNumber, partIndex, totalParts, originalSize
-    static const int MAX_PAYLOAD_SIZE = MAX_UDP_PACKET_SIZE - HEADER_SIZE;
+    static const int PACKET_HEADER_SIZE = 12; // StreamID(4) + PacketNumber(4) + PacketType(1) + FrameCount(1) + резерв(2)
+    static const int MAX_PAYLOAD_SIZE = MAX_UDP_PACKET_SIZE - PACKET_HEADER_SIZE; // 1188 байт
+    static const int FRAME_HEADER_SIZE = 8; // FrameNumber(4) + FrameSize(4)
 };

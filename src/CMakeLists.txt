@@ -35,7 +35,7 @@ set(SOURCES
 	removevideodialog.cpp
 	videodecoder.cpp
 	networkdisplaybuffer.cpp
-	reed_solomon.cpp
+#	reed_solomon.cpp
 	framebuffer.cpp
 )
 
@@ -52,7 +52,7 @@ set(HEADERS
 	removevideodialog.h
 	videodecoder.h
 	networkdisplaybuffer.h
-	reed_solomon.h
+#	reed_solomon.h
 	framebuffer.h
 )
 
@@ -60,27 +60,41 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 # ---------------------------------------------------------------------------
 # libfec (Reed-Solomon)
-# ---------------------------------------------------------------------------
-find_library(FEC_LIB fec)
-if(FEC_LIB)
-    message(STATUS "Found libfec: ${FEC_LIB}")
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${FEC_LIB})
-else()
-    # Попробуем найти через pkg-config
-    find_package(PkgConfig)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(FEC_PKG QUIET fec)
-        if(FEC_PKG_FOUND)
-            message(STATUS "Found libfec via pkg-config")
-            target_link_libraries(${PROJECT_NAME} PRIVATE ${FEC_PKG_LIBRARIES})
-            target_include_directories(${PROJECT_NAME} PRIVATE ${FEC_PKG_INCLUDE_DIRS})
-        else()
-            message(WARNING "libfec not found - Reed-Solomon will not be available")
-        endif()
-    else()
-        message(WARNING "libfec not found and pkg-config unavailable")
-    endif()
-endif()
+# # ---------------------------------------------------------------------------
+# find_library(FEC_LIB fec)
+# if(FEC_LIB)
+#     message(STATUS "Found libfec: ${FEC_LIB}")
+#     target_link_libraries(${PROJECT_NAME} PRIVATE ${FEC_LIB})
+# else()
+#     # Попробуем найти через pkg-config
+#     find_package(PkgConfig)
+#     if(PkgConfig_FOUND)
+#         pkg_check_modules(FEC_PKG QUIET fec)
+#         if(FEC_PKG_FOUND)
+#             message(STATUS "Found libfec via pkg-config")
+#             target_link_libraries(${PROJECT_NAME} PRIVATE ${FEC_PKG_LIBRARIES})
+#             target_include_directories(${PROJECT_NAME} PRIVATE ${FEC_PKG_INCLUDE_DIRS})
+#         else()
+#             message(WARNING "libfec not found - Reed-Solomon will not be available")
+#         endif()
+#     else()
+#         message(WARNING "libfec not found and pkg-config unavailable")
+#     endif()
+# endif()
+
+#find_library(RAPTORQ_LIB raptorq)
+#if(NOT RAPTORQ_LIB)
+#    # Скачать и собрать из исходников
+#    include(FetchContent)
+#    FetchContent_Declare(
+#        libRaptorQ
+#        GIT_REPOSITORY https://github.com/LucaFulchir/libRaptorQ
+#        GIT_TAG master
+#    )
+#    FetchContent_MakeAvailable(libRaptorQ)
+#endif()
+#
+#target_link_libraries(your_app PRIVATE RaptorQ)
 
 # Link Qt + OpenCV
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -96,7 +110,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     # Windows — используем локальный FFMPEG_ROOT
     if(NOT DEFINED FFMPEG_ROOT)
-        set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/../../deps/Windows/ffmpeg_static" CACHE PATH "FFmpeg root")
+        set(FFMPEG_ROOT "${CMAKE_SOURCE_DIR}/../deps/Windows/ffmpeg_static" CACHE PATH "FFmpeg root")
     endif()
     message(STATUS "Using local FFmpeg root: ${FFMPEG_ROOT}")
 
@@ -108,7 +122,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
             target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::AVCODEC)
         endif()
     endif()
-    target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 bcrypt user32 gdi32 ole32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 bcrypt user32 gdi32 ole32 z)
 
 else()
     # Linux / macOS — используем системный FFmpeg через pkg-config
@@ -126,3 +140,5 @@ else()
 
     target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl m z)
 endif()
+
+
