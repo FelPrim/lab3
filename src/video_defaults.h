@@ -45,5 +45,5 @@ inline constexpr int FRAME_HEADER_SIZE = 8;
 
 
 // FEC параметры для упрощенной XOR-схемы
-inline constexpr int FEC_K = 60;  // Data packets
-inline constexpr int FEC_N = 62;  // Total packets
+inline constexpr int FEC_K = 8;  // Data packets
+inline constexpr int FEC_N = 10;  // Total packets
