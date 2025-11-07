@@ -12,50 +12,15 @@
 #include <QDateTime> 
 #include <QVariant>
 #include <zlib.h>
+#include "simplefec.h"
 
 // Типы пакетов
 enum PacketType {
     START_FRAME = 0x01,
     CONTINUE_FRAME = 0x02,
     BOUNDARY_FRAME = 0x03,
-    FAILED_BOUNDARY_FRAME = 0x04,
-    FEC_PACKET = 0x05 
+    FAILED_BOUNDARY_FRAME = 0x04
 };
-
-struct FECGroup {
-    QVector<QByteArray> dataPackets;
-    QVector<bool> receivedPackets;
-    QVector<QByteArray> fecPackets;
-    QVector<bool> receivedFecPackets;
-    int streamId;
-    int groupId;
-    qint64 creationTime;
-    
-    FECGroup() : streamId(0), groupId(0), 
-                dataPackets(FEC_K), receivedPackets(FEC_K, false),
-                fecPackets(FEC_N - FEC_K), receivedFecPackets(FEC_N - FEC_K, false),
-                creationTime(QDateTime::currentMSecsSinceEpoch()) {}
-    
-    FECGroup(int stream, int group) 
-        : streamId(stream), groupId(group),
-          dataPackets(FEC_K), receivedPackets(FEC_K, false),
-          fecPackets(FEC_N - FEC_K), receivedFecPackets(FEC_N - FEC_K, false),
-          creationTime(QDateTime::currentMSecsSinceEpoch()) {}
-    
-    bool canRecover() const {
-        int receivedData = 0;
-        for (bool received : receivedPackets) if (received) receivedData++;
-        int receivedFec = 0;
-        for (bool received : receivedFecPackets) if (received) receivedFec++;
-        return receivedData + receivedFec >= FEC_K;
-    }
-    
-    bool isComplete() const {
-        for (bool received : receivedPackets) if (!received) return false;
-        return true;
-    }
-};
-
 
 // Структура для сборки фреймов
 struct StreamAssembly {
@@ -118,15 +83,18 @@ private slots:
     void onPacketReceived();
     void cleanupOldAssemblies();
     void printStatistics();
-
+    void onFECGroupDecoded(int streamId, int frameNumber, int groupId, const QVector<QByteArray> &packets);
+    
 private:
+    void sendFECPackets(const QVector<QByteArray> &dataPackets);
+    void processFECPacket(int streamId, int packetNumber, quint8 packetType, const QByteArray &data);
+    
     // Сетевые методы
     void setupSocket();
     
     // Новые методы для протокола с фиксированными пакетами
     void processPacketNewProtocol(const QNetworkDatagram &datagram);
     void sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type);
-    void sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type, int customSequence);
     void sendBufferedData();
     
     // Обработчики типов пакетов
@@ -140,6 +108,12 @@ private:
     void updateSendStats(int packets, int bytes);
     void updateReceiveStats(int packets, int bytes);
     uint32_t calculateCRC32(const QByteArray &data);
+    // FEC компонент
+    SimpleFEC *m_fec;
+    
+    // Буферы для FEC
+    QVector<QByteArray> m_currentDataPackets;
+    int m_packetsSinceLastFEC = 0;
 
 private:
     QUdpSocket *m_udpSocket = nullptr;
@@ -172,29 +146,22 @@ private:
         // Для расчета потерь
         QSet<QPair<int, int>> expectedFrames;
         QSet<QPair<int, int>> receivedFrames;
-		
-		quint64 fecGroupsSent = 0;
-		quint64 fecGroupsRecovered = 0;
-		quint64 packetsRecoveredByFEC = 0;
     } m_stats;
     
     QElapsedTimer m_operationTimer;
     bool m_initialized = false;
-	
-	
-	void processFECPacket(int streamId, int groupId, int packetIndex, const QByteArray &data);
-    void sendFECGroup(int streamId, int groupStartSequence);
-    bool tryRecoverFECGroup(int streamId, int groupId);
-    void processRecoveredPacket(const QByteArray &packetData);
-	
-    // FEC буферы
-    QHash<QPair<int, int>, FECGroup> m_fecGroups;
-    QVector<QByteArray> m_currentDataPackets;
-    int m_currentGroupStartSequence = 0;
     
     // Константы протокола - ИСПРАВЛЕНО: точные размеры
     static const int MAX_UDP_PACKET_SIZE = 1200;
     static const int PACKET_HEADER_SIZE = 12; // StreamID(4) + PacketNumber(4) + PacketType(1) + FrameCount(1) + резерв(2)
     static const int MAX_PAYLOAD_SIZE = MAX_UDP_PACKET_SIZE - PACKET_HEADER_SIZE; // 1188 байт
     static const int FRAME_HEADER_SIZE = 8; // FrameNumber(4) + FrameSize(4)
+    void processRecoveredPacket(int streamId, int groupId, int packetIndex, const QByteArray &fullPacketData);
+    void handleRecoveredStartFrame(int streamId, int frameNumber, const QByteArray& data);
+    void handleRecoveredContinueFrame(int streamId, int frameNumber, const QByteArray& data);
+    void handleRecoveredBoundaryFrame(int streamId, int frameNumber, const QByteArray& data);
+    void handleRecoveredFailedBoundaryFrame(int streamId, int frameNumber, const QByteArray& data);
+    
+    // Для отслеживания восстановленных пакетов
+    QSet<QPair<int, int>> m_recoveredPackets; // (streamId, packetNumber)
 };

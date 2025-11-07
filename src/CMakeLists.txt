@@ -35,8 +35,8 @@ set(SOURCES
 	removevideodialog.cpp
 	videodecoder.cpp
 	networkdisplaybuffer.cpp
-#	reed_solomon.cpp
 	framebuffer.cpp
+ #   simplefec.cpp
 )
 
 set(HEADERS
@@ -52,49 +52,45 @@ set(HEADERS
 	removevideodialog.h
 	videodecoder.h
 	networkdisplaybuffer.h
-#	reed_solomon.h
+ #   simplefec.h
 	framebuffer.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 # ---------------------------------------------------------------------------
-# libfec (Reed-Solomon)
-# # ---------------------------------------------------------------------------
-# find_library(FEC_LIB fec)
-# if(FEC_LIB)
-#     message(STATUS "Found libfec: ${FEC_LIB}")
-#     target_link_libraries(${PROJECT_NAME} PRIVATE ${FEC_LIB})
-# else()
-#     # Попробуем найти через pkg-config
-#     find_package(PkgConfig)
-#     if(PkgConfig_FOUND)
-#         pkg_check_modules(FEC_PKG QUIET fec)
-#         if(FEC_PKG_FOUND)
-#             message(STATUS "Found libfec via pkg-config")
-#             target_link_libraries(${PROJECT_NAME} PRIVATE ${FEC_PKG_LIBRARIES})
-#             target_include_directories(${PROJECT_NAME} PRIVATE ${FEC_PKG_INCLUDE_DIRS})
-#         else()
-#             message(WARNING "libfec not found - Reed-Solomon will not be available")
-#         endif()
-#     else()
-#         message(WARNING "libfec not found and pkg-config unavailable")
-#     endif()
-# endif()
-
-#find_library(RAPTORQ_LIB raptorq)
-#if(NOT RAPTORQ_LIB)
-#    # Скачать и собрать из исходников
-#    include(FetchContent)
-#    FetchContent_Declare(
-#        libRaptorQ
-#        GIT_REPOSITORY https://github.com/LucaFulchir/libRaptorQ
-#        GIT_TAG master
-#    )
-#    FetchContent_MakeAvailable(libRaptorQ)
-#endif()
-#
-#target_link_libraries(your_app PRIVATE RaptorQ)
+# FEC Library (feclib)
+# ---------------------------------------------------------------------------
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # Windows
+    if(NOT DEFINED FEC_ROOT)
+        set(FEC_ROOT "${CMAKE_SOURCE_DIR}/../deps/Windows/fec" CACHE PATH "FEC root")
+    endif()
+    message(STATUS "Using local FEC root: ${FEC_ROOT}")
+    
+    target_include_directories(${PROJECT_NAME} PRIVATE "${FEC_ROOT}/include")
+    target_link_libraries(${PROJECT_NAME} PRIVATE "${FEC_ROOT}/lib/libfeclib.a")
+    
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # Linux
+    if(NOT DEFINED FEC_ROOT)
+        set(FEC_ROOT "${CMAKE_SOURCE_DIR}/../deps/Linux/fec" CACHE PATH "FEC root")
+    endif()
+    message(STATUS "Using local FEC root: ${FEC_ROOT}")
+    
+    target_include_directories(${PROJECT_NAME} PRIVATE "${FEC_ROOT}/include")
+    target_link_libraries(${PROJECT_NAME} PRIVATE "${FEC_ROOT}/lib/libfeclib.a")
+    
+else()
+    # macOS
+    if(NOT DEFINED FEC_ROOT)
+        set(FEC_ROOT "${CMAKE_SOURCE_DIR}/../deps/macOS/fec" CACHE PATH "FEC root")
+    endif()
+    message(STATUS "Using local FEC root: ${FEC_ROOT}")
+    
+    target_include_directories(${PROJECT_NAME} PRIVATE "${FEC_ROOT}/include")
+    target_link_libraries(${PROJECT_NAME} PRIVATE "${FEC_ROOT}/lib/libfeclib.a")
+endif()
 
 # Link Qt + OpenCV
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -140,5 +136,3 @@ else()
 
     target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl m z)
 endif()
-
-

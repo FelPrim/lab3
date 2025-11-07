@@ -19,10 +19,10 @@ inline constexpr int _720P_HEIGHT  = 720;
 inline constexpr int _480P_WIDTH   = 854;
 inline constexpr int _480P_HEIGHT  = 480;
 
-inline constexpr int DEFAULT_BITRATE = BITRATE_720P_15FPS;
+inline constexpr int DEFAULT_BITRATE = BITRATE_480P_15FPS;
 inline constexpr int DEFAULT_FPS     = 15;
-inline constexpr int DEFAULT_WIDTH   = _720P_WIDTH;
-inline constexpr int DEFAULT_HEIGHT  = _720P_HEIGHT;
+inline constexpr int DEFAULT_WIDTH   = _480P_WIDTH;
+inline constexpr int DEFAULT_HEIGHT  = _480P_HEIGHT;
 inline constexpr float DEFAULT_BUFFERSECONDS = 0.1;
 
 // x264 presets: use "ultrafast" for lowest latency/CPU cost, and "zerolatency" tune
@@ -43,7 +43,12 @@ inline constexpr int PACKET_HEADER_SIZE = 16;
 inline constexpr int MAX_PAYLOAD_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE;
 inline constexpr int FRAME_HEADER_SIZE = 8;
 
-
-// FEC параметры для упрощенной XOR-схемы
-inline constexpr int FEC_K = 60;  // Data packets
-inline constexpr int FEC_N = 62;  // Total packets
+// FEC параметры для XOR-схемы
+inline constexpr int FEC_GROUP_SIZE = 4;
+inline constexpr int FEC_XOR_PACKETS = 5;
+// FEC packet types
+inline constexpr quint8 XOR12_PACKET = 0x05;
+inline constexpr quint8 XOR23_PACKET = 0x06;
+inline constexpr quint8 XOR34_PACKET = 0x07;
+inline constexpr quint8 XOR14_PACKET = 0x08;
+inline constexpr quint8 XOR1234_PACKET = 0x09;

@@ -64,48 +64,47 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
         return;
     }
 
-    // Защитная очистка
     cleanupFFmpeg();
 
-    // Пробуем libx264 сначала, потом встроенный H264
+    // Пробуем разные кодеки в порядке приоритета
     const AVCodec *enc_codec = avcodec_find_encoder_by_name("libx264");
     if (!enc_codec) enc_codec = avcodec_find_encoder(AV_CODEC_ID_H264);
+    
     if (!enc_codec) {
         emit errorOccurred(QString("VideoEncoder stream %1: H.264 encoder not found").arg(m_streamId));
         return;
     }
 
-    // Выделяем контекст
     m_enc_ctx = avcodec_alloc_context3(enc_codec);
     if (!m_enc_ctx) {
         emit errorOccurred(QString("VideoEncoder stream %1: failed to allocate encoder context").arg(m_streamId));
         return;
     }
 
+    // ОСНОВНЫЕ НАСТРОЙКИ ДЛЯ БЫСТРОГО СТАРТА
     m_enc_ctx->width = width;
     m_enc_ctx->height = height;
     m_enc_ctx->time_base = AVRational{1, fps};
     m_enc_ctx->framerate = AVRational{fps, 1};
     m_enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    m_enc_ctx->gop_size = fps * 2;
-    m_enc_ctx->max_b_frames = 0;
+    m_enc_ctx->gop_size = fps;          // Маленький GOP для быстрого восстановления
+    m_enc_ctx->max_b_frames = 0;       // Без B-фреймов для низкой задержки
+    m_enc_ctx->refs = 1;               // Минимальное количество reference фреймов
     m_enc_ctx->bit_rate = m_bitrate;
     m_enc_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+    
+    // ОПТИМИЗАЦИИ ДЛЯ НИЗКОЙ ЗАДЕРЖКИ
+    m_enc_ctx->rc_buffer_size = 0;
+    m_enc_ctx->rc_initial_buffer_occupancy = 0;
+    
+    // УМЕНЬШАЕМ количество потоков для стабильности
+    m_enc_ctx->thread_count = 2;
 
-    // Настройка потоков (сохраняем логику из EncoderWorker)
-    unsigned int hc = std::thread::hardware_concurrency();
-    unsigned int hw_threads = 1;
-    if (hc > DEFAULT_HW_THREADS_SUBTRACT) hw_threads = hc - DEFAULT_HW_THREADS_SUBTRACT;
-    m_enc_ctx->thread_count = hw_threads;
-
-    // Опции энкодера для x264
     AVDictionary *enc_opts = nullptr;
-    if (enc_codec && strcmp(enc_codec->name, "libx264") == 0) {
-        av_dict_set(&enc_opts, "preset", DEFAULT_X264_PRESET, 0);
-        av_dict_set(&enc_opts, "tune",   DEFAULT_X264_TUNE, 0);
-        char x264params[256];
-        snprintf(x264params, sizeof(x264params), "keyint=%d:scenecut=0", m_enc_ctx->gop_size);
-        av_dict_set(&enc_opts, "x264-params", x264params, 0);
+    if (enc_codec && strstr(enc_codec->name, "x264")) {
+        av_dict_set(&enc_opts, "preset", "ultrafast", 0);  // САМЫЙ БЫСТРЫЙ
+        av_dict_set(&enc_opts, "tune", "zerolatency", 0);  // Нулевая задержка
+        av_dict_set(&enc_opts, "crf", "25", 0);           // Немного выше CRF для скорости
     }
 
     int ret = avcodec_open2(m_enc_ctx, enc_codec, &enc_opts);
@@ -113,45 +112,13 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
 
     if (ret < 0) {
         QString err = ffmpegErrStr(ret);
-        // Пробуем fallback на встроенный h264 если доступен другой кодек
-        const AVCodec *fallback = avcodec_find_encoder(AV_CODEC_ID_H264);
-        if (fallback && fallback != enc_codec) {
-            avcodec_free_context(&m_enc_ctx);
-            m_enc_ctx = avcodec_alloc_context3(fallback);
-            if (!m_enc_ctx) {
-                emit errorOccurred(QString("VideoEncoder stream %1: failed to allocate fallback context").arg(m_streamId));
-                return;
-            }
-            // Повторно применяем настройки
-            m_enc_ctx->width = width;
-            m_enc_ctx->height = height;
-            m_enc_ctx->time_base = AVRational{1, fps};
-            m_enc_ctx->framerate = AVRational{fps, 1};
-            m_enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-            m_enc_ctx->gop_size = fps * 2;
-            m_enc_ctx->max_b_frames = 0;
-            m_enc_ctx->bit_rate = m_bitrate;
-            m_enc_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
-            m_enc_ctx->thread_count = hw_threads;
-
-            ret = avcodec_open2(m_enc_ctx, fallback, nullptr);
-            if (ret < 0) {
-                QString err2 = ffmpegErrStr(ret);
-                avcodec_free_context(&m_enc_ctx);
-                m_enc_ctx = nullptr;
-                emit errorOccurred(QString("VideoEncoder stream %1: avcodec_open2 failed (primary: %2, fallback: %3)")
-                                  .arg(m_streamId).arg(err).arg(err2));
-                return;
-            }
-        } else {
-            avcodec_free_context(&m_enc_ctx);
-            m_enc_ctx = nullptr;
-            emit errorOccurred(QString("VideoEncoder stream %1: avcodec_open2 failed: %2").arg(m_streamId).arg(err));
-            return;
-        }
+        avcodec_free_context(&m_enc_ctx);
+        m_enc_ctx = nullptr;
+        emit errorOccurred(QString("VideoEncoder stream %1: avcodec_open2 failed: %2").arg(m_streamId).arg(err));
+        return;
     }
 
-    // Создаем sws контекст: BGR24 -> target pix_fmt
+    // Остальная инициализация без изменений...
     m_sws_enc = sws_getContext(width, height, AV_PIX_FMT_BGR24,
                                width, height, m_enc_ctx->pix_fmt,
                                SWS_BILINEAR, nullptr, nullptr, nullptr);
@@ -161,7 +128,6 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
         return;
     }
 
-    // Выделяем фрейм (YUV420P)
     m_enc_frame = av_frame_alloc();
     if (!m_enc_frame) {
         emit errorOccurred(QString("VideoEncoder stream %1: av_frame_alloc failed").arg(m_streamId));
@@ -180,7 +146,6 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
         return;
     }
 
-    // Выделяем пакет
     m_pkt = av_packet_alloc();
     if (!m_pkt) {
         emit errorOccurred(QString("VideoEncoder stream %1: av_packet_alloc failed").arg(m_streamId));
@@ -188,9 +153,10 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
         return;
     }
 
-    // Сбрасываем pts и busy флаг
     m_pts = 0;
     m_busy = false;
+    
+    qDebug() << "✅ VideoEncoder ULTRAFAST preset for stream:" << m_streamId;
 }
 
 void VideoEncoder::cleanupFFmpeg()

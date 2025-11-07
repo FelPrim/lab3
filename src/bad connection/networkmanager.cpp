@@ -3,53 +3,6 @@
 #include <QDebug>
 #include <QNetworkInterface>
 #include <QVariant>
-#include <feclib/fec.h>
-
-// Добавляем в начало файла, после include
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type)
-{
-    sendPacketNewProtocol(data, streamId, type, m_packetSequence++);
-}
-
-void NetworkManager::processRecoveredPacket(const QByteArray &packetData)
-{
-    // Восстановленный пакет имеет тот же формат, что и обычный пакет
-    if (packetData.size() < PACKET_HEADER_SIZE) return;
-    
-    QDataStream stream(packetData);
-    int streamId, packetSequence;
-    quint8 packetType;
-    
-    stream >> streamId >> packetSequence >> packetType;
-    
-    // Пропускаем резервные байты
-    for (int i = 0; i < 3; ++i) {
-        quint8 dummy;
-        stream >> dummy;
-    }
-    
-    QByteArray payload = packetData.mid(PACKET_HEADER_SIZE);
-    
-    // Обрабатываем восстановленный пакет по его типу
-    switch (packetType) {
-    case START_FRAME:
-        handleStartFrame(streamId, payload);
-        break;
-    case CONTINUE_FRAME:
-        handleContinueFrame(streamId, payload);
-        break;
-    case BOUNDARY_FRAME:
-        handleBoundaryFrame(streamId, payload);
-        break;
-    case FAILED_BOUNDARY_FRAME:
-        handleFailedBoundaryFrame(streamId, payload);
-        break;
-    default:
-        break;
-    }
-    
-    qDebug() << "Processed recovered packet - Type:" << packetType << "Size:" << payload.size();
-}
 
 NetworkManager::NetworkManager(QObject *parent)
     : QObject(parent)
@@ -215,6 +168,50 @@ void NetworkManager::onPacketReceived()
     }
 }
 
+void NetworkManager::processPacketNewProtocol(const QNetworkDatagram &datagram)
+{
+    QByteArray data = datagram.data();
+    if (data.size() < PACKET_HEADER_SIZE) return;
+    
+    try {
+        QDataStream stream(data);
+        int streamId, packetNumber;
+        quint8 packetType, frameCount;
+        
+        stream >> streamId >> packetNumber >> packetType >> frameCount;
+        
+        // Пропускаем резервные байты (2 байта вместо 6)
+        for (int i = 0; i < 2; ++i) {
+            quint8 dummy;
+            stream >> dummy;
+        }
+        
+        QByteArray payload = data.mid(PACKET_HEADER_SIZE);
+        
+        switch (packetType) {
+        case START_FRAME:
+            handleStartFrame(streamId, payload);
+            break;
+        case CONTINUE_FRAME:
+            handleContinueFrame(streamId, payload);
+            break;
+        case BOUNDARY_FRAME:
+            handleBoundaryFrame(streamId, payload);
+            break;
+        case FAILED_BOUNDARY_FRAME:
+            handleFailedBoundaryFrame(streamId, payload);
+            break;
+        default:
+            qDebug() << "Unknown packet type:" << packetType;
+            break;
+        }
+        
+        updateReceiveStats(1, payload.size());
+        
+    } catch (const std::exception &e) {
+        qDebug() << "Exception processing packet:" << e.what();
+    }
+}
 
 void NetworkManager::handleStartFrame(int streamId, const QByteArray& data)
 {
@@ -319,206 +316,65 @@ void NetworkManager::sendVideoFrame(int streamId, int frameNumber, const QByteAr
     }
 }
 
-void NetworkManager::processPacketNewProtocol(const QNetworkDatagram &datagram)
+void NetworkManager::sendBufferedData()
 {
-    QByteArray data = datagram.data();
-    if (data.size() < PACKET_HEADER_SIZE) return;
+    if (m_sendBuffer.isEmpty() || !m_udpSocket) return;
     
-    try {
-        QDataStream stream(data);
-        int streamId, packetSequence;
-        quint8 packetType;
+    int bytesSent = 0;
+    bool isFirstPacket = true;
+    
+    while (bytesSent < m_sendBuffer.size()) {
+        int remaining = m_sendBuffer.size() - bytesSent;
+        int chunkSize;
         
-        stream >> streamId >> packetSequence >> packetType;
-        
-        // Пропускаем резервные байты
-        for (int i = 0; i < 3; ++i) {
-            quint8 dummy;
-            stream >> dummy;
-        }
-        
-        QByteArray payload = data.mid(PACKET_HEADER_SIZE);
-        
-        // Вычисляем groupId и packetIndex из packetSequence
-        int groupId = packetSequence / FEC_N;
-        int packetIndex = packetSequence % FEC_N;
-        
-        if (packetType == FEC_PACKET) {
-            processFECPacket(streamId, groupId, packetIndex - FEC_K, payload);
+        if (isFirstPacket) {
+            // Для START_FRAME: заголовок фрейма (8 байт) уже в данных
+            chunkSize = qMin(MAX_PAYLOAD_SIZE, remaining);
+            QByteArray packetData = m_sendBuffer.mid(bytesSent, chunkSize);
+            sendPacketNewProtocol(packetData, m_streamId, START_FRAME);
+            isFirstPacket = false;
         } else {
-            // Обработка обычных пакетов
-            switch (packetType) {
-            case START_FRAME:
-                handleStartFrame(streamId, payload);
-                break;
-            case CONTINUE_FRAME:
-                handleContinueFrame(streamId, payload);
-                break;
-            case BOUNDARY_FRAME:
-                handleBoundaryFrame(streamId, payload);
-                break;
-            case FAILED_BOUNDARY_FRAME:
-                handleFailedBoundaryFrame(streamId, payload);
-                break;
-            default:
-                qDebug() << "Unknown packet type:" << packetType;
-                break;
-            }
-            
-            // Сохраняем data пакет для FEC
-            if (packetIndex < FEC_K) {
-                QPair<int, int> groupKey = qMakePair(streamId, groupId);
-                if (!m_fecGroups.contains(groupKey)) {
-                    m_fecGroups[groupKey] = FECGroup(streamId, groupId);
-                }
-                FECGroup &group = m_fecGroups[groupKey];
-                group.dataPackets[packetIndex] = payload;
-                group.receivedPackets[packetIndex] = true;
-            }
+            // Для CONTINUE_FRAME: добавляем 4 байта номера фрейма
+            chunkSize = qMin(MAX_PAYLOAD_SIZE - 4, remaining);
+            QByteArray packetData = m_sendBuffer.mid(bytesSent, chunkSize);
+            // Добавляем номер фрейма в CONTINUE_FRAME
+            QByteArray continueData;
+            QDataStream stream(&continueData, QIODevice::WriteOnly);
+            stream << m_currentFrameNumber;
+            stream.writeRawData(packetData.constData(), packetData.size());
+            sendPacketNewProtocol(continueData, m_streamId, CONTINUE_FRAME);
         }
         
-        updateReceiveStats(1, payload.size());
-        
-    } catch (const std::exception &e) {
-        qDebug() << "Exception processing packet:" << e.what();
+        bytesSent += chunkSize;
     }
+    
+    m_sendBuffer.clear();
 }
 
-void NetworkManager::processFECPacket(int streamId, int groupId, int packetIndex, const QByteArray &data)
-{
-    QPair<int, int> groupKey = qMakePair(streamId, groupId);
-    
-    if (!m_fecGroups.contains(groupKey)) {
-        m_fecGroups[groupKey] = FECGroup(streamId, groupId);
-    }
-    
-    FECGroup &group = m_fecGroups[groupKey];
-    
-    if (packetIndex >= 0 && packetIndex < (FEC_N - FEC_K)) {
-        group.fecPackets[packetIndex] = data;
-        group.receivedFecPackets[packetIndex] = true;
-        
-        // Пытаемся восстановить группу
-        if (group.canRecover() && !group.isComplete()) {
-            if (tryRecoverFECGroup(streamId, groupId)) {
-                m_stats.fecGroupsRecovered++;
-            }
-        }
-    }
-}
-bool NetworkManager::tryRecoverFECGroup(int streamId, int groupId)
-{
-    QPair<int, int> groupKey = qMakePair(streamId, groupId);
-    if (!m_fecGroups.contains(groupKey)) return false;
-    
-    FECGroup &group = m_fecGroups[groupKey];
-    
-    // Выравниваем размеры блоков
-    int blockSize = 0;
-    QVector<QByteArray> dataBlocks(FEC_K);
-    QVector<bool> receivedBlocks(FEC_K, false);
-    
-    for (int i = 0; i < FEC_K; i++) {
-        if (group.receivedPackets[i] && group.dataPackets[i].size() > blockSize) {
-            blockSize = group.dataPackets[i].size();
-        }
-    }
-    
-    for (int i = 0; i < FEC_K; i++) {
-        if (group.receivedPackets[i]) {
-            dataBlocks[i] = group.dataPackets[i];
-            if (dataBlocks[i].size() < blockSize) {
-                dataBlocks[i].append(QByteArray(blockSize - dataBlocks[i].size(), 0));
-            }
-            receivedBlocks[i] = true;
-        }
-    }
-    
-    // Подготавливаем FEC блоки - исправляем типы
-    QVector<QByteArray> fecBlocks(FEC_N - FEC_K);
-    QVector<unsigned int> fecBlockNos; // меняем на unsigned int
-    
-    for (int i = 0; i < FEC_N - FEC_K; i++) {
-        if (group.receivedFecPackets[i]) {
-            fecBlocks[i] = group.fecPackets[i];
-            if (fecBlocks[i].size() < blockSize) {
-                fecBlocks[i].append(QByteArray(blockSize - fecBlocks[i].size(), 0));
-            }
-            fecBlockNos.append(static_cast<unsigned int>(i)); // явное преобразование
-        }
-    }
-    
-    // Определяем потерянные блоки - исправляем типы
-    QVector<unsigned int> erasedBlocks; // меняем на unsigned int
-    for (int i = 0; i < FEC_K; i++) {
-        if (!group.receivedPackets[i]) {
-            erasedBlocks.append(static_cast<unsigned int>(i)); // явное преобразование
-        }
-    }
-    
-    if (erasedBlocks.isEmpty()) return true;
-    if (fecBlockNos.size() < erasedBlocks.size()) return false;
-    
-    // Конвертируем для FEC библиотеки
-    QVector<unsigned char*> dataPtrs(FEC_K);
-    QVector<unsigned char*> fecPtrs(fecBlockNos.size());
-    
-    for (int i = 0; i < FEC_K; i++) {
-        dataPtrs[i] = receivedBlocks[i] ? 
-            reinterpret_cast<unsigned char*>(dataBlocks[i].data()) : nullptr;
-    }
-    
-    for (int i = 0; i < fecBlockNos.size(); i++) {
-        fecPtrs[i] = reinterpret_cast<unsigned char*>(fecBlocks[fecBlockNos[i]].data());
-    }
-    
-    // FEC декодирование с правильными типами
-    try {
-        FEClib::fec_decode(blockSize, dataPtrs.data(), FEC_K, 
-                          fecPtrs.data(), fecBlockNos.data(), 
-                          erasedBlocks.data(), static_cast<short>(fecBlockNos.size()));
-        
-        // Восстанавливаем потерянные пакеты
-        for (unsigned int lostIndex : erasedBlocks) {
-            if (dataPtrs[lostIndex]) {
-                QByteArray recoveredData(reinterpret_cast<char*>(dataPtrs[lostIndex]), blockSize);
-                // Обрезаем нулевое дополнение
-                int originalSize = recoveredData.size();
-                while (originalSize > 0 && recoveredData[originalSize-1] == 0) {
-                    originalSize--;
-                }
-                recoveredData.resize(originalSize);
-                
-                group.dataPackets[lostIndex] = recoveredData;
-                group.receivedPackets[lostIndex] = true;
-                m_stats.packetsRecoveredByFEC++;
-                
-                processRecoveredPacket(recoveredData);
-            }
-        }
-        return true;
-    } catch (const std::exception &e) {
-        qWarning() << "FEC decoding failed:" << e.what();
-        return false;
-    }
-}
-
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type, int customSequence)
+void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type)
 {
     QByteArray datagram;
     QDataStream stream(&datagram, QIODevice::WriteOnly);
     
-    stream << streamId << customSequence << (quint8)type;
+    // Заголовок пакета (12 байт)
+    stream << streamId << m_packetSequence++ << (quint8)type << (quint8)0; // frameCount пока не используем
     
-    // Резервные байты (3 байта)
-    for (int i = 0; i < 3; ++i) {
+    // Резервные байты (2 байта)
+    for (int i = 0; i < 2; ++i) {
         stream << (quint8)0;
     }
     
+    // Полезная нагрузка
     stream.writeRawData(data.constData(), data.size());
     
+    // Дополняем нулями до фиксированного размера 1200 байт
     if (datagram.size() < MAX_UDP_PACKET_SIZE) {
         datagram.append(QByteArray(MAX_UDP_PACKET_SIZE - datagram.size(), 0));
+    }
+    
+    if (datagram.size() > MAX_UDP_PACKET_SIZE) {
+        qDebug() << "Datagram too large:" << datagram.size() << "bytes";
+        return;
     }
     
     qint64 sent = m_udpSocket->writeDatagram(datagram, m_serverAddress, m_serverPort);
@@ -529,91 +385,6 @@ void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId,
         m_stats.totalPacketsSent++;
         m_stats.totalBytesSent += data.size();
     }
-}
-
-void NetworkManager::sendBufferedData()
-{
-    if (m_sendBuffer.isEmpty() || !m_udpSocket) return;
-    
-    int bytesSent = 0;
-    bool isFirstPacket = true;
-    m_currentGroupStartSequence = m_packetSequence;
-    
-    while (bytesSent < m_sendBuffer.size()) {
-        int remaining = m_sendBuffer.size() - bytesSent;
-        int chunkSize;
-        QByteArray packetData;
-        
-        if (isFirstPacket) {
-            chunkSize = qMin(MAX_PAYLOAD_SIZE, remaining);
-            packetData = m_sendBuffer.mid(bytesSent, chunkSize);
-            sendPacketNewProtocol(packetData, m_streamId, START_FRAME);
-            isFirstPacket = false;
-        } else {
-            chunkSize = qMin(MAX_PAYLOAD_SIZE - 4, remaining);
-            packetData = m_sendBuffer.mid(bytesSent, chunkSize);
-            QByteArray continueData;
-            QDataStream stream(&continueData, QIODevice::WriteOnly);
-            stream << m_currentFrameNumber;
-            stream.writeRawData(packetData.constData(), packetData.size());
-            sendPacketNewProtocol(continueData, m_streamId, CONTINUE_FRAME);
-        }
-        
-        m_currentDataPackets.append(packetData);
-        bytesSent += chunkSize;
-        
-        // Когда накопили FEC_K пакетов, отправляем FEC
-        if (m_currentDataPackets.size() >= FEC_K) {
-            sendFECGroup(m_streamId, m_currentGroupStartSequence);
-            m_currentDataPackets.clear();
-            m_currentGroupStartSequence = m_packetSequence;
-        }
-    }
-    
-    m_sendBuffer.clear();
-}
-
-void NetworkManager::sendFECGroup(int streamId, int groupStartSequence)
-{
-    if (m_currentDataPackets.size() != FEC_K) return;
-    
-    // Выравниваем размеры
-    int maxSize = 0;
-    for (const QByteArray &packet : m_currentDataPackets) {
-        if (packet.size() > maxSize) maxSize = packet.size();
-    }
-    
-    QVector<QByteArray> alignedPackets(FEC_K);
-    for (int i = 0; i < FEC_K; i++) {
-        alignedPackets[i] = m_currentDataPackets[i];
-        if (alignedPackets[i].size() < maxSize) {
-            alignedPackets[i].append(QByteArray(maxSize - alignedPackets[i].size(), 0));
-        }
-    }
-    
-    // Генерируем FEC
-    QVector<unsigned char*> dataPtrs(FEC_K);
-    QVector<unsigned char*> fecPtrs(FEC_N - FEC_K);
-    QVector<QByteArray> fecPackets(FEC_N - FEC_K);
-    
-    for (int i = 0; i < FEC_K; i++) {
-        dataPtrs[i] = reinterpret_cast<unsigned char*>(alignedPackets[i].data());
-    }
-    
-    for (int i = 0; i < FEC_N - FEC_K; i++) {
-        fecPackets[i] = QByteArray(maxSize, 0);
-        fecPtrs[i] = reinterpret_cast<unsigned char*>(fecPackets[i].data());
-    }
-    
-    FEClib::fec_encode(maxSize, dataPtrs.data(), FEC_K, fecPtrs.data(), FEC_N - FEC_K);
-    
-    // Отправляем FEC пакеты
-    for (int i = 0; i < FEC_N - FEC_K; i++) {
-        int fecSequence = groupStartSequence + FEC_K + i;
-        sendPacketNewProtocol(fecPackets[i], streamId, FEC_PACKET, fecSequence);
-    }
-    
-    m_stats.fecGroupsSent++;
 }
 
 void NetworkManager::cleanupOldAssemblies()
@@ -646,6 +417,181 @@ void NetworkManager::updateReceiveStats(int packets, int bytes)
     m_stats.totalBytesReceived += bytes;
 }
 
+void NetworkManager::onFECGroupDecoded(int streamId, int frameNumber, int groupId, const QVector<QByteArray> &packets)
+{
+    qDebug() << "FEC: Group decoded - Stream:" << streamId << "Group:" << groupId 
+             << "Packets recovered:" << packets.size();
+    
+    for (int i = 0; i < packets.size(); ++i) {
+        const QByteArray &recoveredPacket = packets[i];
+        
+        if (recoveredPacket.isEmpty()) {
+            qDebug() << "FEC: Empty packet in recovered group, skipping";
+            continue;
+        }
+        
+        // Восстановленный пакет содержит полные данные (заголовок + полезная нагрузка)
+        // Нужно разобрать его и обработать как обычный пакет
+        processRecoveredPacket(streamId, groupId, i, recoveredPacket);
+    }
+    
+    m_stats.assembliesCompleted++;
+    emit statisticsUpdated("FEC: Recovered group " + QString::number(groupId));
+}
+
+void NetworkManager::processRecoveredPacket(int streamId, int groupId, int packetIndex, const QByteArray &fullPacketData)
+{
+    try {
+        // Восстановленный пакет имеет тот же формат, что и обычный пакет
+        if (fullPacketData.size() < PACKET_HEADER_SIZE) {
+            qWarning() << "FEC: Recovered packet too small:" << fullPacketData.size();
+            return;
+        }
+        
+        QDataStream stream(fullPacketData);
+        int recoveredStreamId, packetNumber;
+        quint8 packetType, frameCount;
+        
+        // Читаем заголовок восстановленного пакета
+        stream >> recoveredStreamId >> packetNumber >> packetType >> frameCount;
+        
+        // Пропускаем резервные байты
+        for (int i = 0; i < 2; ++i) {
+            quint8 dummy;
+            stream >> dummy;
+        }
+        
+        // Извлекаем полезную нагрузку
+        QByteArray payload = fullPacketData.mid(PACKET_HEADER_SIZE);
+        
+        // Вычисляем оригинальный frameNumber на основе groupId и packetIndex
+        // В нашей схеме groupId соответствует начальному frameNumber для группы
+        int originalFrameNumber = groupId * 4 + packetIndex;
+        
+        qDebug() << "FEC: Processing recovered packet - Type:" << packetType 
+                 << "Frame:" << originalFrameNumber << "Size:" << payload.size();
+        
+        // Обрабатываем восстановленный пакет в зависимости от его типа
+        // Используем оригинальный frameNumber вместо восстановленного
+        switch (packetType) {
+        case START_FRAME:
+            handleRecoveredStartFrame(streamId, originalFrameNumber, payload);
+            break;
+        case CONTINUE_FRAME:
+            handleRecoveredContinueFrame(streamId, originalFrameNumber, payload);
+            break;
+        case BOUNDARY_FRAME:
+            handleRecoveredBoundaryFrame(streamId, originalFrameNumber, payload);
+            break;
+        case FAILED_BOUNDARY_FRAME:
+            handleRecoveredFailedBoundaryFrame(streamId, originalFrameNumber, payload);
+            break;
+        default:
+            qDebug() << "FEC: Unknown packet type in recovered packet:" << packetType;
+            break;
+        }
+        
+        // Обновляем статистику
+        updateReceiveStats(1, payload.size());
+        m_stats.totalPacketsReceived++; // Учитываем восстановленные пакеты
+        
+    } catch (const std::exception &e) {
+        qCritical() << "FEC: Exception processing recovered packet:" << e.what();
+    }
+}
+
+void NetworkManager::handleRecoveredStartFrame(int streamId, int frameNumber, const QByteArray& data)
+{
+    if (data.size() < FRAME_HEADER_SIZE) {
+        qWarning() << "FEC: Recovered START_FRAME too small";
+        return;
+    }
+    
+    QDataStream stream(data);
+    int storedFrameNumber, frameSize;
+    stream >> storedFrameNumber >> frameSize;
+    
+    QByteArray frameData = data.mid(FRAME_HEADER_SIZE);
+    
+    // Создаем или обновляем сборку для восстановленного фрейма
+    if (!m_streamAssemblies.contains(streamId)) {
+        m_streamAssemblies[streamId] = StreamAssembly(streamId, frameNumber);
+    } else if (m_streamAssemblies[streamId].frameNumber != frameNumber) {
+        // Если это новый фрейм, заменяем старую сборку
+        m_streamAssemblies[streamId] = StreamAssembly(streamId, frameNumber);
+    }
+    
+    StreamAssembly& assembly = m_streamAssemblies[streamId];
+    assembly.totalSize = frameSize;
+    assembly.data = frameData;
+    assembly.receivedSize = frameData.size();
+    assembly.hasStartFrame = true;
+    
+    qDebug() << "FEC: Recovered START_FRAME for frame" << frameNumber 
+             << "total:" << frameSize << "received:" << assembly.receivedSize;
+    
+    // Проверяем завершенность
+    if (assembly.isComplete()) {
+        processCompleteFrame(streamId);
+    }
+}
+
+void NetworkManager::handleRecoveredContinueFrame(int streamId, int frameNumber, const QByteArray& data)
+{
+    if (!m_streamAssemblies.contains(streamId)) {
+        qDebug() << "FEC: No assembly for recovered CONTINUE_FRAME, frame:" << frameNumber;
+        return;
+    }
+    
+    StreamAssembly& assembly = m_streamAssemblies[streamId];
+    
+    if (data.size() < 4) {
+        qWarning() << "FEC: Recovered CONTINUE_FRAME too small";
+        return;
+    }
+    
+    QDataStream stream(data);
+    int storedFrameNumber;
+    stream >> storedFrameNumber;
+    
+    if (storedFrameNumber != assembly.frameNumber) {
+        qDebug() << "FEC: Frame number mismatch in recovered CONTINUE_FRAME. Expected:" 
+                 << assembly.frameNumber << "Got:" << storedFrameNumber;
+        return;
+    }
+    
+    QByteArray frameData = data.mid(4);
+    assembly.data.append(frameData);
+    assembly.receivedSize += frameData.size();
+    
+    qDebug() << "FEC: Recovered CONTINUE_FRAME for frame" << frameNumber 
+             << "added:" << frameData.size() << "total received:" << assembly.receivedSize;
+    
+    if (assembly.isComplete()) {
+        processCompleteFrame(streamId);
+    }
+}
+
+void NetworkManager::handleRecoveredBoundaryFrame(int streamId, int frameNumber, const QByteArray& data)
+{
+    // Сначала завершаем предыдущий фрейм, если он есть
+    if (m_streamAssemblies.contains(streamId)) {
+        StreamAssembly& prevAssembly = m_streamAssemblies[streamId];
+        if (prevAssembly.isComplete()) {
+            processCompleteFrame(streamId);
+        }
+    }
+    
+    // Обрабатываем как START_FRAME для следующего фрейма
+    handleRecoveredStartFrame(streamId, frameNumber, data);
+}
+
+void NetworkManager::handleRecoveredFailedBoundaryFrame(int streamId, int frameNumber, const QByteArray& data)
+{
+    // Обрабатываем как CONTINUE_FRAME, но игнорируем нулевое дополнение
+    handleRecoveredContinueFrame(streamId, frameNumber, data);
+}
+
 void NetworkManager::printStatistics()
 {
     double elapsedSeconds = m_operationTimer.elapsed() / 1000.0;
@@ -662,16 +608,22 @@ void NetworkManager::printStatistics()
         lossRate = (double)lostFrames / m_stats.expectedFrames.size() * 100.0;
     }
     
+    // FEC статистика
+    int recoveredCount = m_recoveredPackets.size();
+    QString fecStats = recoveredCount > 0 ? 
+        QString(" | FEC recovered: %1 packets").arg(recoveredCount) : "";
+    
     QString stats = QString(
         "=== New Protocol Statistics ===\n"
-        "Time: %1s | Frames: %2 sent, %3 received (%4% loss)\n"
-        "Packets: %5 sent, %6 received | Data Rate: %7/%8 KB/s\n"
-        "Send Buffer: %9 bytes | Active Assemblies: %10\n"
+        "Time: %1s | Frames: %2 sent, %3 received (%4% loss)%5\n"
+        "Packets: %6 sent, %7 received | Data Rate: %8/%9 KB/s\n"
+        "Send Buffer: %10 bytes | Active Assemblies: %11\n"
         "================================="
     ).arg(elapsedSeconds, 0, 'f', 1)
      .arg(m_stats.framesSent)
      .arg(m_stats.framesReceived)
      .arg(lossRate, 0, 'f', 2)
+     .arg(fecStats)
      .arg(m_stats.totalPacketsSent)
      .arg(m_stats.totalPacketsReceived)
      .arg(sendRate, 0, 'f', 2)

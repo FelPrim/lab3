@@ -60,13 +60,17 @@ void VideoDecoder::initFFmpeg()
 
     // ОПТИМИЗАЦИИ ДЛЯ НИЗКОЙ ЗАДЕРЖКИ
     m_dec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+	m_dec_ctx->flags |= AV_CODEC_FLAG_OUTPUT_CORRUPT;
+	m_dec_ctx->flags |= AV_CODEC_FLAG2_SHOW_ALL;
     m_dec_ctx->flags2 |= AV_CODEC_FLAG2_FAST;
+
+	m_dec_ctx->error_concealment = FF_EC_GUESS_MVS | FF_EC_DEBLOCK;
     
     // Уменьшаем размер буфера
     m_dec_ctx->delay = 0;
     
     // Используем меньше потоков для снижения накладных расходов
-    m_dec_ctx->thread_count = 2;
+    m_dec_ctx->thread_count = 1;
 
     int ret = avcodec_open2(m_dec_ctx, dec_codec, nullptr);
     if (ret < 0) {
@@ -231,6 +235,7 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
 
 void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
 {
+	/*
     if (!m_initialized || !m_dec_ctx || !m_dec_frame) {
         return;
     }
@@ -258,5 +263,16 @@ void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
     }
     
     // Декодируем только если данные валидны
+    decodeFrameInternal(frameData, frameNumber);
+*/
+	if (!m_initialized) return;
+
+    // ПРОПУСК ПРОВЕРОК ДЛЯ ЛУЧШЕГО ВОССТАНОВЛЕНИЯ:
+    // Убираем строгие проверки H.264 данных - пытаемся декодировать всё
+    if (frameData.isEmpty()) return;
+    
+    // Пропускаем проверку на NAL unit starters
+    // Даже поврежденные данные пытаемся декодировать
+    
     decodeFrameInternal(frameData, frameNumber);
 }
