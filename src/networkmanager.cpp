@@ -3,53 +3,6 @@
 #include <QDebug>
 #include <QNetworkInterface>
 #include <QVariant>
-#include <feclib/fec.h>
-
-// Добавляем в начало файла, после include
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type)
-{
-    sendPacketNewProtocol(data, streamId, type, m_packetSequence++);
-}
-
-void NetworkManager::processRecoveredPacket(const QByteArray &packetData)
-{
-    // Восстановленный пакет имеет тот же формат, что и обычный пакет
-    if (packetData.size() < PACKET_HEADER_SIZE) return;
-    
-    QDataStream stream(packetData);
-    int streamId, packetSequence;
-    quint8 packetType;
-    
-    stream >> streamId >> packetSequence >> packetType;
-    
-    // Пропускаем резервные байты
-    for (int i = 0; i < 3; ++i) {
-        quint8 dummy;
-        stream >> dummy;
-    }
-    
-    QByteArray payload = packetData.mid(PACKET_HEADER_SIZE);
-    
-    // Обрабатываем восстановленный пакет по его типу
-    switch (packetType) {
-    case START_FRAME:
-        handleStartFrame(streamId, payload);
-        break;
-    case CONTINUE_FRAME:
-        handleContinueFrame(streamId, payload);
-        break;
-    case BOUNDARY_FRAME:
-        handleBoundaryFrame(streamId, payload);
-        break;
-    case FAILED_BOUNDARY_FRAME:
-        handleFailedBoundaryFrame(streamId, payload);
-        break;
-    default:
-        break;
-    }
-    
-    qDebug() << "Processed recovered packet - Type:" << packetType << "Size:" << payload.size();
-}
 
 NetworkManager::NetworkManager(QObject *parent)
     : QObject(parent)
@@ -57,7 +10,9 @@ NetworkManager::NetworkManager(QObject *parent)
     , m_serverPort(DEFAULT_ECHO_SERVER_PORT)
     , m_localPort(0)
 {
-    qDebug() << "NetworkManager: Constructor";
+    m_xorFEC = new SimpleFEC(this);
+    connect(m_xorFEC, &SimpleFEC::groupDecoded, this, &NetworkManager::onXORFECGroupDecoded);
+    qDebug() << "NetworkManager: Constructor with XOR FEC";
 }
 
 NetworkManager::~NetworkManager()
@@ -77,7 +32,7 @@ bool NetworkManager::initialize()
         
         // Создаем таймеры
         m_cleanupTimer = new QTimer(this);
-        m_cleanupTimer->setInterval(5000); // Очистка каждые 5 секунд
+        m_cleanupTimer->setInterval(5000);
         connect(m_cleanupTimer, &QTimer::timeout, this, &NetworkManager::cleanupOldAssemblies);
         
         m_statsTimer = new QTimer(this);
@@ -87,7 +42,7 @@ bool NetworkManager::initialize()
         m_operationTimer.start();
         m_initialized = true;
         
-        qDebug() << "NetworkManager: Initialized successfully";
+        qDebug() << "NetworkManager: Initialized successfully with XOR FEC";
         qDebug() << "Server:" << m_serverAddress.toString() << ":" << m_serverPort;
         qDebug() << "Local port:" << m_localPort;
         
@@ -121,6 +76,7 @@ void NetworkManager::cleanup()
     
     m_streamAssemblies.clear();
     m_sendBuffer.clear();
+    m_currentDataPackets.clear();
     m_initialized = false;
     
     qDebug() << "NetworkManager: Cleaned up";
@@ -134,20 +90,16 @@ void NetworkManager::setupSocket()
     }
     
     m_udpSocket = new QUdpSocket(this);
-    // Увеличиваем размеры буферов
     m_udpSocket->setSocketOption(QAbstractSocket::SendBufferSizeSocketOption, QVariant(1024 * 1024));
     m_udpSocket->setSocketOption(QAbstractSocket::ReceiveBufferSizeSocketOption, QVariant(1024 * 1024));
     
-    // Используем фиксированный порт из video_defaults
     m_localPort = DEFAULT_UDP_CLIENT_PORT;
     
-    // Пробуем привязаться к фиксированному порту
     if (!m_udpSocket->bind(QHostAddress::Any, m_localPort)) {
         QString error = QString("Failed to bind UDP socket to port %1: %2")
                           .arg(m_localPort).arg(m_udpSocket->errorString());
         qCritical() << error;
         
-        // Fallback: пробуем любой доступный порт
         if (!m_udpSocket->bind(QHostAddress::Any, 0)) {
             emit errorOccurred(QString("Failed to bind UDP socket to any port: %1")
                               .arg(m_udpSocket->errorString()));
@@ -159,7 +111,6 @@ void NetworkManager::setupSocket()
     
     connect(m_udpSocket, &QUdpSocket::readyRead, this, &NetworkManager::onPacketReceived);
     
-    // Обработчики ошибок
     connect(m_udpSocket, &QUdpSocket::errorOccurred, this, [this](QAbstractSocket::SocketError error) {
         qWarning() << "UDP Socket error:" << error << m_udpSocket->errorString();
     });
@@ -215,7 +166,218 @@ void NetworkManager::onPacketReceived()
     }
 }
 
+void NetworkManager::processPacketNewProtocol(const QNetworkDatagram &datagram)
+{
+    QByteArray data = datagram.data();
+    if (data.size() < PACKET_HEADER_SIZE) return;
+    
+    try {
+        QDataStream stream(data);
+        int streamId, packetSequence;
+        quint8 packetType;
+        
+        stream >> streamId >> packetSequence >> packetType;
+        
+        // Пропускаем резервные байты
+        for (int i = 0; i < 3; ++i) {
+            quint8 dummy;
+            stream >> dummy;
+        }
+        
+        QByteArray payload = data.mid(PACKET_HEADER_SIZE);
+        
+        // Вычисляем groupId и packetIndex из packetSequence
+        int groupId = packetSequence / XOR_FEC_N;
+        int packetIndex = packetSequence % XOR_FEC_N;
+        
+        if (packetType == XOR_FEC_PACKET) {
+            processXORFECPacket(streamId, groupId, payload);
+        } else {
+            // Обработка обычных пакетов
+            switch (packetType) {
+            case START_FRAME:
+                handleStartFrame(streamId, payload);
+                break;
+            case CONTINUE_FRAME:
+                handleContinueFrame(streamId, payload);
+                break;
+            case BOUNDARY_FRAME:
+                handleBoundaryFrame(streamId, payload);
+                break;
+            case FAILED_BOUNDARY_FRAME:
+                handleFailedBoundaryFrame(streamId, payload);
+                break;
+            default:
+                qDebug() << "Unknown packet type:" << packetType;
+                break;
+            }
+            
+            // Добавляем data пакет в XOR FEC
+            if (packetIndex < XOR_FEC_K) {
+                m_xorFEC->addPacket(streamId, groupId, packetIndex, data);
+            }
+        }
+        
+        updateReceiveStats(1, payload.size());
+        
+    } catch (const std::exception &e) {
+        qDebug() << "Exception processing packet:" << e.what();
+    }
+}
 
+void NetworkManager::processXORFECPacket(int streamId, int groupId, const QByteArray &data)
+{
+    // Добавляем XOR пакет в декодер
+    m_xorFEC->addPacket(streamId, groupId, XOR_FEC_K, data);
+}
+
+void NetworkManager::onXORFECGroupDecoded(int streamId, int groupId, const QVector<QByteArray> &packets)
+{
+    qDebug() << "XOR FEC: Group decoded - Stream:" << streamId << "Group:" << groupId;
+    m_stats.xorGroupsRecovered++;
+    
+    // Обрабатываем каждый восстановленный пакет
+    for (const QByteArray &packet : packets) {
+        processRecoveredPacket(packet);
+        m_stats.packetsRecoveredByXOR++;
+    }
+}
+
+void NetworkManager::processRecoveredPacket(const QByteArray &packetData)
+{
+    // Восстановленный пакет имеет тот же формат, что и обычный пакет
+    if (packetData.size() < PACKET_HEADER_SIZE) return;
+    
+    QDataStream stream(packetData);
+    int streamId, packetSequence;
+    quint8 packetType;
+    
+    stream >> streamId >> packetSequence >> packetType;
+    
+    // Пропускаем резервные байты
+    for (int i = 0; i < 3; ++i) {
+        quint8 dummy;
+        stream >> dummy;
+    }
+    
+    QByteArray payload = packetData.mid(PACKET_HEADER_SIZE);
+    
+    // Обрабатываем восстановленный пакет по его типу
+    switch (packetType) {
+    case START_FRAME:
+        handleStartFrame(streamId, payload);
+        break;
+    case CONTINUE_FRAME:
+        handleContinueFrame(streamId, payload);
+        break;
+    case BOUNDARY_FRAME:
+        handleBoundaryFrame(streamId, payload);
+        break;
+    case FAILED_BOUNDARY_FRAME:
+        handleFailedBoundaryFrame(streamId, payload);
+        break;
+    default:
+        break;
+    }
+    
+    qDebug() << "Processed XOR recovered packet - Type:" << packetType << "Size:" << payload.size();
+}
+
+void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type)
+{
+    sendPacketNewProtocol(data, streamId, type, m_packetSequence++);
+}
+
+void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type, int customSequence)
+{
+    QByteArray datagram;
+    QDataStream stream(&datagram, QIODevice::WriteOnly);
+    
+    stream << streamId << customSequence << (quint8)type;
+    
+    // Резервные байты (3 байта)
+    for (int i = 0; i < 3; ++i) {
+        stream << (quint8)0;
+    }
+    
+    stream.writeRawData(data.constData(), data.size());
+    
+    qint64 sent = m_udpSocket->writeDatagram(datagram, m_serverAddress, m_serverPort);
+    
+    if (sent == -1) {
+        qDebug() << "Failed to send packet:" << m_udpSocket->errorString();
+    } else {
+        m_stats.totalPacketsSent++;
+        m_stats.totalBytesSent += data.size();
+        
+        // Сохраняем data пакеты для XOR FEC
+        if (type != XOR_FEC_PACKET) {
+            m_currentDataPackets.append(datagram);
+        }
+    }
+}
+
+void NetworkManager::sendBufferedData()
+{
+    if (m_sendBuffer.isEmpty() || !m_udpSocket) return;
+    
+    int bytesSent = 0;
+    bool isFirstPacket = true;
+    m_currentGroupStartSequence = m_packetSequence;
+    
+    while (bytesSent < m_sendBuffer.size()) {
+        int remaining = m_sendBuffer.size() - bytesSent;
+        int chunkSize;
+        QByteArray packetData;
+        
+        if (isFirstPacket) {
+            chunkSize = qMin(MAX_PAYLOAD_SIZE, remaining);
+            packetData = m_sendBuffer.mid(bytesSent, chunkSize);
+            sendPacketNewProtocol(packetData, m_streamId, START_FRAME);
+            isFirstPacket = false;
+        } else {
+            chunkSize = qMin(MAX_PAYLOAD_SIZE - 4, remaining);
+            packetData = m_sendBuffer.mid(bytesSent, chunkSize);
+            QByteArray continueData;
+            QDataStream stream(&continueData, QIODevice::WriteOnly);
+            stream << m_currentFrameNumber;
+            stream.writeRawData(packetData.constData(), packetData.size());
+            sendPacketNewProtocol(continueData, m_streamId, CONTINUE_FRAME);
+        }
+        
+        bytesSent += chunkSize;
+        
+        // Когда накопили XOR_FEC_K пакетов, отправляем XOR FEC
+        if (m_currentDataPackets.size() >= XOR_FEC_K) {
+            sendXORFECGroup(m_streamId, m_currentGroupStartSequence);
+            m_currentDataPackets.clear();
+            m_currentGroupStartSequence = m_packetSequence;
+        }
+    }
+    
+    m_sendBuffer.clear();
+}
+
+void NetworkManager::sendXORFECGroup(int streamId, int groupStartSequence)
+{
+    if (m_currentDataPackets.size() != XOR_FEC_K) return;
+    
+    // Генерируем XOR пакет
+    QByteArray xorPacket = m_xorFEC->encodeXORGroup(m_currentDataPackets);
+    if (xorPacket.isEmpty()) {
+        qWarning() << "Failed to generate XOR FEC packet";
+        return;
+    }
+    
+    // Отправляем XOR пакет
+    int xorSequence = groupStartSequence + XOR_FEC_K;
+    sendPacketNewProtocol(xorPacket, streamId, XOR_FEC_PACKET, xorSequence);
+    
+    m_stats.xorGroupsSent++;
+    qDebug() << "Sent XOR FEC group - Stream:" << streamId << "StartSeq:" << groupStartSequence;
+}
+
+// Остальные методы остаются без изменений...
 void NetworkManager::handleStartFrame(int streamId, const QByteArray& data)
 {
     if (data.size() < FRAME_HEADER_SIZE) return;
@@ -251,7 +413,7 @@ void NetworkManager::handleContinueFrame(int streamId, const QByteArray& data)
     
     StreamAssembly& assembly = m_streamAssemblies[streamId];
     
-    if (data.size() < 4) return; // Минимум frameNumber
+    if (data.size() < 4) return;
     
     QDataStream stream(data);
     int frameNumber;
@@ -270,7 +432,6 @@ void NetworkManager::handleContinueFrame(int streamId, const QByteArray& data)
 
 void NetworkManager::handleBoundaryFrame(int streamId, const QByteArray& data)
 {
-    // Сначала завершаем предыдущий фрейм
     if (m_streamAssemblies.contains(streamId)) {
         StreamAssembly& prevAssembly = m_streamAssemblies[streamId];
         if (prevAssembly.isComplete()) {
@@ -278,13 +439,11 @@ void NetworkManager::handleBoundaryFrame(int streamId, const QByteArray& data)
         }
     }
     
-    // Затем обрабатываем как START_FRAME для следующего фрейма
     handleStartFrame(streamId, data);
 }
 
 void NetworkManager::handleFailedBoundaryFrame(int streamId, const QByteArray& data)
 {
-    // Обрабатываем как CONTINUE_FRAME, но игнорируем нулевое дополнение
     handleContinueFrame(streamId, data);
 }
 
@@ -298,7 +457,6 @@ void NetworkManager::sendVideoFrame(int streamId, int frameNumber, const QByteAr
         m_streamId = streamId;
         m_currentFrameNumber = frameNumber;
         
-        // Добавляем в буфер отправки с заголовком фрейма
         QByteArray framedData;
         QDataStream stream(&framedData, QIODevice::WriteOnly);
         stream << frameNumber << (int)frameData.size();
@@ -306,7 +464,6 @@ void NetworkManager::sendVideoFrame(int streamId, int frameNumber, const QByteAr
         
         m_sendBuffer.append(framedData);
         
-        // Пытаемся отправить накопленные данные
         sendBufferedData();
         
         updateSendStats(1, frameData.size());
@@ -319,307 +476,10 @@ void NetworkManager::sendVideoFrame(int streamId, int frameNumber, const QByteAr
     }
 }
 
-void NetworkManager::processPacketNewProtocol(const QNetworkDatagram &datagram)
-{
-    QByteArray data = datagram.data();
-    if (data.size() < PACKET_HEADER_SIZE) return;
-    
-    try {
-        QDataStream stream(data);
-        int streamId, packetSequence;
-        quint8 packetType;
-        
-        stream >> streamId >> packetSequence >> packetType;
-        
-        // Пропускаем резервные байты
-        for (int i = 0; i < 3; ++i) {
-            quint8 dummy;
-            stream >> dummy;
-        }
-        
-        QByteArray payload = data.mid(PACKET_HEADER_SIZE);
-        
-        // Вычисляем groupId и packetIndex из packetSequence
-        int groupId = packetSequence / FEC_N;
-        int packetIndex = packetSequence % FEC_N;
-        
-        if (packetType == FEC_PACKET) {
-            processFECPacket(streamId, groupId, packetIndex - FEC_K, payload);
-        } else {
-            // Обработка обычных пакетов
-            switch (packetType) {
-            case START_FRAME:
-                handleStartFrame(streamId, payload);
-                break;
-            case CONTINUE_FRAME:
-                handleContinueFrame(streamId, payload);
-                break;
-            case BOUNDARY_FRAME:
-                handleBoundaryFrame(streamId, payload);
-                break;
-            case FAILED_BOUNDARY_FRAME:
-                handleFailedBoundaryFrame(streamId, payload);
-                break;
-            default:
-                qDebug() << "Unknown packet type:" << packetType;
-                break;
-            }
-            
-            // Сохраняем data пакет для FEC
-            if (packetIndex < FEC_K) {
-                QPair<int, int> groupKey = qMakePair(streamId, groupId);
-                if (!m_fecGroups.contains(groupKey)) {
-                    m_fecGroups[groupKey] = FECGroup(streamId, groupId);
-                }
-                FECGroup &group = m_fecGroups[groupKey];
-                group.dataPackets[packetIndex] = payload;
-                group.receivedPackets[packetIndex] = true;
-            }
-        }
-        
-        updateReceiveStats(1, payload.size());
-        
-    } catch (const std::exception &e) {
-        qDebug() << "Exception processing packet:" << e.what();
-    }
-}
-
-void NetworkManager::processFECPacket(int streamId, int groupId, int packetIndex, const QByteArray &data)
-{
-    QPair<int, int> groupKey = qMakePair(streamId, groupId);
-    
-    if (!m_fecGroups.contains(groupKey)) {
-        m_fecGroups[groupKey] = FECGroup(streamId, groupId);
-    }
-    
-    FECGroup &group = m_fecGroups[groupKey];
-    
-    if (packetIndex >= 0 && packetIndex < (FEC_N - FEC_K)) {
-        group.fecPackets[packetIndex] = data;
-        group.receivedFecPackets[packetIndex] = true;
-        
-        // Пытаемся восстановить группу
-        if (group.canRecover() && !group.isComplete()) {
-            if (tryRecoverFECGroup(streamId, groupId)) {
-                m_stats.fecGroupsRecovered++;
-            }
-        }
-    }
-}
-bool NetworkManager::tryRecoverFECGroup(int streamId, int groupId)
-{
-    QPair<int, int> groupKey = qMakePair(streamId, groupId);
-    if (!m_fecGroups.contains(groupKey)) return false;
-    
-    FECGroup &group = m_fecGroups[groupKey];
-    
-    // Выравниваем размеры блоков
-    int blockSize = 0;
-    QVector<QByteArray> dataBlocks(FEC_K);
-    QVector<bool> receivedBlocks(FEC_K, false);
-    
-    for (int i = 0; i < FEC_K; i++) {
-        if (group.receivedPackets[i] && group.dataPackets[i].size() > blockSize) {
-            blockSize = group.dataPackets[i].size();
-        }
-    }
-    
-    for (int i = 0; i < FEC_K; i++) {
-        if (group.receivedPackets[i]) {
-            dataBlocks[i] = group.dataPackets[i];
-            if (dataBlocks[i].size() < blockSize) {
-                dataBlocks[i].append(QByteArray(blockSize - dataBlocks[i].size(), 0));
-            }
-            receivedBlocks[i] = true;
-        }
-    }
-    
-    // Подготавливаем FEC блоки - исправляем типы
-    QVector<QByteArray> fecBlocks(FEC_N - FEC_K);
-    QVector<unsigned int> fecBlockNos; // меняем на unsigned int
-    
-    for (int i = 0; i < FEC_N - FEC_K; i++) {
-        if (group.receivedFecPackets[i]) {
-            fecBlocks[i] = group.fecPackets[i];
-            if (fecBlocks[i].size() < blockSize) {
-                fecBlocks[i].append(QByteArray(blockSize - fecBlocks[i].size(), 0));
-            }
-            fecBlockNos.append(static_cast<unsigned int>(i)); // явное преобразование
-        }
-    }
-    
-    // Определяем потерянные блоки - исправляем типы
-    QVector<unsigned int> erasedBlocks; // меняем на unsigned int
-    for (int i = 0; i < FEC_K; i++) {
-        if (!group.receivedPackets[i]) {
-            erasedBlocks.append(static_cast<unsigned int>(i)); // явное преобразование
-        }
-    }
-    
-    if (erasedBlocks.isEmpty()) return true;
-    if (fecBlockNos.size() < erasedBlocks.size()) return false;
-    
-    // Конвертируем для FEC библиотеки
-    QVector<unsigned char*> dataPtrs(FEC_K);
-    QVector<unsigned char*> fecPtrs(fecBlockNos.size());
-    
-    for (int i = 0; i < FEC_K; i++) {
-        dataPtrs[i] = receivedBlocks[i] ? 
-            reinterpret_cast<unsigned char*>(dataBlocks[i].data()) : nullptr;
-    }
-    
-    for (int i = 0; i < fecBlockNos.size(); i++) {
-        fecPtrs[i] = reinterpret_cast<unsigned char*>(fecBlocks[fecBlockNos[i]].data());
-    }
-    
-    // FEC декодирование с правильными типами
-    try {
-        FEClib::fec_decode(blockSize, dataPtrs.data(), FEC_K, 
-                          fecPtrs.data(), fecBlockNos.data(), 
-                          erasedBlocks.data(), static_cast<short>(fecBlockNos.size()));
-        
-        // Восстанавливаем потерянные пакеты
-        for (unsigned int lostIndex : erasedBlocks) {
-            if (dataPtrs[lostIndex]) {
-                QByteArray recoveredData(reinterpret_cast<char*>(dataPtrs[lostIndex]), blockSize);
-                // Обрезаем нулевое дополнение
-                int originalSize = recoveredData.size();
-                while (originalSize > 0 && recoveredData[originalSize-1] == 0) {
-                    originalSize--;
-                }
-                recoveredData.resize(originalSize);
-                
-                group.dataPackets[lostIndex] = recoveredData;
-                group.receivedPackets[lostIndex] = true;
-                m_stats.packetsRecoveredByFEC++;
-                
-                processRecoveredPacket(recoveredData);
-            }
-        }
-        return true;
-    } catch (const std::exception &e) {
-        qWarning() << "FEC decoding failed:" << e.what();
-        return false;
-    }
-}
-
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type, int customSequence)
-{
-    QByteArray datagram;
-    QDataStream stream(&datagram, QIODevice::WriteOnly);
-    
-    stream << streamId << customSequence << (quint8)type;
-    
-    // Резервные байты (3 байта)
-    for (int i = 0; i < 3; ++i) {
-        stream << (quint8)0;
-    }
-    
-    stream.writeRawData(data.constData(), data.size());
-    
-    if (datagram.size() < MAX_UDP_PACKET_SIZE) {
-        datagram.append(QByteArray(MAX_UDP_PACKET_SIZE - datagram.size(), 0));
-    }
-    
-    qint64 sent = m_udpSocket->writeDatagram(datagram, m_serverAddress, m_serverPort);
-    
-    if (sent == -1) {
-        qDebug() << "Failed to send packet:" << m_udpSocket->errorString();
-    } else {
-        m_stats.totalPacketsSent++;
-        m_stats.totalBytesSent += data.size();
-    }
-}
-
-void NetworkManager::sendBufferedData()
-{
-    if (m_sendBuffer.isEmpty() || !m_udpSocket) return;
-    
-    int bytesSent = 0;
-    bool isFirstPacket = true;
-    m_currentGroupStartSequence = m_packetSequence;
-    
-    while (bytesSent < m_sendBuffer.size()) {
-        int remaining = m_sendBuffer.size() - bytesSent;
-        int chunkSize;
-        QByteArray packetData;
-        
-        if (isFirstPacket) {
-            chunkSize = qMin(MAX_PAYLOAD_SIZE, remaining);
-            packetData = m_sendBuffer.mid(bytesSent, chunkSize);
-            sendPacketNewProtocol(packetData, m_streamId, START_FRAME);
-            isFirstPacket = false;
-        } else {
-            chunkSize = qMin(MAX_PAYLOAD_SIZE - 4, remaining);
-            packetData = m_sendBuffer.mid(bytesSent, chunkSize);
-            QByteArray continueData;
-            QDataStream stream(&continueData, QIODevice::WriteOnly);
-            stream << m_currentFrameNumber;
-            stream.writeRawData(packetData.constData(), packetData.size());
-            sendPacketNewProtocol(continueData, m_streamId, CONTINUE_FRAME);
-        }
-        
-        m_currentDataPackets.append(packetData);
-        bytesSent += chunkSize;
-        
-        // Когда накопили FEC_K пакетов, отправляем FEC
-        if (m_currentDataPackets.size() >= FEC_K) {
-            sendFECGroup(m_streamId, m_currentGroupStartSequence);
-            m_currentDataPackets.clear();
-            m_currentGroupStartSequence = m_packetSequence;
-        }
-    }
-    
-    m_sendBuffer.clear();
-}
-
-void NetworkManager::sendFECGroup(int streamId, int groupStartSequence)
-{
-    if (m_currentDataPackets.size() != FEC_K) return;
-    
-    // Выравниваем размеры
-    int maxSize = 0;
-    for (const QByteArray &packet : m_currentDataPackets) {
-        if (packet.size() > maxSize) maxSize = packet.size();
-    }
-    
-    QVector<QByteArray> alignedPackets(FEC_K);
-    for (int i = 0; i < FEC_K; i++) {
-        alignedPackets[i] = m_currentDataPackets[i];
-        if (alignedPackets[i].size() < maxSize) {
-            alignedPackets[i].append(QByteArray(maxSize - alignedPackets[i].size(), 0));
-        }
-    }
-    
-    // Генерируем FEC
-    QVector<unsigned char*> dataPtrs(FEC_K);
-    QVector<unsigned char*> fecPtrs(FEC_N - FEC_K);
-    QVector<QByteArray> fecPackets(FEC_N - FEC_K);
-    
-    for (int i = 0; i < FEC_K; i++) {
-        dataPtrs[i] = reinterpret_cast<unsigned char*>(alignedPackets[i].data());
-    }
-    
-    for (int i = 0; i < FEC_N - FEC_K; i++) {
-        fecPackets[i] = QByteArray(maxSize, 0);
-        fecPtrs[i] = reinterpret_cast<unsigned char*>(fecPackets[i].data());
-    }
-    
-    FEClib::fec_encode(maxSize, dataPtrs.data(), FEC_K, fecPtrs.data(), FEC_N - FEC_K);
-    
-    // Отправляем FEC пакеты
-    for (int i = 0; i < FEC_N - FEC_K; i++) {
-        int fecSequence = groupStartSequence + FEC_K + i;
-        sendPacketNewProtocol(fecPackets[i], streamId, FEC_PACKET, fecSequence);
-    }
-    
-    m_stats.fecGroupsSent++;
-}
-
 void NetworkManager::cleanupOldAssemblies()
 {
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
-    int cleanupThreshold = 10000; // 10 секунд
+    int cleanupThreshold = 10000;
     
     auto it = m_streamAssemblies.begin();
     while (it != m_streamAssemblies.end()) {
@@ -655,7 +515,6 @@ void NetworkManager::printStatistics()
     double sendRate = (m_stats.totalBytesSent / 1024.0) / elapsedSeconds;
     double receiveRate = (m_stats.totalBytesReceived / 1024.0) / elapsedSeconds;
     
-    // Расчет потерь
     double lossRate = 0.0;
     if (m_stats.expectedFrames.size() > 0) {
         int lostFrames = m_stats.expectedFrames.size() - m_stats.receivedFrames.size();
@@ -663,10 +522,11 @@ void NetworkManager::printStatistics()
     }
     
     QString stats = QString(
-        "=== New Protocol Statistics ===\n"
+        "=== XOR FEC Protocol Statistics ===\n"
         "Time: %1s | Frames: %2 sent, %3 received (%4% loss)\n"
         "Packets: %5 sent, %6 received | Data Rate: %7/%8 KB/s\n"
-        "Send Buffer: %9 bytes | Active Assemblies: %10\n"
+        "XOR FEC: %9 groups sent, %10 recovered, %11 packets recovered\n"
+        "Send Buffer: %12 bytes | Active Assemblies: %13\n"
         "================================="
     ).arg(elapsedSeconds, 0, 'f', 1)
      .arg(m_stats.framesSent)
@@ -676,6 +536,9 @@ void NetworkManager::printStatistics()
      .arg(m_stats.totalPacketsReceived)
      .arg(sendRate, 0, 'f', 2)
      .arg(receiveRate, 0, 'f', 2)
+     .arg(m_stats.xorGroupsSent)
+     .arg(m_stats.xorGroupsRecovered)
+     .arg(m_stats.packetsRecoveredByXOR)
      .arg(m_sendBuffer.size())
      .arg(m_streamAssemblies.size());
     
@@ -693,7 +556,6 @@ void NetworkManager::processCompleteFrame(int streamId)
     StreamAssembly& assembly = m_streamAssemblies[streamId];
     
     if (assembly.data.size() >= assembly.totalSize) {
-        // Обрезаем данные до заявленного размера (на случай дополнения нулями)
         QByteArray completeData = assembly.data.left(assembly.totalSize);
         
         emit frameAssembled(streamId, assembly.frameNumber, completeData);

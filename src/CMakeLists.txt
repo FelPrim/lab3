@@ -36,7 +36,7 @@ set(SOURCES
 	videodecoder.cpp
 	networkdisplaybuffer.cpp
 	framebuffer.cpp
- #   simplefec.cpp
+ 	simplefec.cpp
 )
 
 set(HEADERS
@@ -52,7 +52,7 @@ set(HEADERS
 	removevideodialog.h
 	videodecoder.h
 	networkdisplaybuffer.h
- #   simplefec.h
+    	simplefec.h
 	framebuffer.h
 )
 

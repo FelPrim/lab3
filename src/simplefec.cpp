@@ -15,36 +15,35 @@ int SimpleFEC::generateGroupId(int streamId, int groupId) const
     return (streamId << 16) | (groupId & 0xFFFF);
 }
 
-QByteArray SimpleFEC::encodeGroup(const QVector<QByteArray> &packets)
+QByteArray SimpleFEC::encodeXORGroup(const QVector<QByteArray> &packets)
 {
-    if (packets.size() != FEC_GROUP_SIZE) {
-        qWarning() << "FEC: Need exactly" << FEC_GROUP_SIZE << "packets for encoding, got" << packets.size();
+    if (packets.size() != XOR_FEC_K) {
+        qWarning() << "XOR FEC: Need exactly" << XOR_FEC_K << "packets for encoding, got" << packets.size();
         return QByteArray();
     }
     
-    // Простой XOR двух пакетов - УПРОЩЕНО
     return xorPackets(packets);
 }
 
-void SimpleFEC::addPacket(int streamId, int groupId, int packetType, const QByteArray &data)
+void SimpleFEC::addPacket(int streamId, int groupId, int packetIndex, const QByteArray &data)
 {
     int uniqueGroupId = generateGroupId(streamId, groupId);
     
     if (!m_groups.contains(uniqueGroupId)) {
-        m_groups[uniqueGroupId] = FECGroup();
+        m_groups[uniqueGroupId] = XORFECGroup();
     }
     
-    FECGroup &group = m_groups[uniqueGroupId];
+    XORFECGroup &group = m_groups[uniqueGroupId];
     group.lastUpdateTime = QDateTime::currentMSecsSinceEpoch();
     
-    // packetType: 0 = P1, 1 = P2, 2 = XOR
-    if (packetType >= 0 && packetType < FEC_GROUP_SIZE) {
-        if (!group.hasOriginal[packetType]) {
-            group.originalPackets[packetType] = data;
-            group.hasOriginal[packetType] = true;
+    // packetIndex: 0-3 = данные, 4 = XOR пакет
+    if (packetIndex >= 0 && packetIndex < XOR_FEC_K) {
+        if (!group.hasData[packetIndex]) {
+            group.dataPackets[packetIndex] = data;
+            group.hasData[packetIndex] = true;
         }
     } 
-    else if (packetType == FEC_GROUP_SIZE) { // XOR packet
+    else if (packetIndex == XOR_FEC_K) { // XOR packet
         if (!group.hasXor) {
             group.xorPacket = data;
             group.hasXor = true;
@@ -53,7 +52,7 @@ void SimpleFEC::addPacket(int streamId, int groupId, int packetType, const QByte
     
     // Пытаемся декодировать группу
     if (tryDecodeGroup(streamId, groupId)) {
-        emit groupDecoded(streamId, groupId, group.originalPackets);
+        emit groupDecoded(streamId, groupId, group.dataPackets);
     }
 }
 
@@ -65,11 +64,11 @@ bool SimpleFEC::tryDecodeGroup(int streamId, int groupId)
         return false;
     }
     
-    FECGroup &group = m_groups[uniqueGroupId];
+    XORFECGroup &group = m_groups[uniqueGroupId];
     
     // Проверяем, есть ли все пакеты
     bool allComplete = true;
-    for (bool has : group.hasOriginal) {
+    for (bool has : group.hasData) {
         if (!has) {
             allComplete = false;
             break;
@@ -89,7 +88,7 @@ QVector<QByteArray> SimpleFEC::getDecodedPackets(int streamId, int groupId) cons
     int uniqueGroupId = generateGroupId(streamId, groupId);
     
     if (m_groups.contains(uniqueGroupId)) {
-        return m_groups[uniqueGroupId].originalPackets;
+        return m_groups[uniqueGroupId].dataPackets;
     }
     return QVector<QByteArray>();
 }
@@ -102,8 +101,8 @@ bool SimpleFEC::isGroupComplete(int streamId, int groupId) const
         return false;
     }
     
-    const FECGroup &group = m_groups[uniqueGroupId];
-    for (bool has : group.hasOriginal) {
+    const XORFECGroup &group = m_groups[uniqueGroupId];
+    for (bool has : group.hasData) {
         if (!has) return false;
     }
     return true;
@@ -159,38 +158,40 @@ QByteArray SimpleFEC::xorPackets(const QVector<QByteArray> &packets) const
 bool SimpleFEC::recoverLostPackets(int streamId, int groupId)
 {
     int uniqueGroupId = generateGroupId(streamId, groupId);
-    FECGroup &group = m_groups[uniqueGroupId];
+    XORFECGroup &group = m_groups[uniqueGroupId];
     
-    // УПРОЩЕНО: только один потерянный пакет можно восстановить
     if (!group.hasXor) {
         return false; // Нет XOR пакета для восстановления
     }
     
+    // Подсчитываем потерянные пакеты
+    int lostCount = 0;
     int lostIndex = -1;
-    int foundCount = 0;
     
-    // Находим индекс потерянного пакета
-    for (int i = 0; i < FEC_GROUP_SIZE; ++i) {
-        if (!group.hasOriginal[i]) {
-            if (lostIndex != -1) {
-                // Больше одного потерянного пакета - не можем восстановить
-                return false;
-            }
+    for (int i = 0; i < XOR_FEC_K; ++i) {
+        if (!group.hasData[i]) {
+            lostCount++;
             lostIndex = i;
-        } else {
-            foundCount++;
         }
     }
     
-    if (lostIndex == -1 || foundCount != 1) {
-        return false; // Нет потерь или неправильное количество
+    // XOR FEC может восстановить только один потерянный пакет
+    if (lostCount != 1) {
+        return false;
     }
     
     // Восстанавливаем потерянный пакет
-    int knownIndex = (lostIndex == 0) ? 1 : 0;
-    group.originalPackets[lostIndex] = xorPackets({group.originalPackets[knownIndex], group.xorPacket});
-    group.hasOriginal[lostIndex] = true;
+    QVector<QByteArray> availablePackets;
+    for (int i = 0; i < XOR_FEC_K; ++i) {
+        if (i != lostIndex && group.hasData[i]) {
+            availablePackets.append(group.dataPackets[i]);
+        }
+    }
+    availablePackets.append(group.xorPacket);
     
-    qDebug() << "FEC: Recovered packet" << lostIndex << "in group" << groupId;
+    group.dataPackets[lostIndex] = xorPackets(availablePackets);
+    group.hasData[lostIndex] = true;
+    
+    qDebug() << "XOR FEC: Recovered packet" << lostIndex << "in group" << groupId;
     return true;
 }

@@ -43,7 +43,3 @@ inline constexpr int PACKET_HEADER_SIZE = 16;
 inline constexpr int MAX_PAYLOAD_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE;
 inline constexpr int FRAME_HEADER_SIZE = 8;
 
-
-// FEC параметры для упрощенной XOR-схемы
-inline constexpr int FEC_K = 8;  // Data packets
-inline constexpr int FEC_N = 10;  // Total packets

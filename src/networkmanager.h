@@ -8,10 +8,14 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QSet>
-#include "video_defaults.h"
 #include <QDateTime> 
 #include <QVariant>
 #include <zlib.h>
+#include "simplefec.h"
+
+// Объявляем константы здесь для networkmanager
+constexpr int XOR_FEC_K = 4;  // Data packets
+constexpr int XOR_FEC_N = 5;  // Total packets (4 data + 1 XOR)
 
 // Типы пакетов
 enum PacketType {
@@ -19,43 +23,8 @@ enum PacketType {
     CONTINUE_FRAME = 0x02,
     BOUNDARY_FRAME = 0x03,
     FAILED_BOUNDARY_FRAME = 0x04,
-    FEC_PACKET = 0x05 
+    XOR_FEC_PACKET = 0x06  // Заменяем FEC_PACKET на XOR_FEC_PACKET
 };
-
-struct FECGroup {
-    QVector<QByteArray> dataPackets;
-    QVector<bool> receivedPackets;
-    QVector<QByteArray> fecPackets;
-    QVector<bool> receivedFecPackets;
-    int streamId;
-    int groupId;
-    qint64 creationTime;
-    
-    FECGroup() : streamId(0), groupId(0), 
-                dataPackets(FEC_K), receivedPackets(FEC_K, false),
-                fecPackets(FEC_N - FEC_K), receivedFecPackets(FEC_N - FEC_K, false),
-                creationTime(QDateTime::currentMSecsSinceEpoch()) {}
-    
-    FECGroup(int stream, int group) 
-        : streamId(stream), groupId(group),
-          dataPackets(FEC_K), receivedPackets(FEC_K, false),
-          fecPackets(FEC_N - FEC_K), receivedFecPackets(FEC_N - FEC_K, false),
-          creationTime(QDateTime::currentMSecsSinceEpoch()) {}
-    
-    bool canRecover() const {
-        int receivedData = 0;
-        for (bool received : receivedPackets) if (received) receivedData++;
-        int receivedFec = 0;
-        for (bool received : receivedFecPackets) if (received) receivedFec++;
-        return receivedData + receivedFec >= FEC_K;
-    }
-    
-    bool isComplete() const {
-        for (bool received : receivedPackets) if (!received) return false;
-        return true;
-    }
-};
-
 
 // Структура для сборки фреймов
 struct StreamAssembly {
@@ -118,6 +87,7 @@ private slots:
     void onPacketReceived();
     void cleanupOldAssemblies();
     void printStatistics();
+    void onXORFECGroupDecoded(int streamId, int groupId, const QVector<QByteArray> &packets);
 
 private:
     // Сетевые методы
@@ -135,6 +105,11 @@ private:
     void handleBoundaryFrame(int streamId, const QByteArray& data);
     void handleFailedBoundaryFrame(int streamId, const QByteArray& data);
     void processCompleteFrame(int streamId);
+    
+    // XOR FEC методы
+    void sendXORFECGroup(int streamId, int groupStartSequence);
+    void processXORFECPacket(int streamId, int groupId, const QByteArray &data);
+    void processRecoveredPacket(const QByteArray &packetData);
     
     // Статистика
     void updateSendStats(int packets, int bytes);
@@ -158,6 +133,11 @@ private:
     int m_packetSequence = 0;
     int m_streamId = 0;
     
+    // XOR FEC
+    SimpleFEC *m_xorFEC;
+    QVector<QByteArray> m_currentDataPackets;
+    int m_currentGroupStartSequence = 0;
+    
     // Статистика
     struct Statistics {
         quint64 totalPacketsSent = 0;
@@ -172,29 +152,19 @@ private:
         // Для расчета потерь
         QSet<QPair<int, int>> expectedFrames;
         QSet<QPair<int, int>> receivedFrames;
-		
-		quint64 fecGroupsSent = 0;
-		quint64 fecGroupsRecovered = 0;
-		quint64 packetsRecoveredByFEC = 0;
+        
+        // XOR FEC статистика
+        quint64 xorGroupsSent = 0;
+        quint64 xorGroupsRecovered = 0;
+        quint64 packetsRecoveredByXOR = 0;
     } m_stats;
     
     QElapsedTimer m_operationTimer;
     bool m_initialized = false;
-	
-	
-	void processFECPacket(int streamId, int groupId, int packetIndex, const QByteArray &data);
-    void sendFECGroup(int streamId, int groupStartSequence);
-    bool tryRecoverFECGroup(int streamId, int groupId);
-    void processRecoveredPacket(const QByteArray &packetData);
-	
-    // FEC буферы
-    QHash<QPair<int, int>, FECGroup> m_fecGroups;
-    QVector<QByteArray> m_currentDataPackets;
-    int m_currentGroupStartSequence = 0;
     
-    // Константы протокола - ИСПРАВЛЕНО: точные размеры
+    // Константы протокола
     static const int MAX_UDP_PACKET_SIZE = 1200;
-    static const int PACKET_HEADER_SIZE = 12; // StreamID(4) + PacketNumber(4) + PacketType(1) + FrameCount(1) + резерв(2)
-    static const int MAX_PAYLOAD_SIZE = MAX_UDP_PACKET_SIZE - PACKET_HEADER_SIZE; // 1188 байт
-    static const int FRAME_HEADER_SIZE = 8; // FrameNumber(4) + FrameSize(4)
+    static const int PACKET_HEADER_SIZE = 12;
+    static const int MAX_PAYLOAD_SIZE = MAX_UDP_PACKET_SIZE - PACKET_HEADER_SIZE;
+    static const int FRAME_HEADER_SIZE = 8;
 };

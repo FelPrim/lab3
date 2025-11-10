@@ -6,7 +6,10 @@
 #include <QHash>
 #include <QTimer>
 #include <QDateTime>
-#include "video_defaults.h"
+
+// Объявляем константы здесь, чтобы избежать циклических зависимостей
+constexpr int XOR_FEC_K = 4;  // Data packets
+constexpr int XOR_FEC_N = 5;  // Total packets (4 data + 1 XOR)
 
 class SimpleFEC : public QObject
 {
@@ -15,16 +18,16 @@ class SimpleFEC : public QObject
 public:
     explicit SimpleFEC(QObject *parent = nullptr);
     
-    // Кодирование группы из 2 пакетов - УПРОЩЕНО
-    QByteArray encodeGroup(const QVector<QByteArray> &packets);
+    // Кодирование XOR для группы пакетов
+    QByteArray encodeXORGroup(const QVector<QByteArray> &packets);
     
-    // Добавление пакета для декодирования - УПРОЩЕНО
-    void addPacket(int streamId, int groupId, int packetType, const QByteArray &data);
+    // Добавление пакета для декодирования
+    void addPacket(int streamId, int groupId, int packetIndex, const QByteArray &data);
     
-    // Попытка декодирования группы - УПРОЩЕНО
+    // Попытка декодирования группы
     bool tryDecodeGroup(int streamId, int groupId);
     
-    // Получение декодированных пакетов - УПРОЩЕНО
+    // Получение декодированных пакетов
     QVector<QByteArray> getDecodedPackets(int streamId, int groupId) const;
     
     // Проверка, полностью ли декодирована группа
@@ -40,26 +43,26 @@ signals:
     void groupDecoded(int streamId, int groupId, const QVector<QByteArray> &packets);
 
 private:
-    // Вычисление XOR для пакетов - УПРОЩЕНО
+    // Вычисление XOR для пакетов
     QByteArray xorPackets(const QVector<QByteArray> &packets) const;
     
-    // Восстановление потерянных пакетов - УПРОЩЕНО
+    // Восстановление потерянных пакетов
     bool recoverLostPackets(int streamId, int groupId);
     
     // Генерация уникального ID группы
     int generateGroupId(int streamId, int groupId) const;
 
-    struct FECGroup {
-        QVector<QByteArray> originalPackets;    // P1, P2
-        QVector<bool> hasOriginal;              // Флаги наличия оригинальных пакетов
-        QByteArray xorPacket;                   // XOR пакет (P1 ^ P2)
+    struct XORFECGroup {
+        QVector<QByteArray> dataPackets;    // P0, P1, P2, P3
+        QVector<bool> hasData;              // Флаги наличия пакетов данных
+        QByteArray xorPacket;               // XOR пакет (P0 ^ P1 ^ P2 ^ P3)
         bool hasXor = false;
         qint64 lastUpdateTime;
         
-        FECGroup() : originalPackets(2), hasOriginal(2, false), 
-                    lastUpdateTime(QDateTime::currentMSecsSinceEpoch()) {}
+        XORFECGroup() : dataPackets(XOR_FEC_K), hasData(XOR_FEC_K, false), 
+                       lastUpdateTime(QDateTime::currentMSecsSinceEpoch()) {}
     };
     
-    QHash<int, FECGroup> m_groups;
+    QHash<int, XORFECGroup> m_groups;
     QTimer *m_cleanupTimer;
 };
