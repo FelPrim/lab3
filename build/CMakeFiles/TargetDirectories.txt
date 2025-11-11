@@ -1,0 +1,9 @@
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/test_myfec.dir
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/test_packet_format.dir
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/VideoCapture.dir
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/test.dir
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/edit_cache.dir
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/rebuild_cache.dir
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/test_myfec_autogen.dir
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/test_packet_format_autogen.dir
+/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/VideoCapture_autogen.dir

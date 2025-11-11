@@ -1,419 +1,324 @@
 #include "mainwindow.h"
-#include "videoselectiondialog.h"
-#include "removevideodialog.h"
 #include "darktheme.h"
-#include "video_defaults.h"
-#include "networkdisplaybuffer.h"  // Будет реализован позже для сетевого эхо
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
+#include <QInputDialog>
+#include <QLineEdit>
+#include <QFrame>
+#include <QFont>
+#include <QRegularExpression>
 #include <QDebug>
-#include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , m_btnAddVideo(nullptr)
-    , m_btnRemoveVideo(nullptr)
-    , m_btnRefresh(nullptr)
+    , m_btnStartStream(nullptr)
+    , m_btnJoinStream(nullptr)
+    , m_connectionStatusLabel(nullptr)
     , m_infoLabel(nullptr)
-    , m_videoContainer(nullptr)
-    , m_videoLayout(nullptr)
-    , m_networkManager(new NetworkManager(this))
+    , m_streamManager(new StreamManager(this))
 {
     setupUI();
     setupConnections();
     
-    // Инициализируем NetworkManager
-    if (m_networkManager->initialize()) {
-        m_networkManager->start();
-        qDebug() << "NetworkManager initialized successfully";
-    } else {
-        qWarning() << "Failed to initialize NetworkManager";
-    }
+    // Initialize stream manager
+    m_streamManager->initialize();
+    m_streamManager->setServerAddress("127.0.0.1", 8080);
+    m_streamManager->connectToServer();
     
-    refreshDevices();
-    
-    // Принудительно устанавливаем минимальный размер окна
-    setMinimumSize(800, 600);
-    
-    // Показываем окно ДО обновления layout
-    show();
-    
-    // Небольшая задержка для инициализации GUI, затем обновляем layout
-    QTimer::singleShot(100, this, &MainWindow::updateVideoLayout);
+    setMinimumSize(500, 400);
 }
 
 MainWindow::~MainWindow()
 {
-    // Останавливаем все захваты видео
-    for (auto capture : m_videoCaptures) {
-        if (capture) {
-            capture->stopCapture();
-            capture->wait();
-            capture->deleteLater();
-        }
-    }
-    
-    // Останавливаем NetworkManager
-    if (m_networkManager) {
-        m_networkManager->stop();
-        m_networkManager->deleteLater();
-    }
+    m_streamManager->disconnectFromServer();
+    m_streamManager->cleanup();
 }
 
 void MainWindow::setupUI()
 {
-    // Apply dark theme
     DarkTheme::applyToApplication();
     
-    setWindowTitle("Multi-Video Stream");
-    setMinimumSize(800, 600);
+    setWindowTitle("Video Streaming Client");
     
-    // Central widget
+    // Central widget with same style as stream windows
     auto central = new QWidget(this);
+    central->setObjectName("centralWidget");
+    central->setStyleSheet(
+        "#centralWidget {"
+        "   background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1,"
+        "                               stop: 0 #1e1e2e, stop: 1 #252536);"
+        "}"
+    );
+    
     auto mainLayout = new QVBoxLayout(central);
-    mainLayout->setSpacing(10);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
+    mainLayout->setSpacing(25);
+    mainLayout->setContentsMargins(40, 40, 40, 40);
     
-    // Top control panel
-    auto topPanel = new QWidget(this);
-    auto topLayout = new QHBoxLayout(topPanel);
-    topLayout->setContentsMargins(0, 0, 0, 0);
+    // Header only
+    auto headerLabel = new QLabel("Video Streaming", this);
+    headerLabel->setAlignment(Qt::AlignCenter);
+    headerLabel->setStyleSheet(
+        "font-size: 24px;"
+        "font-weight: 300;"
+        "color: #e0e0e0;"
+        "padding: 20px 0;"
+        "margin-bottom: 10px;"
+    );
+    mainLayout->addWidget(headerLabel);
     
-    m_btnAddVideo = new QPushButton("➕ Add Video", this);
-    m_btnRemoveVideo = new QPushButton("➖ Remove Video", this);
-    m_btnRefresh = new QPushButton("🔄 Refresh", this);
+    // Connection status
+    m_connectionStatusLabel = new QLabel("● Disconnected", this);
+    m_connectionStatusLabel->setAlignment(Qt::AlignCenter);
+    m_connectionStatusLabel->setStyleSheet(
+        "font-size: 13px;"
+        "font-weight: 500;"
+        "padding: 8px 20px;"
+        "background: #333;"
+        "color: #999;"
+        "border: 1px solid #444;"
+        "border-radius: 12px;"
+        "margin: 10px 0;"
+    );
+    mainLayout->addWidget(m_connectionStatusLabel);
     
-    topLayout->addWidget(m_btnAddVideo);
-    topLayout->addWidget(m_btnRemoveVideo);
-    topLayout->addWidget(m_btnRefresh);
-    topLayout->addStretch();
-    
-    mainLayout->addWidget(topPanel);
-
-    // Video container without scroll area
-    m_videoContainer = new QWidget(this);
-    m_videoLayout = new QGridLayout(m_videoContainer);
-    m_videoLayout->setSpacing(MARGIN);
-    m_videoLayout->setContentsMargins(MARGIN, MARGIN, MARGIN, MARGIN);
-    
-    mainLayout->addWidget(m_videoContainer, 1);
-
-    m_infoLabel = new QLabel("Click 'Add Video' to start capturing", this);
+    // Info label with same style as stream windows
+    m_infoLabel = new QLabel("Select an action to begin streaming", this);
     m_infoLabel->setAlignment(Qt::AlignCenter);
-    m_infoLabel->setStyleSheet("color: #888; font-size: 14px; padding: 10px; background: transparent;");
+    m_infoLabel->setStyleSheet(
+        "color: #adb5bd;"
+        "font-size: 13px;"
+        "padding: 12px;"
+        "background: rgba(255, 255, 255, 0.05);"
+        "border: 1px solid #444;"
+        "border-radius: 6px;"
+        "margin: 10px 0;"
+    );
     mainLayout->addWidget(m_infoLabel);
-
+    
+    mainLayout->addStretch();
+    
+    // Action buttons container
+    auto buttonContainer = new QWidget(this);
+    buttonContainer->setStyleSheet("background: transparent;");
+    auto buttonLayout = new QVBoxLayout(buttonContainer);
+    buttonLayout->setSpacing(12);
+    buttonLayout->setContentsMargins(0, 0, 0, 0);
+    
+    // Start Stream button
+    m_btnStartStream = new QPushButton("Start Streaming", this);
+    m_btnStartStream->setMinimumHeight(50);
+    m_btnStartStream->setStyleSheet(
+        "QPushButton {"
+        "   background: #2a2a2a;"
+        "   color: #e0e0e0;"
+        "   font-size: 14px;"
+        "   font-weight: 500;"
+        "   border: 1px solid #444;"
+        "   border-radius: 8px;"
+        "   padding: 12px;"
+        "}"
+        "QPushButton:hover {"
+        "   background: #333;"
+        "   border: 1px solid #555;"
+        "}"
+        "QPushButton:pressed {"
+        "   background: #3a3a3a;"
+        "   border: 1px solid #666;"
+        "}"
+        "QPushButton:disabled {"
+        "   background: #1a1a1a;"
+        "   color: #555;"
+        "   border: 1px solid #333;"
+        "}"
+    );
+    
+    // Join Stream button
+    m_btnJoinStream = new QPushButton("Join Stream", this);
+    m_btnJoinStream->setMinimumHeight(50);
+    m_btnJoinStream->setStyleSheet(
+        "QPushButton {"
+        "   background: #2a2a2a;"
+        "   color: #e0e0e0;"
+        "   font-size: 14px;"
+        "   font-weight: 500;"
+        "   border: 1px solid #444;"
+        "   border-radius: 8px;"
+        "   padding: 12px;"
+        "}"
+        "QPushButton:hover {"
+        "   background: #333;"
+        "   border: 1px solid #555;"
+        "}"
+        "QPushButton:pressed {"
+        "   background: #3a3a3a;"
+        "   border: 1px solid #666;"
+        "}"
+        "QPushButton:disabled {"
+        "   background: #1a1a1a;"
+        "   color: #555;"
+        "   border: 1px solid #333;"
+        "}"
+    );
+    
+    buttonLayout->addWidget(m_btnStartStream);
+    buttonLayout->addWidget(m_btnJoinStream);
+    
+    mainLayout->addWidget(buttonContainer);
+    mainLayout->addStretch();
+    
     setCentralWidget(central);
 }
 
 void MainWindow::setupConnections()
 {
-    connect(m_btnRefresh, &QPushButton::clicked, this, &MainWindow::refreshDevices);
-    connect(m_btnAddVideo, &QPushButton::clicked, this, &MainWindow::addVideo);
-    connect(m_btnRemoveVideo, &QPushButton::clicked, this, &MainWindow::removeVideo);
+    connect(m_btnStartStream, &QPushButton::clicked, this, &MainWindow::onStartStreamClicked);
+    connect(m_btnJoinStream, &QPushButton::clicked, this, &MainWindow::onJoinStreamClicked);
     
-    // Соединяем NetworkManager с методом обработки собранных фреймов
-    connect(m_networkManager, &NetworkManager::frameAssembled, 
-            this, &MainWindow::onFrameAssembled);
-    connect(m_networkManager, &NetworkManager::errorOccurred,
-            this, &MainWindow::onError);
+    // Stream manager signals
+    connect(m_streamManager, &StreamManager::streamWindowCreated, 
+            this, &MainWindow::onStreamWindowCreated);
+    connect(m_streamManager, &StreamManager::streamWindowClosed,
+            this, &MainWindow::onStreamWindowClosed);
+    connect(m_streamManager, &StreamManager::connectionStatusChanged,
+            this, &MainWindow::onConnectionStatusChanged);
+    connect(m_streamManager, &StreamManager::errorOccurred,
+            this, [this](const QString& error) {
+                QMessageBox::warning(this, "Error", error);
+            });
 }
 
-void MainWindow::refreshDevices()
+void MainWindow::onStartStreamClicked()
 {
-    m_availableDevices.clear();
+    qDebug() << "Start stream button clicked";
     
-    qDebug() << "Scanning for video devices...";
-    for (int i = 0; i < 10; ++i) {
-        cv::VideoCapture cap;
-#ifdef _WIN32
-        try {
-            cap.open(i, cv::CAP_DSHOW);
-        } catch (...) {
-            continue;
-        }
-#else
-#ifdef __linux__
-        if (!cap.open(i, cv::CAP_V4L2)) continue;
-#else
-#ifdef __APPLE__
-        if (!cap.open(i, cv::CAP_AVFOUNDATION)) continue;
-#endif
-        if (!cap.open(i)) continue;
-#endif
-#endif
-        if (cap.isOpened()) {
-            m_availableDevices.append(i);
-            qDebug() << "Found device:" << i;
-            cap.release();
-        }
-    }
-
-    if (m_availableDevices.isEmpty()) {
-        m_infoLabel->setText("No cameras found. Click 'Refresh' to scan again.");
-    } else {
-        m_infoLabel->setText(QString("Found %1 camera(s). Click 'Add Video' to start.").arg(m_availableDevices.size()));
-    }
+    // Заглушка: всегда используем устройство 0
+    int deviceIndex = 0;
+    m_streamManager->createStream(deviceIndex);
     
-    updateVideoLayout();
+    m_infoLabel->setText("Creating new stream...");
+    m_infoLabel->setStyleSheet(
+        "color: #888;"
+        "font-size: 13px;"
+        "padding: 12px;"
+        "background: #252525;"
+        "border: 1px solid #444;"
+        "border-radius: 6px;"
+        "margin: 10px 0;"
+    );
 }
 
-void MainWindow::addVideo()
+void MainWindow::onJoinStreamClicked()
 {
-    // Determine available devices (excluding already used ones)
-    QList<int> available;
-    for (int device : m_availableDevices) {
-        if (!m_usedDevices.contains(device)) {
-            available.append(device);
-        }
-    }
+    qDebug() << "Join stream button clicked";
     
-    if (available.isEmpty()) {
-        QMessageBox::information(this, "No Devices", "No available devices to add.");
-        return;
-    }
-    
-    int selectedDevice;
-    if (available.size() == 1) {
-        selectedDevice = available.first();
-    } else {
-        VideoSelectionDialog dialog(available, this);
-        if (dialog.exec() == QDialog::Accepted) {
-            selectedDevice = available[dialog.selectedDevice()];
-        } else {
+    bool ok;
+    QString streamId = QInputDialog::getText(this, "Join Stream", 
+                                           "Enter 6-character Stream ID:",
+                                           QLineEdit::Normal, "", &ok);
+    if (ok && !streamId.isEmpty()) {
+        // Проверяем формат ID
+        if (streamId.length() != 6) {
+            QMessageBox::warning(this, "Invalid ID", "Stream ID must be exactly 6 characters");
             return;
         }
-    }
-    
-    int streamId = m_videoCaptures.size();
-    
-    // 1. Создаем окно для прямого показа
-    VideoDisplay *sourceDisplay = new VideoDisplay(this);
-    sourceDisplay->setStreamId(streamId);
-    m_sourceDisplays.append(sourceDisplay);
-    
-    // 2. Создаем окно для сетевого эхо
-    VideoDisplay *networkDisplay = new VideoDisplay(this);
-    networkDisplay->setStreamId(streamId);
-    m_networkDisplays.append(networkDisplay);
-	
-	// 3. Создаем буфер для сетевого отображения
-    NetworkDisplayBuffer *networkBuffer = new NetworkDisplayBuffer(
-        streamId, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS, this);
-    m_networkBuffers.append(networkBuffer);
-    
-    // 4. Создаем захват видео
-    VideoCapture *videoCapture = new VideoCapture(selectedDevice, this);
-    m_videoCaptures.append(videoCapture);
-    
-    // 5. Создаем кодировщик
-    VideoEncoder *videoEncoder = new VideoEncoder(streamId, this);
-    m_videoEncoders.append(videoEncoder);
-    
-    // Соединяем сигналы:
-    
-    // Прямой показ
-    connect(videoCapture, &VideoCapture::rawFrameReady,
-            sourceDisplay, &VideoDisplay::displayFrame);
-    
-    // Кодирование
-    connect(videoCapture, &VideoCapture::frameForEncodingReady,
-            videoEncoder, &VideoEncoder::encodeFrame);
-    
-    // Отправка по сети
-    connect(videoEncoder, &VideoEncoder::encodedPacketReady,
-            m_networkManager, &NetworkManager::sendVideoFrame);
-    
-	// Получение сетевых фреймов
-    connect(m_networkManager, &NetworkManager::frameAssembled,
-            this, &MainWindow::onFrameAssembled);
-    
-    // Сетевой показ
-    connect(networkBuffer, &NetworkDisplayBuffer::frameReady,
-            networkDisplay, &VideoDisplay::displayFrameFromNetwork);
-	
-    // Обработка ошибок
-    connect(videoCapture, &VideoCapture::errorOccurred,
-            this, &MainWindow::onError);
-    connect(videoEncoder, &VideoEncoder::errorOccurred,
-            this, &MainWindow::onError);
-    
-    // Инициализируем компоненты
-    videoEncoder->initialize(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS);
-    networkBuffer->initialize();
-    
-    // Запускаем захват
-    videoCapture->startCapture();
-    m_usedDevices.append(selectedDevice);
-    
-    updateVideoLayout();
-    
-    m_infoLabel->setText(QString("Added video from camera #%1").arg(selectedDevice));
-    qDebug() << "Added video stream" << streamId << "from device" << selectedDevice;
-}
-
-void MainWindow::removeVideo()
-{
-    if (m_videoCaptures.isEmpty()) {
-        QMessageBox::information(this, "No Videos", "No active video streams to remove.");
-        return;
-    }
-    
-    // Show selection dialog for multiple videos
-    if (m_videoCaptures.size() > 1) {
-        RemoveVideoDialog dialog(m_videoCaptures, this);
-        if (dialog.exec() == QDialog::Accepted && dialog.selectedIndex() >= 0) {
-            removeVideoAtIndex(dialog.selectedIndex());
+        
+        // Проверяем что все символы - заглавные буквы
+        QRegularExpression regex("^[A-Z]{6}$");
+        if (!regex.match(streamId).hasMatch()) {
+            QMessageBox::warning(this, "Invalid ID", "Stream ID must contain only uppercase letters (A-Z)");
+            return;
         }
+        
+        m_streamManager->joinStream(streamId);
+        m_infoLabel->setText("Joining stream: " + streamId);
+        m_infoLabel->setStyleSheet(
+            "color: #888;"
+            "font-size: 13px;"
+            "padding: 12px;"
+            "background: #252525;"
+            "border: 1px solid #444;"
+            "border-radius: 6px;"
+            "margin: 10px 0;"
+        );
+    }
+}
+
+void MainWindow::onStreamWindowCreated(StreamWindow *window)
+{
+    if (!window) return;
+    
+    // Определяем streamId из заголовка окна или другим способом
+    int streamId = window->getStreamId();
+    m_openWindows[streamId] = window;
+    
+    // Показываем окно
+    window->show();
+    window->raise();
+    window->activateWindow();
+    
+    qDebug() << "Stream window created with ID:" << streamId;
+    m_infoLabel->setText(QString("Active streams: %1").arg(m_openWindows.size()));
+    m_infoLabel->setStyleSheet(
+        "color: #aaa;"
+        "font-size: 13px;"
+        "padding: 12px;"
+        "background: #252525;"
+        "border: 1px solid #444;"
+        "border-radius: 6px;"
+        "margin: 10px 0;"
+    );
+}
+
+void MainWindow::onStreamWindowClosed(int streamId)
+{
+    m_openWindows.remove(streamId);
+    qDebug() << "Stream window closed, ID:" << streamId;
+    m_infoLabel->setText(QString("Active streams: %1").arg(m_openWindows.size()));
+    
+    if (m_openWindows.isEmpty()) {
+        m_infoLabel->setText("Select an action to begin streaming");
+        m_infoLabel->setStyleSheet(
+            "color: #666;"
+            "font-size: 13px;"
+            "padding: 12px;"
+            "background: #222;"
+            "border: 1px solid #333;"
+            "border-radius: 6px;"
+            "margin: 10px 0;"
+        );
+    }
+}
+
+void MainWindow::onConnectionStatusChanged(bool connected)
+{
+    if (connected) {
+        m_connectionStatusLabel->setText("● Connected");
+        m_connectionStatusLabel->setStyleSheet(
+            "font-size: 13px;"
+            "font-weight: 500;"
+            "padding: 8px 20px;"
+            "background: #1a3a1a;"
+            "color: #8bc34a;"
+            "border: 1px solid #2a5a2a;"
+            "border-radius: 12px;"
+            "margin: 10px 0;"
+        );
+        m_btnStartStream->setEnabled(true);
+        m_btnJoinStream->setEnabled(true);
     } else {
-        // Only one video - remove it directly
-        removeVideoAtIndex(0);
+        m_connectionStatusLabel->setText("● Disconnected");
+        m_connectionStatusLabel->setStyleSheet(
+            "font-size: 13px;"
+            "font-weight: 500;"
+            "padding: 8px 20px;"
+            "background: #333;"
+            "color: #999;"
+            "border: 1px solid #444;"
+            "border-radius: 12px;"
+            "margin: 10px 0;"
+        );
+        m_btnStartStream->setEnabled(false);
+        m_btnJoinStream->setEnabled(false);
     }
-}
-
-void MainWindow::removeVideoAtIndex(int index)
-{
-    if (index < 0 || index >= m_videoCaptures.size()) return;
-    
-    qDebug() << "Removing video stream at index:" << index;
-    
-    // Останавливаем и удаляем захват
-    VideoCapture *capture = m_videoCaptures[index];
-    int deviceIndex = capture->getDeviceIndex();
-    
-    capture->stopCapture();
-    capture->wait();
-    capture->deleteLater();
-    m_videoCaptures.removeAt(index);
-    
-    // Удаляем кодировщик
-    VideoEncoder *encoder = m_videoEncoders[index];
-    encoder->cleanup();
-    encoder->deleteLater();
-    m_videoEncoders.removeAt(index);
-    
-    // Удаляем буфер сетевого отображения
-    NetworkDisplayBuffer *buffer = m_networkBuffers[index];
-    buffer->cleanup();
-    buffer->deleteLater();
-    m_networkBuffers.removeAt(index);
-    
-    // Удаляем окна показа
-    VideoDisplay *sourceDisplay = m_sourceDisplays[index];
-    VideoDisplay *networkDisplay = m_networkDisplays[index];
-    sourceDisplay->deleteLater();
-    networkDisplay->deleteLater();
-    m_sourceDisplays.removeAt(index);
-    m_networkDisplays.removeAt(index);
-    
-    // Обновляем used devices
-    m_usedDevices.removeAll(deviceIndex);
-    
-    updateVideoLayout();
-    
-    m_infoLabel->setText(QString("Removed video from camera #%1").arg(deviceIndex));
-    qDebug() << "Removed video stream" << index << "from device" << deviceIndex;
-}
-
-void MainWindow::resizeEvent(QResizeEvent *event)
-{
-    QMainWindow::resizeEvent(event);
-    updateVideoLayout();
-}
-
-void MainWindow::updateVideoLayout()
-{
-    // Clear existing layout
-    QLayoutItem* item;
-    while ((item = m_videoLayout->takeAt(0)) != nullptr) {
-        delete item;
-    }
-    
-    int sourceCount = m_sourceDisplays.size();
-    int totalCount = sourceCount * 2;
-    
-    if (totalCount == 0) {
-        m_infoLabel->setText("No active video streams. Click 'Add Video' to start.");
-        m_btnRemoveVideo->setEnabled(false);
-        
-        // Принудительно обновляем контейнер когда нет видео
-        m_videoContainer->updateGeometry();
-        return;
-    }
-    
-    // Calculate optimal layout - используем минимальные размеры для расчета
-    QSize containerSize = m_videoContainer->size();
-    if (containerSize.isEmpty()) {
-        // Если контейнер еще не имеет размера, используем размер окна
-        containerSize = size() - QSize(40, 120); // Отступы
-    }
-    
-    auto layout = VideoLayoutCalculator::calculateLayout(totalCount, containerSize);
-    
-    // Setup new grid dimensions
-    for (int i = 0; i < layout.rows; ++i) {
-        m_videoLayout->setRowStretch(i, 1);
-    }
-    for (int i = 0; i < layout.cols; ++i) {
-        m_videoLayout->setColumnStretch(i, 1);
-    }
-    
-    // Position videos according to calculated layout
-    int displayIndex = 0;
-    
-    // Сначала размещаем прямые показы (source displays)
-    for (int i = 0; i < sourceCount; i++) {
-        VideoDisplay *display = m_sourceDisplays[i];
-        display->setVisible(true);
-        
-        auto pos = layout.positions[displayIndex];
-        m_videoLayout->addWidget(display, pos.first, pos.second, 1, 1);
-        displayIndex++;
-    }
-    
-    // Затем размещаем сетевые эхо (network displays)
-    for (int i = 0; i < sourceCount; i++) {
-        VideoDisplay *display = m_networkDisplays[i];
-        display->setVisible(true);
-        
-        auto pos = layout.positions[displayIndex];
-        m_videoLayout->addWidget(display, pos.first, pos.second, 1, 1);
-        displayIndex++;
-    }
-    
-    // Принудительные обновления геометрии
-    m_videoLayout->update();
-    m_videoLayout->activate();  // Важно: активируем layout
-    
-    m_videoContainer->updateGeometry();
-    m_videoContainer->update();
-    
-    // Update UI state
-    m_btnRemoveVideo->setEnabled(true);
-    m_btnAddVideo->setEnabled(m_availableDevices.size() > m_usedDevices.size());
-    m_infoLabel->setText(QString("Displaying %1 video streams (%2 sources + %2 echoes)")
-                        .arg(totalCount).arg(sourceCount));
-    
-    qDebug() << "Video layout updated. Container size:" << m_videoContainer->size()
-             << "Video size:" << layout.videoSize
-             << "Total displays:" << totalCount;
-}
-
-void MainWindow::onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData)
-{
-    qDebug() << "Frame assembled - Stream:" << streamId << "Frame:" << frameNumber << "Size:" << frameData.size();
-    
-    // Передаем собранный фрейм в соответствующий буфер для отображения
-    if (streamId >= 0 && streamId < m_networkBuffers.size()) {
-        m_networkBuffers[streamId]->addFrame(frameNumber, frameData);
-    } else {
-        qWarning() << "Received frame for unknown stream:" << streamId;
-    }
-}
-
-void MainWindow::onError(const QString &msg)
-{
-    QMessageBox::warning(this, "Error", msg);
-    qWarning() << "Error occurred:" << msg;
 }

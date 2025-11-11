@@ -180,10 +180,16 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
 
             // Создаем контекст масштабирования если нужно
             if (!m_sws_dec) {
+		 /*
                 m_sws_dec = sws_getContext(m_dec_frame->width, m_dec_frame->height,
                                         (AVPixelFormat)m_dec_frame->format,
                                         m_targetWidth, m_targetHeight, AV_PIX_FMT_RGB24,
                                         SWS_BILINEAR, nullptr, nullptr, nullptr);
+		*/
+		m_sws_dec = sws_getContext(m_dec_frame->width, m_dec_frame->height,
+                            (AVPixelFormat)m_dec_frame->format,
+                            m_dec_frame->width, m_dec_frame->height, AV_PIX_FMT_RGB24,  
+                            SWS_BILINEAR, nullptr, nullptr, nullptr);
                 if (!m_sws_dec) {
                     emit errorOccurred("sws_getContext(dec) failed");
                     av_frame_unref(m_dec_frame);
@@ -210,8 +216,9 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
             }
 
             // Создаем QImage и эмитируем сигнал
-            QImage img(dst_data[0], m_targetWidth, m_targetHeight, dst_linesize[0], QImage::Format_RGB888);
-            if (!img.isNull()) {
+            // QImage img(dst_data[0], m_targetWidth, m_targetHeight, dst_linesize[0], QImage::Format_RGB888);
+            QImage img(dst_data[0], m_dec_frame->width, m_dec_frame->height, dst_linesize[0], QImage::Format_RGB888);
+	    if (!img.isNull()) {
                 emit frameDecoded(img.copy(), frameNumber);
             } else {
                 qWarning() << "Failed to create QImage from decoded data for frame" << frameNumber;

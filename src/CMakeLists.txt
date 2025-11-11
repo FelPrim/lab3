@@ -14,52 +14,94 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 # ---------------------------------------------------------------------------
-# Other dependencies
+# Dependencies
 # ---------------------------------------------------------------------------
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Test)
 find_package(OpenCV REQUIRED)
 
 # ---------------------------------------------------------------------------
-# Sources & headers
+# Test executables (commented out as in original)
+# ---------------------------------------------------------------------------
+#enable_testing()
+#qt_add_executable(test_myfec test_myfec.cpp myfec.cpp)
+#qt_add_executable(test_packet_format test_packet_format.cpp myfec.cpp)
+#target_link_libraries(test_myfec PRIVATE Qt6::Test Qt6::Core ${OpenCV_LIBS})
+#target_link_libraries(test_packet_format PRIVATE Qt6::Test Qt6::Core ${OpenCV_LIBS})
+#target_include_directories(test_myfec PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+#target_include_directories(test_packet_format PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+#add_test(NAME test_myfec COMMAND test_myfec)
+#add_test(NAME test_packet_format COMMAND test_packet_format)
+
+# ---------------------------------------------------------------------------
+# Sources & headers (combined from old and new)
 # ---------------------------------------------------------------------------
 set(SOURCES
     main.cpp
     mainwindow.cpp
-	videocapture.cpp
-	videodisplay.cpp
-	videoencoder.cpp
-	networkmanager.cpp
-	videoselectiondialog.cpp
-	videolayoutcalculator.cpp
-	darktheme.cpp
-	removevideodialog.cpp
-	videodecoder.cpp
-	networkdisplaybuffer.cpp
-	framebuffer.cpp
- 	simplefec.cpp
+    videocapture.cpp
+    videodisplay.cpp
+    videoencoder.cpp
+    networkmanager.cpp
+    videoselectiondialog.cpp
+    videolayoutcalculator.cpp
+    darktheme.cpp
+    removevideodialog.cpp
+    videodecoder.cpp
+    networkdisplaybuffer.cpp
+    framebuffer.cpp
+    myfec.cpp
+    
+    new/tcpclient.cpp
+
+    # New GUI files
+    new/streammanager.cpp
+    new/streampublisherwindow.cpp
+    new/streamviewerwindow.cpp
+    new/streamcontrolpanel.cpp
+    new/streamvideodisplaypanel.cpp
+    new/streamidinputwidget.cpp
+    new/deviceselectorwidget.cpp
+    new/streamstatswidget.cpp
+    new/streamwindow.cpp
 )
 
 set(HEADERS
     video_defaults.h
     mainwindow.h
-	videocapture.h
-	videodisplay.h
-	videoencoder.h
-	networkmanager.h
-	videoselectiondialog.h
-	videolayoutcalculator.h
-	darktheme.h
-	removevideodialog.h
-	videodecoder.h
-	networkdisplaybuffer.h
-    	simplefec.h
-	framebuffer.h
+    videocapture.h
+    videodisplay.h
+    videoencoder.h
+    networkmanager.h
+    videoselectiondialog.h
+    videolayoutcalculator.h
+    darktheme.h
+    removevideodialog.h
+    videodecoder.h
+    networkdisplaybuffer.h
+    framebuffer.h
+    myfec.h
+    network_packet.h
+    
+    # New GUI headers
+    new/streammanager.h
+    new/streampublisherwindow.h
+    new/streamviewerwindow.h
+    new/streamcontrolpanel.h
+    new/streamvideodisplaypanel.h
+    new/streamidinputwidget.h
+    new/deviceselectorwidget.h
+    new/streamstatswidget.h
+    new/tcpclient.h
+    new/streamwindow.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
+# Include directories
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
 # ---------------------------------------------------------------------------
-# FEC Library (feclib)
+# FEC Library (feclib) - from original version
 # ---------------------------------------------------------------------------
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     # Windows
@@ -92,16 +134,8 @@ else()
     target_link_libraries(${PROJECT_NAME} PRIVATE "${FEC_ROOT}/lib/libfeclib.a")
 endif()
 
-# Link Qt + OpenCV
-target_link_libraries(${PROJECT_NAME} PRIVATE 
-	Qt6::Core 
-    Qt6::Gui 
-    Qt6::Widgets 
-    Qt6::Network 
-    ${OpenCV_LIBS})
-
 # ---------------------------------------------------------------------------
-# FFmpeg
+# FFmpeg - from original version
 # ---------------------------------------------------------------------------
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     # Windows — используем локальный FFMPEG_ROOT
@@ -136,3 +170,18 @@ else()
 
     target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl m z)
 endif()
+
+# ---------------------------------------------------------------------------
+# Link dependencies (combined)
+# ---------------------------------------------------------------------------
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    Qt6::Core 
+    Qt6::Gui 
+    Qt6::Widgets 
+    Qt6::Network 
+    Qt6::Test
+    ${OpenCV_LIBS})
+
+# Debug info
+message(STATUS "Source files: ${SOURCES}")
+message(STATUS "Header files: ${HEADERS}")

@@ -4,6 +4,7 @@
 #include <exception>
 #include "darktheme.h"
 
+
 int main(int argc, char *argv[])
 {
 	try {

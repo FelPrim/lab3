@@ -1,0 +1,42 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/VideoCapture_autogen.dir/AutogenUsed.txt"
+  "CMakeFiles/VideoCapture_autogen.dir/ParseCache.txt"
+  "VideoCapture_autogen"
+  "CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o"
+  "CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/darktheme.cpp.o"
+  "CMakeFiles/VideoCapture.dir/darktheme.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/framebuffer.cpp.o"
+  "CMakeFiles/VideoCapture.dir/framebuffer.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/main.cpp.o"
+  "CMakeFiles/VideoCapture.dir/main.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/mainwindow.cpp.o"
+  "CMakeFiles/VideoCapture.dir/mainwindow.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/myfec.cpp.o"
+  "CMakeFiles/VideoCapture.dir/myfec.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o"
+  "CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/networkmanager.cpp.o"
+  "CMakeFiles/VideoCapture.dir/networkmanager.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o"
+  "CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/videocapture.cpp.o"
+  "CMakeFiles/VideoCapture.dir/videocapture.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/videodecoder.cpp.o"
+  "CMakeFiles/VideoCapture.dir/videodecoder.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/videodisplay.cpp.o"
+  "CMakeFiles/VideoCapture.dir/videodisplay.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/videoencoder.cpp.o"
+  "CMakeFiles/VideoCapture.dir/videoencoder.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o"
+  "CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o.d"
+  "CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o"
+  "CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o.d"
+  "VideoCapture"
+  "VideoCapture.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/VideoCapture.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()
