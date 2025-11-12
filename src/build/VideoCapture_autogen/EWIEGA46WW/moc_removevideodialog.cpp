@@ -1,19 +1,25 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'removevideodialog.h'
 **
-** Created by: The Qt Meta Object Compiler version 68 (Qt 6.4.2)
+** Created by: The Qt Meta Object Compiler version 69 (Qt 6.10.0)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include <memory>
 #include "../../../removevideodialog.h"
 #include <QtGui/qtextcursor.h>
 #include <QtCore/qmetatype.h>
+
+#include <QtCore/qtmochelpers.h>
+
+#include <memory>
+
+
+#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'removevideodialog.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 68
-#error "This file was generated using the moc from 6.4.2. It"
+#elif Q_MOC_OUTPUT_REVISION != 69
+#error "This file was generated using the moc from 6.10.0. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -22,79 +28,52 @@
 #define Q_CONSTINIT
 #endif
 
-QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
+QT_WARNING_DISABLE_GCC("-Wuseless-cast")
 namespace {
-struct qt_meta_stringdata_RemoveVideoDialog_t {
-    uint offsetsAndSizes[8];
-    char stringdata0[18];
-    char stringdata1[15];
-    char stringdata2[1];
-    char stringdata3[6];
-};
-#define QT_MOC_LITERAL(ofs, len) \
-    uint(sizeof(qt_meta_stringdata_RemoveVideoDialog_t::offsetsAndSizes) + ofs), len 
-Q_CONSTINIT static const qt_meta_stringdata_RemoveVideoDialog_t qt_meta_stringdata_RemoveVideoDialog = {
-    {
-        QT_MOC_LITERAL(0, 17),  // "RemoveVideoDialog"
-        QT_MOC_LITERAL(18, 14),  // "onItemSelected"
-        QT_MOC_LITERAL(33, 0),  // ""
-        QT_MOC_LITERAL(34, 5)   // "index"
-    },
-    "RemoveVideoDialog",
-    "onItemSelected",
-    "",
-    "index"
-};
-#undef QT_MOC_LITERAL
+struct qt_meta_tag_ZN17RemoveVideoDialogE_t {};
 } // unnamed namespace
 
-Q_CONSTINIT static const uint qt_meta_data_RemoveVideoDialog[] = {
+template <> constexpr inline auto RemoveVideoDialog::qt_create_metaobjectdata<qt_meta_tag_ZN17RemoveVideoDialogE_t>()
+{
+    namespace QMC = QtMocConstants;
+    QtMocHelpers::StringRefStorage qt_stringData {
+        "RemoveVideoDialog",
+        "onItemSelected",
+        "",
+        "index"
+    };
 
- // content:
-      10,       // revision
-       0,       // classname
-       0,    0, // classinfo
-       1,   14, // methods
-       0,    0, // properties
-       0,    0, // enums/sets
-       0,    0, // constructors
-       0,       // flags
-       0,       // signalCount
-
- // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    1,   20,    2, 0x08,    1 /* Private */,
-
- // slots: parameters
-    QMetaType::Void, QMetaType::Int,    3,
-
-       0        // eod
-};
-
+    QtMocHelpers::UintData qt_methods {
+        // Slot 'onItemSelected'
+        QtMocHelpers::SlotData<void(int)>(1, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Int, 3 },
+        }}),
+    };
+    QtMocHelpers::UintData qt_properties {
+    };
+    QtMocHelpers::UintData qt_enums {
+    };
+    return QtMocHelpers::metaObjectData<RemoveVideoDialog, qt_meta_tag_ZN17RemoveVideoDialogE_t>(QMC::MetaObjectFlag{}, qt_stringData,
+            qt_methods, qt_properties, qt_enums);
+}
 Q_CONSTINIT const QMetaObject RemoveVideoDialog::staticMetaObject = { {
     QMetaObject::SuperData::link<QDialog::staticMetaObject>(),
-    qt_meta_stringdata_RemoveVideoDialog.offsetsAndSizes,
-    qt_meta_data_RemoveVideoDialog,
+    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN17RemoveVideoDialogE_t>.stringdata,
+    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN17RemoveVideoDialogE_t>.data,
     qt_static_metacall,
     nullptr,
-    qt_incomplete_metaTypeArray<qt_meta_stringdata_RemoveVideoDialog_t,
-        // Q_OBJECT / Q_GADGET
-        QtPrivate::TypeAndForceComplete<RemoveVideoDialog, std::true_type>,
-        // method 'onItemSelected'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>
-    >,
+    qt_staticMetaObjectRelocatingContent<qt_meta_tag_ZN17RemoveVideoDialogE_t>.metaTypes,
     nullptr
 } };
 
 void RemoveVideoDialog::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
+    auto *_t = static_cast<RemoveVideoDialog *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
-        auto *_t = static_cast<RemoveVideoDialog *>(_o);
-        (void)_t;
         switch (_id) {
-        case 0: _t->onItemSelected((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 0: _t->onItemSelected((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;
         default: ;
         }
     }
@@ -108,7 +87,7 @@ const QMetaObject *RemoveVideoDialog::metaObject() const
 void *RemoveVideoDialog::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_RemoveVideoDialog.stringdata0))
+    if (!strcmp(_clname, qt_staticMetaObjectStaticContent<qt_meta_tag_ZN17RemoveVideoDialogE_t>.strings))
         return static_cast<void*>(this);
     return QDialog::qt_metacast(_clname);
 }
@@ -122,7 +101,8 @@ int RemoveVideoDialog::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         if (_id < 1)
             qt_static_metacall(this, _c, _id, _a);
         _id -= 1;
-    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+    }
+    if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 1)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 1;
@@ -130,4 +110,3 @@ int RemoveVideoDialog::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     return _id;
 }
 QT_WARNING_POP
-QT_END_MOC_NAMESPACE

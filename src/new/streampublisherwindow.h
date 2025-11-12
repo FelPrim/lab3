@@ -14,7 +14,8 @@ class StreamPublisherWindow : public StreamWindow
     Q_OBJECT
 
 public:
-    explicit StreamPublisherWindow(int streamId, QWidget *parent = nullptr);
+    // Теперь конструктор принимает deviceIndex
+    explicit StreamPublisherWindow(int streamId, int deviceIndex, QWidget *parent = nullptr);
     ~StreamPublisherWindow();
 
     // StreamWindow interface
@@ -37,13 +38,14 @@ public slots:
 
 private slots:
     void onStopRequested();
-    void onDeviceSelected(int deviceIndex);
     void onVideoError(const QString &message);
 
 private:
     void setupUI();
     void setupConnections();
     void updateStatusLabel();
+    void initializeVideoCapture();
+    void cleanupVideoCapture();
 
     int m_streamId;
     QString m_displayId;
@@ -52,13 +54,15 @@ private:
 
     // Специфичные для ведущего виджеты
     StreamControlPanel *m_controlPanel;
-    DeviceSelectorWidget *m_deviceSelector;
+    //DeviceSelectorWidget *m_deviceSelector; // удалено: выбор устройства — снаружи
     StreamVideoDisplayPanel *m_videoDisplay;
     StreamStatsWidget *m_statsWidget;
 
     // Видео компоненты
     VideoCapture *m_videoCapture;
     VideoEncoder *m_videoEncoder;
+
+    int m_deviceIndex; // выбранный индекс устройства
 
     static const QString STATUS_NO_VIEWERS;
     static const QString STATUS_HAS_VIEWERS;

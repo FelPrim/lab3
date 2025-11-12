@@ -1,4 +1,5 @@
-/home/aprihodko/t/GitHub/my_scripts/lab3_1/src/build/CMakeFiles/VideoCapture.dir
-/home/aprihodko/t/GitHub/my_scripts/lab3_1/src/build/CMakeFiles/edit_cache.dir
-/home/aprihodko/t/GitHub/my_scripts/lab3_1/src/build/CMakeFiles/rebuild_cache.dir
-/home/aprihodko/t/GitHub/my_scripts/lab3_1/src/build/CMakeFiles/VideoCapture_autogen.dir
+T:/GitHub/my_scripts/lab3/src/build/CMakeFiles/VideoCapture.dir
+T:/GitHub/my_scripts/lab3/src/build/CMakeFiles/edit_cache.dir
+T:/GitHub/my_scripts/lab3/src/build/CMakeFiles/rebuild_cache.dir
+T:/GitHub/my_scripts/lab3/src/build/CMakeFiles/VideoCapture_autogen_timestamp_deps.dir
+T:/GitHub/my_scripts/lab3/src/build/CMakeFiles/VideoCapture_autogen.dir

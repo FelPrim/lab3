@@ -1,18 +1,24 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'videodecoder.h'
 **
-** Created by: The Qt Meta Object Compiler version 68 (Qt 6.4.2)
+** Created by: The Qt Meta Object Compiler version 69 (Qt 6.10.0)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include <memory>
 #include "../../../videodecoder.h"
 #include <QtCore/qmetatype.h>
+
+#include <QtCore/qtmochelpers.h>
+
+#include <memory>
+
+
+#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'videodecoder.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 68
-#error "This file was generated using the moc from 6.4.2. It"
+#elif Q_MOC_OUTPUT_REVISION != 69
+#error "This file was generated using the moc from 6.10.0. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -21,140 +27,82 @@
 #define Q_CONSTINIT
 #endif
 
-QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
+QT_WARNING_DISABLE_GCC("-Wuseless-cast")
 namespace {
-struct qt_meta_stringdata_VideoDecoder_t {
-    uint offsetsAndSizes[20];
-    char stringdata0[13];
-    char stringdata1[13];
-    char stringdata2[1];
-    char stringdata3[6];
-    char stringdata4[12];
-    char stringdata5[14];
-    char stringdata6[8];
-    char stringdata7[12];
-    char stringdata8[10];
-    char stringdata9[20];
-};
-#define QT_MOC_LITERAL(ofs, len) \
-    uint(sizeof(qt_meta_stringdata_VideoDecoder_t::offsetsAndSizes) + ofs), len 
-Q_CONSTINIT static const qt_meta_stringdata_VideoDecoder_t qt_meta_stringdata_VideoDecoder = {
-    {
-        QT_MOC_LITERAL(0, 12),  // "VideoDecoder"
-        QT_MOC_LITERAL(13, 12),  // "frameDecoded"
-        QT_MOC_LITERAL(26, 0),  // ""
-        QT_MOC_LITERAL(27, 5),  // "image"
-        QT_MOC_LITERAL(33, 11),  // "frameNumber"
-        QT_MOC_LITERAL(45, 13),  // "errorOccurred"
-        QT_MOC_LITERAL(59, 7),  // "message"
-        QT_MOC_LITERAL(67, 11),  // "decodeFrame"
-        QT_MOC_LITERAL(79, 9),  // "frameData"
-        QT_MOC_LITERAL(89, 19)   // "decodeFrameInternal"
-    },
-    "VideoDecoder",
-    "frameDecoded",
-    "",
-    "image",
-    "frameNumber",
-    "errorOccurred",
-    "message",
-    "decodeFrame",
-    "frameData",
-    "decodeFrameInternal"
-};
-#undef QT_MOC_LITERAL
+struct qt_meta_tag_ZN12VideoDecoderE_t {};
 } // unnamed namespace
 
-Q_CONSTINIT static const uint qt_meta_data_VideoDecoder[] = {
+template <> constexpr inline auto VideoDecoder::qt_create_metaobjectdata<qt_meta_tag_ZN12VideoDecoderE_t>()
+{
+    namespace QMC = QtMocConstants;
+    QtMocHelpers::StringRefStorage qt_stringData {
+        "VideoDecoder",
+        "frameDecoded",
+        "",
+        "QImage",
+        "image",
+        "frameNumber",
+        "errorOccurred",
+        "message",
+        "decodeFrame",
+        "frameData",
+        "decodeFrameInternal"
+    };
 
- // content:
-      10,       // revision
-       0,       // classname
-       0,    0, // classinfo
-       4,   14, // methods
-       0,    0, // properties
-       0,    0, // enums/sets
-       0,    0, // constructors
-       0,       // flags
-       2,       // signalCount
-
- // signals: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    2,   38,    2, 0x06,    1 /* Public */,
-       5,    1,   43,    2, 0x06,    4 /* Public */,
-
- // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       7,    2,   46,    2, 0x0a,    6 /* Public */,
-       9,    2,   51,    2, 0x0a,    9 /* Public */,
-
- // signals: parameters
-    QMetaType::Void, QMetaType::QImage, QMetaType::Int,    3,    4,
-    QMetaType::Void, QMetaType::QString,    6,
-
- // slots: parameters
-    QMetaType::Void, QMetaType::QByteArray, QMetaType::Int,    8,    4,
-    QMetaType::Void, QMetaType::QByteArray, QMetaType::Int,    8,    4,
-
-       0        // eod
-};
-
+    QtMocHelpers::UintData qt_methods {
+        // Signal 'frameDecoded'
+        QtMocHelpers::SignalData<void(const QImage &, int)>(1, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { 0x80000000 | 3, 4 }, { QMetaType::Int, 5 },
+        }}),
+        // Signal 'errorOccurred'
+        QtMocHelpers::SignalData<void(const QString &)>(6, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 7 },
+        }}),
+        // Slot 'decodeFrame'
+        QtMocHelpers::SlotData<void(const QByteArray &, int)>(8, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QByteArray, 9 }, { QMetaType::Int, 5 },
+        }}),
+        // Slot 'decodeFrameInternal'
+        QtMocHelpers::SlotData<void(const QByteArray &, int)>(10, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QByteArray, 9 }, { QMetaType::Int, 5 },
+        }}),
+    };
+    QtMocHelpers::UintData qt_properties {
+    };
+    QtMocHelpers::UintData qt_enums {
+    };
+    return QtMocHelpers::metaObjectData<VideoDecoder, qt_meta_tag_ZN12VideoDecoderE_t>(QMC::MetaObjectFlag{}, qt_stringData,
+            qt_methods, qt_properties, qt_enums);
+}
 Q_CONSTINIT const QMetaObject VideoDecoder::staticMetaObject = { {
     QMetaObject::SuperData::link<QObject::staticMetaObject>(),
-    qt_meta_stringdata_VideoDecoder.offsetsAndSizes,
-    qt_meta_data_VideoDecoder,
+    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN12VideoDecoderE_t>.stringdata,
+    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN12VideoDecoderE_t>.data,
     qt_static_metacall,
     nullptr,
-    qt_incomplete_metaTypeArray<qt_meta_stringdata_VideoDecoder_t,
-        // Q_OBJECT / Q_GADGET
-        QtPrivate::TypeAndForceComplete<VideoDecoder, std::true_type>,
-        // method 'frameDecoded'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<const QImage &, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>,
-        // method 'errorOccurred'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<const QString &, std::false_type>,
-        // method 'decodeFrame'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<const QByteArray &, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>,
-        // method 'decodeFrameInternal'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        QtPrivate::TypeAndForceComplete<const QByteArray &, std::false_type>,
-        QtPrivate::TypeAndForceComplete<int, std::false_type>
-    >,
+    qt_staticMetaObjectRelocatingContent<qt_meta_tag_ZN12VideoDecoderE_t>.metaTypes,
     nullptr
 } };
 
 void VideoDecoder::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
+    auto *_t = static_cast<VideoDecoder *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
-        auto *_t = static_cast<VideoDecoder *>(_o);
-        (void)_t;
         switch (_id) {
-        case 0: _t->frameDecoded((*reinterpret_cast< std::add_pointer_t<QImage>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2]))); break;
-        case 1: _t->errorOccurred((*reinterpret_cast< std::add_pointer_t<QString>>(_a[1]))); break;
-        case 2: _t->decodeFrame((*reinterpret_cast< std::add_pointer_t<QByteArray>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2]))); break;
-        case 3: _t->decodeFrameInternal((*reinterpret_cast< std::add_pointer_t<QByteArray>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[2]))); break;
+        case 0: _t->frameDecoded((*reinterpret_cast<std::add_pointer_t<QImage>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2]))); break;
+        case 1: _t->errorOccurred((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
+        case 2: _t->decodeFrame((*reinterpret_cast<std::add_pointer_t<QByteArray>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2]))); break;
+        case 3: _t->decodeFrameInternal((*reinterpret_cast<std::add_pointer_t<QByteArray>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2]))); break;
         default: ;
         }
-    } else if (_c == QMetaObject::IndexOfMethod) {
-        int *result = reinterpret_cast<int *>(_a[0]);
-        {
-            using _t = void (VideoDecoder::*)(const QImage & , int );
-            if (_t _q_method = &VideoDecoder::frameDecoded; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
-                *result = 0;
-                return;
-            }
-        }
-        {
-            using _t = void (VideoDecoder::*)(const QString & );
-            if (_t _q_method = &VideoDecoder::errorOccurred; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
-                *result = 1;
-                return;
-            }
-        }
+    }
+    if (_c == QMetaObject::IndexOfMethod) {
+        if (QtMocHelpers::indexOfMethod<void (VideoDecoder::*)(const QImage & , int )>(_a, &VideoDecoder::frameDecoded, 0))
+            return;
+        if (QtMocHelpers::indexOfMethod<void (VideoDecoder::*)(const QString & )>(_a, &VideoDecoder::errorOccurred, 1))
+            return;
     }
 }
 
@@ -166,7 +114,7 @@ const QMetaObject *VideoDecoder::metaObject() const
 void *VideoDecoder::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_VideoDecoder.stringdata0))
+    if (!strcmp(_clname, qt_staticMetaObjectStaticContent<qt_meta_tag_ZN12VideoDecoderE_t>.strings))
         return static_cast<void*>(this);
     return QObject::qt_metacast(_clname);
 }
@@ -180,7 +128,8 @@ int VideoDecoder::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         if (_id < 4)
             qt_static_metacall(this, _c, _id, _a);
         _id -= 4;
-    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+    }
+    if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 4)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 4;
@@ -191,15 +140,12 @@ int VideoDecoder::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 // SIGNAL 0
 void VideoDecoder::frameDecoded(const QImage & _t1, int _t2)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
-    QMetaObject::activate(this, &staticMetaObject, 0, _a);
+    QMetaObject::activate<void>(this, &staticMetaObject, 0, nullptr, _t1, _t2);
 }
 
 // SIGNAL 1
 void VideoDecoder::errorOccurred(const QString & _t1)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
-    QMetaObject::activate(this, &staticMetaObject, 1, _a);
+    QMetaObject::activate<void>(this, &staticMetaObject, 1, nullptr, _t1);
 }
 QT_WARNING_POP
-QT_END_MOC_NAMESPACE

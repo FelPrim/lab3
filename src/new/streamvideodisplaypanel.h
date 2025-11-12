@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QLabel>
 #include <QVBoxLayout>
+#include "../videodisplay.h"
 
 class StreamVideoDisplayPanel : public QWidget
 {
@@ -22,8 +23,9 @@ public slots:
 
 private:
     void setupUI();
-    
-    QLabel *m_videoLabel;
+    void clearPlaceholder();
+
+    VideoDisplay *m_videoDisplayWidget; // делегируем отображение
     QLabel *m_placeholderLabel;
     QVBoxLayout *m_layout;
 };

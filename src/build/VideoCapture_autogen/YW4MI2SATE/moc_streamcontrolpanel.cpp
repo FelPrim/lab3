@@ -1,19 +1,25 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'streamcontrolpanel.h'
 **
-** Created by: The Qt Meta Object Compiler version 68 (Qt 6.4.2)
+** Created by: The Qt Meta Object Compiler version 69 (Qt 6.10.0)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include <memory>
 #include "../../../new/streamcontrolpanel.h"
 #include <QtGui/qtextcursor.h>
 #include <QtCore/qmetatype.h>
+
+#include <QtCore/qtmochelpers.h>
+
+#include <memory>
+
+
+#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'streamcontrolpanel.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 68
-#error "This file was generated using the moc from 6.4.2. It"
+#elif Q_MOC_OUTPUT_REVISION != 69
+#error "This file was generated using the moc from 6.10.0. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -22,98 +28,56 @@
 #define Q_CONSTINIT
 #endif
 
-QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
+QT_WARNING_DISABLE_GCC("-Wuseless-cast")
 namespace {
-struct qt_meta_stringdata_StreamControlPanel_t {
-    uint offsetsAndSizes[12];
-    char stringdata0[19];
-    char stringdata1[14];
-    char stringdata2[1];
-    char stringdata3[15];
-    char stringdata4[14];
-    char stringdata5[15];
-};
-#define QT_MOC_LITERAL(ofs, len) \
-    uint(sizeof(qt_meta_stringdata_StreamControlPanel_t::offsetsAndSizes) + ofs), len 
-Q_CONSTINIT static const qt_meta_stringdata_StreamControlPanel_t qt_meta_stringdata_StreamControlPanel = {
-    {
-        QT_MOC_LITERAL(0, 18),  // "StreamControlPanel"
-        QT_MOC_LITERAL(19, 13),  // "stopRequested"
-        QT_MOC_LITERAL(33, 0),  // ""
-        QT_MOC_LITERAL(34, 14),  // "leaveRequested"
-        QT_MOC_LITERAL(49, 13),  // "onStopClicked"
-        QT_MOC_LITERAL(63, 14)   // "onLeaveClicked"
-    },
-    "StreamControlPanel",
-    "stopRequested",
-    "",
-    "leaveRequested",
-    "onStopClicked",
-    "onLeaveClicked"
-};
-#undef QT_MOC_LITERAL
+struct qt_meta_tag_ZN18StreamControlPanelE_t {};
 } // unnamed namespace
 
-Q_CONSTINIT static const uint qt_meta_data_StreamControlPanel[] = {
+template <> constexpr inline auto StreamControlPanel::qt_create_metaobjectdata<qt_meta_tag_ZN18StreamControlPanelE_t>()
+{
+    namespace QMC = QtMocConstants;
+    QtMocHelpers::StringRefStorage qt_stringData {
+        "StreamControlPanel",
+        "stopRequested",
+        "",
+        "leaveRequested",
+        "onStopClicked",
+        "onLeaveClicked"
+    };
 
- // content:
-      10,       // revision
-       0,       // classname
-       0,    0, // classinfo
-       4,   14, // methods
-       0,    0, // properties
-       0,    0, // enums/sets
-       0,    0, // constructors
-       0,       // flags
-       2,       // signalCount
-
- // signals: name, argc, parameters, tag, flags, initial metatype offsets
-       1,    0,   38,    2, 0x06,    1 /* Public */,
-       3,    0,   39,    2, 0x06,    2 /* Public */,
-
- // slots: name, argc, parameters, tag, flags, initial metatype offsets
-       4,    0,   40,    2, 0x08,    3 /* Private */,
-       5,    0,   41,    2, 0x08,    4 /* Private */,
-
- // signals: parameters
-    QMetaType::Void,
-    QMetaType::Void,
-
- // slots: parameters
-    QMetaType::Void,
-    QMetaType::Void,
-
-       0        // eod
-};
-
+    QtMocHelpers::UintData qt_methods {
+        // Signal 'stopRequested'
+        QtMocHelpers::SignalData<void()>(1, 2, QMC::AccessPublic, QMetaType::Void),
+        // Signal 'leaveRequested'
+        QtMocHelpers::SignalData<void()>(3, 2, QMC::AccessPublic, QMetaType::Void),
+        // Slot 'onStopClicked'
+        QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'onLeaveClicked'
+        QtMocHelpers::SlotData<void()>(5, 2, QMC::AccessPrivate, QMetaType::Void),
+    };
+    QtMocHelpers::UintData qt_properties {
+    };
+    QtMocHelpers::UintData qt_enums {
+    };
+    return QtMocHelpers::metaObjectData<StreamControlPanel, qt_meta_tag_ZN18StreamControlPanelE_t>(QMC::MetaObjectFlag{}, qt_stringData,
+            qt_methods, qt_properties, qt_enums);
+}
 Q_CONSTINIT const QMetaObject StreamControlPanel::staticMetaObject = { {
     QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_meta_stringdata_StreamControlPanel.offsetsAndSizes,
-    qt_meta_data_StreamControlPanel,
+    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN18StreamControlPanelE_t>.stringdata,
+    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN18StreamControlPanelE_t>.data,
     qt_static_metacall,
     nullptr,
-    qt_incomplete_metaTypeArray<qt_meta_stringdata_StreamControlPanel_t,
-        // Q_OBJECT / Q_GADGET
-        QtPrivate::TypeAndForceComplete<StreamControlPanel, std::true_type>,
-        // method 'stopRequested'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'leaveRequested'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'onStopClicked'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>,
-        // method 'onLeaveClicked'
-        QtPrivate::TypeAndForceComplete<void, std::false_type>
-    >,
+    qt_staticMetaObjectRelocatingContent<qt_meta_tag_ZN18StreamControlPanelE_t>.metaTypes,
     nullptr
 } };
 
 void StreamControlPanel::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
+    auto *_t = static_cast<StreamControlPanel *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
-        auto *_t = static_cast<StreamControlPanel *>(_o);
-        (void)_t;
         switch (_id) {
         case 0: _t->stopRequested(); break;
         case 1: _t->leaveRequested(); break;
@@ -121,24 +85,13 @@ void StreamControlPanel::qt_static_metacall(QObject *_o, QMetaObject::Call _c, i
         case 3: _t->onLeaveClicked(); break;
         default: ;
         }
-    } else if (_c == QMetaObject::IndexOfMethod) {
-        int *result = reinterpret_cast<int *>(_a[0]);
-        {
-            using _t = void (StreamControlPanel::*)();
-            if (_t _q_method = &StreamControlPanel::stopRequested; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
-                *result = 0;
-                return;
-            }
-        }
-        {
-            using _t = void (StreamControlPanel::*)();
-            if (_t _q_method = &StreamControlPanel::leaveRequested; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
-                *result = 1;
-                return;
-            }
-        }
     }
-    (void)_a;
+    if (_c == QMetaObject::IndexOfMethod) {
+        if (QtMocHelpers::indexOfMethod<void (StreamControlPanel::*)()>(_a, &StreamControlPanel::stopRequested, 0))
+            return;
+        if (QtMocHelpers::indexOfMethod<void (StreamControlPanel::*)()>(_a, &StreamControlPanel::leaveRequested, 1))
+            return;
+    }
 }
 
 const QMetaObject *StreamControlPanel::metaObject() const
@@ -149,7 +102,7 @@ const QMetaObject *StreamControlPanel::metaObject() const
 void *StreamControlPanel::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_StreamControlPanel.stringdata0))
+    if (!strcmp(_clname, qt_staticMetaObjectStaticContent<qt_meta_tag_ZN18StreamControlPanelE_t>.strings))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
@@ -163,7 +116,8 @@ int StreamControlPanel::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         if (_id < 4)
             qt_static_metacall(this, _c, _id, _a);
         _id -= 4;
-    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+    }
+    if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 4)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 4;
@@ -183,4 +137,3 @@ void StreamControlPanel::leaveRequested()
     QMetaObject::activate(this, &staticMetaObject, 1, nullptr);
 }
 QT_WARNING_POP
-QT_END_MOC_NAMESPACE
