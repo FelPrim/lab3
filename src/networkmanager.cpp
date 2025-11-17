@@ -1,4 +1,5 @@
 #include "networkmanager.h"
+#include "new/udpmanager.h"  // Добавляем для полного определения UDPManager
 #include <QDataStream>
 #include <QDebug>
 #include <QNetworkInterface>
@@ -6,18 +7,16 @@
 #include "network_packet.h"
 #include "video_defaults.h"
 
-#define FEC_FLAG 0x80
-#define PACKET_TYPE_MASK 0x7F
-
-NetworkManager::NetworkManager(QObject *parent)
+// Конструктор должен быть упрощен без инициализации полей, которые были удалены
+NetworkManager::NetworkManager(int streamId, QObject *parent)
     : QObject(parent)
+    , m_streamId(streamId)
     , m_serverAddress(DEFAULT_ECHO_SERVER_ADDRESS)
     , m_serverPort(DEFAULT_ECHO_SERVER_PORT)
-    , m_localPort(0)
     , m_frameAssembler(new FrameAssembler(this))
     , m_frameSender(new FrameSender(this))
 {
-    qDebug() << "NetworkManager: Constructor";
+    qDebug() << "NetworkManager created for stream:" << streamId;
     
     connect(m_frameAssembler, &FrameAssembler::frameAssembled,
             this, &NetworkManager::onFrameAssembled); 
@@ -26,44 +25,48 @@ NetworkManager::NetworkManager(QObject *parent)
 NetworkManager::~NetworkManager()
 {
     cleanup();
-    qDebug() << "NetworkManager: Destructor";
+    qDebug() << "NetworkManager: Destructor for stream" << m_streamId;
 }
 
-bool NetworkManager::initialize()
+bool NetworkManager::initialize(UDPManager *udpManager)
 {
     if (m_initialized) {
         return true;
     }
 
-    try {
-        setupSocket();
-        
-        // Создаем таймеры
-        m_cleanupTimer = new QTimer(this);
-        m_cleanupTimer->setInterval(5000); // Очистка каждые 5 секунд
-        connect(m_cleanupTimer, &QTimer::timeout, this, &NetworkManager::cleanupOldAssemblies);
-        
-        m_statsTimer = new QTimer(this);
-        m_statsTimer->setInterval(5000);
-        connect(m_statsTimer, &QTimer::timeout, this, &NetworkManager::printStatistics);
-        
-        m_operationTimer.start();
-        m_initialized = true;
-        
-        qDebug() << "NetworkManager: Initialized successfully";
-        qDebug() << "Server:" << m_serverAddress.toString() << ":" << m_serverPort;
-        qDebug() << "Local port:" << m_localPort;
-        
-        return true;
-        
-    } catch (const std::exception &e) {
-        emit errorOccurred(QString("NetworkManager initialization failed: %1").arg(e.what()));
+    if (!udpManager) {
+        qCritical() << "NetworkManager: UDPManager is null for stream" << m_streamId;
         return false;
     }
+
+    m_udpManager = udpManager;
+    m_udpManager->registerNetworkManager(m_streamId, this);
+
+    // Создаем таймеры
+    m_cleanupTimer = new QTimer(this);
+    m_cleanupTimer->setInterval(5000); // Очистка каждые 5 секунд
+    connect(m_cleanupTimer, &QTimer::timeout, this, &NetworkManager::cleanupOldAssemblies);
+    
+    m_statsTimer = new QTimer(this);
+    m_statsTimer->setInterval(5000);
+    connect(m_statsTimer, &QTimer::timeout, this, &NetworkManager::printStatistics);
+    
+    m_operationTimer.start();
+    m_initialized = true;
+    
+    qDebug() << "NetworkManager: Initialized for stream" << m_streamId;
+    qDebug() << "Server:" << m_serverAddress.toString() << ":" << m_serverPort;
+    
+    return true;
 }
 
 void NetworkManager::cleanup()
 {
+    // Отписываемся от UDPManager
+    if (m_udpManager) {
+        m_udpManager->unregisterNetworkManager(m_streamId);
+    }
+    
     if (m_cleanupTimer) {
         m_cleanupTimer->stop();
         delete m_cleanupTimer;
@@ -76,69 +79,21 @@ void NetworkManager::cleanup()
         m_statsTimer = nullptr;
     }
     
-    if (m_udpSocket) {
-        m_udpSocket->close();
-        delete m_udpSocket;
-        m_udpSocket = nullptr;
-    }
-    
-    
     m_initialized = false;
     
-    qDebug() << "NetworkManager: Cleaned up";
-}
-
-void NetworkManager::setupSocket()
-{
-    if (m_udpSocket) {
-        m_udpSocket->close();
-        delete m_udpSocket;
-    }
-    
-    m_udpSocket = new QUdpSocket(this);
-    // Увеличиваем размеры буферов
-    m_udpSocket->setSocketOption(QAbstractSocket::SendBufferSizeSocketOption, QVariant(1024 * 1024));
-    m_udpSocket->setSocketOption(QAbstractSocket::ReceiveBufferSizeSocketOption, QVariant(1024 * 1024));
-    
-    // Используем фиксированный порт из video_defaults
-    m_localPort = DEFAULT_UDP_CLIENT_PORT;
-    
-    // Пробуем привязаться к фиксированному порту
-    if (!m_udpSocket->bind(QHostAddress::Any, m_localPort)) {
-        QString error = QString("Failed to bind UDP socket to port %1: %2")
-                          .arg(m_localPort).arg(m_udpSocket->errorString());
-        qCritical() << error;
-        
-        // Fallback: пробуем любой доступный порт
-        if (!m_udpSocket->bind(QHostAddress::Any, 0)) {
-            emit errorOccurred(QString("Failed to bind UDP socket to any port: %1")
-                              .arg(m_udpSocket->errorString()));
-            return;
-        }
-        m_localPort = m_udpSocket->localPort();
-        qWarning() << "Falling back to port:" << m_localPort;
-    }
-    
-    connect(m_udpSocket, &QUdpSocket::readyRead, this, &NetworkManager::onPacketReceived);
-    
-    // Обработчики ошибок
-    connect(m_udpSocket, &QUdpSocket::errorOccurred, this, [this](QAbstractSocket::SocketError error) {
-        qWarning() << "UDP Socket error:" << error << m_udpSocket->errorString();
-    });
-    
-    qDebug() << "NetworkManager: Socket bound to port" << m_localPort;
+    qDebug() << "NetworkManager: Cleaned up for stream" << m_streamId;
 }
 
 void NetworkManager::start()
 {
-    if (!m_initialized && !initialize()) {
+    if (!m_initialized && !initialize(m_udpManager)) {
         return;
     }
     
     if (m_cleanupTimer) m_cleanupTimer->start();
     if (m_statsTimer) m_statsTimer->start();
     
-    qDebug() << "NetworkManager: Started";
+    qDebug() << "NetworkManager: Started for stream" << m_streamId;
 }
 
 void NetworkManager::stop()
@@ -146,7 +101,7 @@ void NetworkManager::stop()
     if (m_cleanupTimer) m_cleanupTimer->stop();
     if (m_statsTimer) m_statsTimer->stop();
     
-    qDebug() << "NetworkManager: Stopped";
+    qDebug() << "NetworkManager: Stopped for stream" << m_streamId;
 }
 
 void NetworkManager::setServerAddress(const QString &address, quint16 port)
@@ -156,25 +111,12 @@ void NetworkManager::setServerAddress(const QString &address, quint16 port)
     qDebug() << "NetworkManager: Server address set to" << address << ":" << port;
 }
 
-void NetworkManager::onPacketReceived()
+// Заменяем onPacketReceived на processPacketFromNetwork
+void NetworkManager::processPacketFromNetwork(const QByteArray &data, const QHostAddress &sender, quint16 port)
 {
-    if (!m_udpSocket) return;
-    
-    while (m_udpSocket->hasPendingDatagrams()) {
-        try {
-            QNetworkDatagram datagram = m_udpSocket->receiveDatagram();
-            
-            if (!datagram.isValid()) {
-                qWarning() << "Received invalid datagram";
-                continue;
-            }
-            
-            processPacketNewProtocol(datagram);
-            
-        } catch (const std::exception &e) {
-            qCritical() << "Exception in onPacketReceived:" << e.what();
-        }
-    }
+    Q_UNUSED(sender);
+    Q_UNUSED(port);
+    processPacketNewProtocol(data);
 }
 
 void NetworkManager::onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData)
@@ -186,28 +128,25 @@ void NetworkManager::onFrameAssembled(int streamId, int frameNumber, const QByte
     emit frameAssembled(streamId, frameNumber, frameData);
 }
 
-
-
-void NetworkManager::sendVideoFrame(int streamId, int frameNumber, const QByteArray &frameData)
+void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray &frameData)
 {
-    if (!m_initialized || !m_udpSocket) {
+    if (!m_initialized || !m_udpManager || !m_sendingEnabled) {
         return;
     }
     
     try {
-        m_streamId = streamId;
-        m_frameSender->addFrame(streamId, frameNumber, frameData);
+        m_frameSender->addFrame(m_streamId, frameNumber, frameData);
         
         // Отправляем все готовые пакеты сразу
         while (m_frameSender->hasPacketsToSend()) {
             auto packets = m_frameSender->takePacketsToSend();
             for (const auto &packet : packets) {
-                sendPacketNewProtocol(packet.second, streamId, packet.first);
+                sendPacketNewProtocol(packet.second, packet.first);
             }
         }
         
         m_stats.framesSent++;
-        m_stats.expectedFrames.insert(qMakePair(streamId, frameNumber));
+        m_stats.expectedFrames.insert(qMakePair(m_streamId, frameNumber));
         
     } catch (const std::exception &e) {
         qDebug() << "Send video frame failed:" << e.what();
@@ -215,21 +154,54 @@ void NetworkManager::sendVideoFrame(int streamId, int frameNumber, const QByteAr
     }
 }
 
+// Обновляем sendPacketNewProtocol - используем m_streamId и m_udpManager
+void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType type)
+{
+    sendPacketNewProtocol(data, type, m_packetSequence++);
+}
 
+void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType type, int customSequence)
+{
+    if (!m_udpManager) {
+        qDebug() << "NetworkManager: UDPManager not available";
+        return;
+    }
 
+    // Создаем пакет с m_streamId
+    NetworkPacket packet = PacketProcessor::createDataPacket(m_streamId, customSequence, 
+                                                           static_cast<uint8_t>(type), data);
+    
+    QByteArray datagram = PacketProcessor::toByteArray(packet);
+    
+    // Отправляем через UDPManager
+    m_udpManager->sendPacket(datagram, m_serverAddress, m_serverPort);
+    
+    // Обновляем статистику
+    m_stats.totalPacketsSent++;
+    m_stats.totalBytesSent += data.size();
+    
+    // FEC логика без изменений
+    int groupId = customSequence / FEC_GROUP_SIZE;
+    int positionInGroup = customSequence % FEC_GROUP_SIZE;
+    
+    if (positionInGroup < FEC_DATA_PACKETS) {
+        if (!m_fecSendBuffers.contains(groupId)) {
+            m_fecSendBuffers[groupId] = QVector<QByteArray>(FEC_TOTAL_PACKETS);
+        }
+        
+        // Сохраняем часть пакета после RouteHeader для XOR
+        QByteArray dataPart = datagram.mid(PACKET_HEADER_SIZE);
+        m_fecSendBuffers[groupId][positionInGroup] = dataPart;
+        
+        // Если накопилось 4 пакета, отправляем XOR пакет
+        if (positionInGroup == FEC_DATA_PACKETS - 1) {
+            sendXorPackets();
+        }
+    }
+}
 
-
-
-
-
-
-
-
-
-
-// Обновим processPacketNewProtocol
-void NetworkManager::processPacketNewProtocol(const QNetworkDatagram& datagram) {
-    QByteArray data = datagram.data();
+// Обновляем processPacketNewProtocol - теперь принимает QByteArray вместо QNetworkDatagram
+void NetworkManager::processPacketNewProtocol(const QByteArray& data) {
     if (data.size() < sizeof(NetworkPacket)) {
         qDebug() << "Packet too small:" << data.size();
         return;
@@ -303,9 +275,10 @@ void NetworkManager::sendXorPackets()
             NetworkPacket xorPacket = PacketProcessor::createXorPacket(m_streamId, xorSequence, xorData);
             
             QByteArray datagram = PacketProcessor::toByteArray(xorPacket);
-            qint64 sent = m_udpSocket->writeDatagram(datagram, m_serverAddress, m_serverPort);
             
-            if (sent != -1) {
+            // Отправляем через UDPManager
+            if (m_udpManager) {
+                m_udpManager->sendPacket(datagram, m_serverAddress, m_serverPort);
                 m_stats.totalPacketsSent++;
                 m_stats.totalBytesSent += xorData.size();
                 m_stats.fecGroupsSent++;
@@ -318,8 +291,6 @@ void NetworkManager::sendXorPackets()
         }
     }
 }
-
-
 
 void NetworkManager::processXorPacket(const NetworkPacket& packet) {
     qDebug() << "Received XOR packet - Stream:" << packet.route.streamId 
@@ -340,45 +311,6 @@ void NetworkManager::processXorPacket(const NetworkPacket& packet) {
     // Пытаемся восстановить потерянные пакеты
     tryRecoverLostPackets(groupId);
 }
-
-// Удаляем старую версию sendPacketNewProtocol и заменяем на:
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type, int customSequence)
-{
-    // Создаем DataPacket
-    NetworkPacket packet = PacketProcessor::createDataPacket(streamId, customSequence, 
-                                                           static_cast<uint8_t>(type), data);
-    
-    // Отправляем пакет
-    QByteArray datagram = PacketProcessor::toByteArray(packet);
-    qint64 sent = m_udpSocket->writeDatagram(datagram, m_serverAddress, m_serverPort);
-    
-    if (sent == -1) {
-        qDebug() << "Failed to send packet:" << m_udpSocket->errorString();
-    } else {
-        m_stats.totalPacketsSent++;
-        m_stats.totalBytesSent += data.size();
-        
-        // Добавляем в FEC буфер (только данные после RouteHeader)
-        int groupId = customSequence / FEC_GROUP_SIZE;
-        int positionInGroup = customSequence % FEC_GROUP_SIZE;
-        
-        if (positionInGroup < FEC_DATA_PACKETS) {
-            if (!m_fecSendBuffers.contains(groupId)) {
-                m_fecSendBuffers[groupId] = QVector<QByteArray>(FEC_TOTAL_PACKETS);
-            }
-            
-            // Сохраняем часть пакета после RouteHeader для XOR
-            QByteArray dataPart = datagram.mid(PACKET_HEADER_SIZE);
-            m_fecSendBuffers[groupId][positionInGroup] = dataPart;
-            
-            // Если накопилось 4 пакета, отправляем XOR пакет
-            if (positionInGroup == FEC_DATA_PACKETS - 1) {
-                sendXorPackets();
-            }
-        }
-    }
-}
-
 
 QByteArray NetworkManager::calculateXorForGroup(int groupId)
 {
@@ -412,7 +344,7 @@ QByteArray NetworkManager::calculateXorForGroup(int groupId)
     return result;
 }
 
-// В tryRecoverLostPackets исправляем логику восстановления
+// В tryRecoverLostPackets исправляем вызов processPacketNewProtocol
 void NetworkManager::tryRecoverLostPackets(int groupId)
 {
     if (!m_fecReceiveBuffers.contains(groupId) || !m_fecReceived.contains(groupId)) {
@@ -485,9 +417,8 @@ void NetworkManager::tryRecoverLostPackets(int groupId)
                 // Конвертируем в QByteArray для обработки
                 QByteArray recoveredDatagram = PacketProcessor::toByteArray(recoveredPacket);
                 
-                // Создаем QNetworkDatagram и обрабатываем как обычный пакет
-                QNetworkDatagram datagram(recoveredDatagram, m_serverAddress, m_serverPort);
-                processPacketNewProtocol(datagram);
+                // Вызываем processPacketNewProtocol напрямую с QByteArray
+                processPacketNewProtocol(recoveredDatagram);
 
                 // Обновляем статистику
                 m_stats.packetsRecoveredByFEC++;
@@ -543,7 +474,6 @@ void NetworkManager::cleanupOldAssemblies()
     qDebug() << "🧹 Cleanup: FEC groups" << groupsToRemove.size();
 }
 
-
 void NetworkManager::updateSendStats(int packets, int bytes)
 {
     m_stats.totalPacketsSent += packets;
@@ -573,12 +503,13 @@ void NetworkManager::printStatistics()
     }
     
     QString stats = QString(
-        "=== New Protocol Statistics ===\n"
-        "Time: %1s | Frames: %2 sent, %3 received (%4% loss)\n"
-        "Packets: %5 sent, %6 received | Data Rate: %7/%8 KB/s\n"
-        "FEC: %9 groups sent, %10 recovered, %11 packets recovered\n"
+        "=== New Protocol Statistics (Stream: %1) ===\n"
+        "Time: %2s | Frames: %3 sent, %4 received (%5% loss)\n"
+        "Packets: %6 sent, %7 received | Data Rate: %8/%9 KB/s\n"
+        "FEC: %10 groups sent, %11 recovered, %12 packets recovered\n"
         "================================="
-    ).arg(elapsedSeconds, 0, 'f', 1)
+    ).arg(m_streamId)
+     .arg(elapsedSeconds, 0, 'f', 1)
      .arg(m_stats.framesSent)
      .arg(m_stats.framesReceived)
      .arg(lossRate, 0, 'f', 2)
@@ -597,9 +528,4 @@ void NetworkManager::printStatistics()
 uint32_t NetworkManager::calculateCRC32(const QByteArray &data)
 {
     return crc32(0, (const Bytef*)data.constData(), data.size());
-}
-
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, int streamId, PacketType type)
-{
-    sendPacketNewProtocol(data, streamId, type, m_packetSequence++);
 }

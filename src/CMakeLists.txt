@@ -65,6 +65,8 @@ set(SOURCES
     new/streamwindow.cpp
     new/networkfacade.cpp
     new/tcpmanager.cpp
+    new/udpmanager.cpp
+    new/streamidconverter.cpp
 )
 
 set(HEADERS
@@ -97,6 +99,8 @@ set(HEADERS
     new/streamwindow.h
     new/networkfacade.h
     new/tcpmanager.h
+    new/udpmanager.h
+    new/streamidconverter.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})

@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     
     // Initialize stream manager
     m_streamManager->initialize();
-    m_streamManager->setServerAddress("127.0.0.1", 8080);
+    m_streamManager->setServerAddress(DEFAULT_ECHO_SERVER_ADDRESS, DEFAULT_ECHO_SERVER_PORT);
     m_streamManager->connectToServer();
     
     setMinimumSize(500, 400);
@@ -248,35 +248,42 @@ void MainWindow::onStreamWindowCreated(StreamWindow *window)
 {
     if (!window) return;
     
-    // Определяем streamId из заголовка окна или другим способом
-    int streamId = window->getStreamId();
-    m_openWindows[streamId] = window;
-    
-    // Показываем окно
+    // Просто показываем окно
     window->show();
     window->raise();
     window->activateWindow();
     
-    qDebug() << "Stream window created with ID:" << streamId;
-    m_infoLabel->setText(QString("Active streams: %1").arg(m_openWindows.size()));
-    m_infoLabel->setStyleSheet(
-        "color: #aaa;"
-        "font-size: 13px;"
-        "padding: 12px;"
-        "background: #252525;"
-        "border: 1px solid #444;"
-        "border-radius: 6px;"
-        "margin: 10px 0;"
-    );
+    qDebug() << "Stream window created, ID:" << window->getStreamId();
+    
+    // Обновляем счетчик окон
+    int activeWindows = 0;
+    QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
+    for (QWidget* widget : topLevelWidgets) {
+        if (qobject_cast<StreamWindow*>(widget) && widget->isVisible()) {
+            activeWindows++;
+        }
+    }
+    
+    m_infoLabel->setText(QString("Active streams: %1").arg(activeWindows));
 }
+
 
 void MainWindow::onStreamWindowClosed(int streamId)
 {
-    m_openWindows.remove(streamId);
     qDebug() << "Stream window closed, ID:" << streamId;
-    m_infoLabel->setText(QString("Active streams: %1").arg(m_openWindows.size()));
     
-    if (m_openWindows.isEmpty()) {
+    // Обновляем счетчик окон
+    int activeWindows = 0;
+    QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
+    for (QWidget* widget : topLevelWidgets) {
+        if (qobject_cast<StreamWindow*>(widget) && widget->isVisible()) {
+            activeWindows++;
+        }
+    }
+    
+    m_infoLabel->setText(QString("Active streams: %1").arg(activeWindows));
+    
+    if (activeWindows == 0) {
         m_infoLabel->setText("Select an action to begin streaming");
         m_infoLabel->setStyleSheet(
             "color: #666;"

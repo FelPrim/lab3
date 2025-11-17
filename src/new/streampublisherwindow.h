@@ -67,4 +67,13 @@ private:
     static const QString STATUS_NO_VIEWERS;
     static const QString STATUS_HAS_VIEWERS;
     static const QString STATUS_STOPPED;
+
+signals:
+    void streamingStateChanged(int streamId, bool enabled);  // Новый сигнал
+
+public slots:
+    void setStreamingEnabled(bool enabled);
+
+private:
+    bool m_streamingEnabled = false;
 };

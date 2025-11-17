@@ -10,6 +10,7 @@
 #include "../networkmanager.h"
 #include "streamwindow.h"
 #include "networkfacade.h"
+#include "streamidconverter.h"  // Добавляем
 
 // Forward declarations
 class StreamPublisherWindow;
@@ -28,30 +29,30 @@ public:
 
     void createStream(int deviceIndex);
     void joinStream(const QString &streamId);
-    void deleteStream(int streamId);
-    void leaveStream(int streamId);
+    void deleteStream(uint32_t streamId);  // Изменено на uint32_t
+    void leaveStream(uint32_t streamId);   // Изменено на uint32_t
 
     void setServerAddress(const QString &address, quint16 port);
     void connectToServer();
     void disconnectFromServer();
 
-    bool isStreamActive(int streamId) const;
-    QVector<int> getActiveStreams() const;
-    QString getStreamStatus(int streamId) const;
+    bool isStreamActive(uint32_t streamId) const;  // Изменено на uint32_t
+    QVector<uint32_t> getActiveStreams() const;    // Изменено на uint32_t
+    QString getStreamStatus(uint32_t streamId) const; // Изменено на uint32_t
 
 signals:
     void streamWindowCreated(StreamWindow *window);
-    void streamWindowClosed(int streamId);
+    void streamWindowClosed(uint32_t streamId);    // Изменено на uint32_t
     void connectionStatusChanged(bool connected);
     void errorOccurred(const QString &message);
 
 private slots:
     // Existing UI-related handlers
-    void onStreamStopped(int streamId);
-    void onStreamLeft(int streamId);
-    void onWindowClosed(int streamId);
+    void onStreamStopped(uint32_t streamId);       // Изменено на uint32_t
+    void onStreamLeft(uint32_t streamId);          // Изменено на uint32_t
+    void onWindowClosed(uint32_t streamId);        // Изменено на uint32_t
 
-    // Handlers for server messages (emitted by NetworkFacade / TCPManager)
+    // Handlers for server messages
     void onServerStreamCreated(uint32_t streamId);
     void onServerStreamDeleted(uint32_t streamId);
     void onServerStreamJoined(uint32_t streamId);
@@ -60,7 +61,13 @@ private slots:
 
 private:
     bool m_connectedToServer;
-    int m_nextStreamId;
-    QMap<int, StreamWindow*> m_openWindows;
+    QMap<uint32_t, StreamWindow*> m_openWindows;  // Изменено на uint32_t
     NetworkFacade *m_networkFacade = nullptr;
+    
+    // Для ожидающих создания стримов
+    StreamPublisherWindow *m_pendingWindow = nullptr;
+    int m_pendingDeviceIndex = -1;
+    
+    // Вспомогательные методы
+    void setupStreamConnections(StreamPublisherWindow* window, uint32_t streamId);
 };

@@ -20,6 +20,7 @@ StreamPublisherWindow::StreamPublisherWindow(int streamId, int deviceIndex, QWid
     , m_videoCapture(nullptr)
     , m_videoEncoder(nullptr)
     , m_deviceIndex(deviceIndex)
+    , m_streamingEnabled(false) 
 {
     setupUI();
     setWindowTitle(QString("Stream Publisher - ID: %1").arg(streamId));
@@ -185,16 +186,21 @@ void StreamPublisherWindow::setStreamId(int streamId, const QString &displayId)
 
 void StreamPublisherWindow::startStream()
 {
-    m_isStreaming = true;
-    updateStatusLabel();
+    if (!m_isStreaming) {
+        m_isStreaming = true;
+        updateStatusLabel();
+        qDebug() << "Stream started:" << m_streamId;
+    }
 }
 
 void StreamPublisherWindow::stopStream()
 {
-    m_isStreaming = false;
-    updateStatusLabel();
+    if (m_isStreaming) {
+        m_isStreaming = false;
+        updateStatusLabel();
+        qDebug() << "Stream stopped:" << m_streamId;
+    }
 }
-
 void StreamPublisherWindow::updateStatusLabel()
 {
     if (!m_isStreaming) {
@@ -258,4 +264,23 @@ void StreamPublisherWindow::cleanupVideoCapture()
     }
 
     qDebug() << "VideoCapture cleaned up";
+}
+
+void StreamPublisherWindow::setStreamingEnabled(bool enabled)
+{
+    if (m_streamingEnabled != enabled) {
+        m_streamingEnabled = enabled;
+        qDebug() << "Streaming enabled:" << enabled << "for stream:" << m_streamId;
+        
+        // Управляем видеозахватом в зависимости от состояния
+        if (enabled) {
+            // Включаем передачу видео
+            startStream();
+        } else {
+            // Выключаем передачу видео, но оставляем превью
+            stopStream();
+        }
+        
+        emit streamingStateChanged(m_streamId, enabled);
+    }
 }

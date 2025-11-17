@@ -73,34 +73,43 @@ void TCPManager::processBuffer()
         if (m_buffer.size() < 1) return;
         uint8_t type = static_cast<uint8_t>(m_buffer.at(0));
 
+        qDebug() << "TCPManager: Processing message, type:" << QString::number(type, 16) 
+                 << "buffer size:" << m_buffer.size();
+
         if (type >= 0x80) {
             const int need = 1 + 4;
-            if (m_buffer.size() < need) return;
+            if (m_buffer.size() < need) {
+                qDebug() << "TCPManager: Not enough data for server message, need:" << need << "have:" << m_buffer.size();
+                return;
+            }
+            
             uint8_t t = static_cast<uint8_t>(m_buffer.at(0));
             const uchar *p = reinterpret_cast<const uchar*>(m_buffer.constData()+1);
             uint32_t id = qFromBigEndian<quint32>(p);
 
             m_buffer.remove(0, need);
 
+            qDebug() << "TCPManager: Server message - type:" << QString::number(t, 16) << "id:" << id;
+
             switch (t) {
                 case 0x81:
-                    qDebug() << "TCPManager: SERVER_STREAM_CREATED id=" << id;
+                    qDebug() << "TCPManager: >>> SERVER_STREAM_CREATED id=" << id;
                     emit serverStreamCreated(id);
                     break;
                 case 0x82:
-                    qDebug() << "TCPManager: SERVER_STREAM_DELETED id=" << id;
+                    qDebug() << "TCPManager: >>> SERVER_STREAM_DELETED id=" << id;
                     emit serverStreamDeleted(id);
                     break;
                 case 0x83:
-                    qDebug() << "TCPManager: SERVER_STREAM_JOINED id=" << id;
+                    qDebug() << "TCPManager: >>> SERVER_STREAM_JOINED id=" << id;
                     emit serverStreamJoined(id);
                     break;
                 case 0x84:
-                    qDebug() << "TCPManager: SERVER_STREAM_START id=" << id;
+                    qDebug() << "TCPManager: >>> SERVER_STREAM_START id=" << id;
                     emit serverStreamStart(id);
                     break;
                 case 0x85:
-                    qDebug() << "TCPManager: SERVER_STREAM_END id=" << id;
+                    qDebug() << "TCPManager: >>> SERVER_STREAM_END id=" << id;
                     emit serverStreamEnd(id);
                     break;
                 default:
@@ -114,7 +123,6 @@ void TCPManager::processBuffer()
         }
     }
 }
-
 // -------------- outgoing --------------
 
 void TCPManager::sendClientUdpAddr(const QByteArray &sockaddr_in_bytes)

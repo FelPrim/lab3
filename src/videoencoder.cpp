@@ -98,7 +98,7 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
     m_enc_ctx->rc_initial_buffer_occupancy = 0;
     
     // УМЕНЬШАЕМ количество потоков для стабильности
-    m_enc_ctx->thread_count = 2;
+    m_enc_ctx->thread_count = 1;
 
     AVDictionary *enc_opts = nullptr;
     if (enc_codec && strstr(enc_codec->name, "x264")) {
