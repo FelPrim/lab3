@@ -52,7 +52,13 @@ template <> constexpr inline auto StreamManager::qt_create_metaobjectdata<qt_met
         "message",
         "onStreamStopped",
         "onStreamLeft",
-        "onWindowClosed"
+        "onWindowClosed",
+        "onServerStreamCreated",
+        "uint32_t",
+        "onServerStreamDeleted",
+        "onServerStreamJoined",
+        "onServerStreamStart",
+        "onServerStreamEnd"
     };
 
     QtMocHelpers::UintData qt_methods {
@@ -84,6 +90,26 @@ template <> constexpr inline auto StreamManager::qt_create_metaobjectdata<qt_met
         QtMocHelpers::SlotData<void(int)>(13, 2, QMC::AccessPrivate, QMetaType::Void, {{
             { QMetaType::Int, 6 },
         }}),
+        // Slot 'onServerStreamCreated'
+        QtMocHelpers::SlotData<void(uint32_t)>(14, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { 0x80000000 | 15, 6 },
+        }}),
+        // Slot 'onServerStreamDeleted'
+        QtMocHelpers::SlotData<void(uint32_t)>(16, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { 0x80000000 | 15, 6 },
+        }}),
+        // Slot 'onServerStreamJoined'
+        QtMocHelpers::SlotData<void(uint32_t)>(17, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { 0x80000000 | 15, 6 },
+        }}),
+        // Slot 'onServerStreamStart'
+        QtMocHelpers::SlotData<void(uint32_t)>(18, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { 0x80000000 | 15, 6 },
+        }}),
+        // Slot 'onServerStreamEnd'
+        QtMocHelpers::SlotData<void(uint32_t)>(19, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { 0x80000000 | 15, 6 },
+        }}),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -114,6 +140,11 @@ void StreamManager::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         case 4: _t->onStreamStopped((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;
         case 5: _t->onStreamLeft((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;
         case 6: _t->onWindowClosed((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;
+        case 7: _t->onServerStreamCreated((*reinterpret_cast<std::add_pointer_t<uint32_t>>(_a[1]))); break;
+        case 8: _t->onServerStreamDeleted((*reinterpret_cast<std::add_pointer_t<uint32_t>>(_a[1]))); break;
+        case 9: _t->onServerStreamJoined((*reinterpret_cast<std::add_pointer_t<uint32_t>>(_a[1]))); break;
+        case 10: _t->onServerStreamStart((*reinterpret_cast<std::add_pointer_t<uint32_t>>(_a[1]))); break;
+        case 11: _t->onServerStreamEnd((*reinterpret_cast<std::add_pointer_t<uint32_t>>(_a[1]))); break;
         default: ;
         }
     }
@@ -160,14 +191,14 @@ int StreamManager::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 7)
+        if (_id < 12)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 7;
+        _id -= 12;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 7)
+        if (_id < 12)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 7;
+        _id -= 12;
     }
     return _id;
 }

@@ -67,7 +67,7 @@ void StreamVideoDisplayPanel::displayFrame(const QImage &frame)
 void StreamVideoDisplayPanel::clearDisplay()
 {
     if (m_videoDisplayWidget) {
-        m_videoDisplayWidget->clearDisplay();
+        m_videoDisplayWidget->displayFrame(QImage());
     }
     showVideo(false);
 }

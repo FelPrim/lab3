@@ -407,6 +407,12 @@
 			null
 		],
 		[
+			"T:/GitHub/my_scripts/lab3/src/new/networkfacade.h",
+			"MU",
+			"YW4MI2SATE/moc_networkfacade.cpp",
+			null
+		],
+		[
 			"T:/GitHub/my_scripts/lab3/src/new/streamcontrolpanel.h",
 			"MU",
 			"YW4MI2SATE/moc_streamcontrolpanel.cpp",
@@ -458,6 +464,12 @@
 			"T:/GitHub/my_scripts/lab3/src/new/tcpclient.h",
 			"MU",
 			"YW4MI2SATE/moc_tcpclient.cpp",
+			null
+		],
+		[
+			"T:/GitHub/my_scripts/lab3/src/new/tcpmanager.h",
+			"MU",
+			"YW4MI2SATE/moc_tcpmanager.cpp",
 			null
 		],
 		[
@@ -603,6 +615,7 @@
 			"MU",
 			null
 		],
+		[ "T:/GitHub/my_scripts/lab3/src/new/networkfacade.cpp", "MU", null ],
 		[
 			"T:/GitHub/my_scripts/lab3/src/new/streamcontrolpanel.cpp",
 			"MU",
@@ -632,6 +645,7 @@
 		],
 		[ "T:/GitHub/my_scripts/lab3/src/new/streamwindow.cpp", "MU", null ],
 		[ "T:/GitHub/my_scripts/lab3/src/new/tcpclient.cpp", "MU", null ],
+		[ "T:/GitHub/my_scripts/lab3/src/new/tcpmanager.cpp", "MU", null ],
 		[ "T:/GitHub/my_scripts/lab3/src/removevideodialog.cpp", "MU", null ],
 		[ "T:/GitHub/my_scripts/lab3/src/videocapture.cpp", "MU", null ],
 		[ "T:/GitHub/my_scripts/lab3/src/videodecoder.cpp", "MU", null ],

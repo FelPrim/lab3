@@ -3,9 +3,13 @@
 #include <QObject>
 #include <QMap>
 #include <QTimer>
+#include <QVector>
+#include <cstdint>
+
 #include "tcpclient.h"
 #include "../networkmanager.h"
 #include "streamwindow.h"
+#include "networkfacade.h"
 
 // Forward declarations
 class StreamPublisherWindow;
@@ -42,12 +46,21 @@ signals:
     void errorOccurred(const QString &message);
 
 private slots:
+    // Existing UI-related handlers
     void onStreamStopped(int streamId);
     void onStreamLeft(int streamId);
     void onWindowClosed(int streamId);
+
+    // Handlers for server messages (emitted by NetworkFacade / TCPManager)
+    void onServerStreamCreated(uint32_t streamId);
+    void onServerStreamDeleted(uint32_t streamId);
+    void onServerStreamJoined(uint32_t streamId);
+    void onServerStreamStart(uint32_t streamId);
+    void onServerStreamEnd(uint32_t streamId);
 
 private:
     bool m_connectedToServer;
     int m_nextStreamId;
     QMap<int, StreamWindow*> m_openWindows;
+    NetworkFacade *m_networkFacade = nullptr;
 };

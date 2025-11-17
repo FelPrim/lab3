@@ -63,6 +63,8 @@ set(SOURCES
     new/deviceselectorwidget.cpp
     new/streamstatswidget.cpp
     new/streamwindow.cpp
+    new/networkfacade.cpp
+    new/tcpmanager.cpp
 )
 
 set(HEADERS
@@ -93,6 +95,8 @@ set(HEADERS
     new/streamstatswidget.h
     new/tcpclient.h
     new/streamwindow.h
+    new/networkfacade.h
+    new/tcpmanager.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})

@@ -30,4 +30,5 @@ private:
 
     QComboBox *m_deviceComboBox;
     QPushButton *m_refreshButton;
+    QList<int> m_availableDevices;
 };

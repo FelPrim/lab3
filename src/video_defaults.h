@@ -31,9 +31,9 @@ inline constexpr const char DEFAULT_X264_TUNE[]   = "zerolatency";
 
 // Subtract threads (leave one thread for decoder / system)
 inline constexpr unsigned DEFAULT_HW_THREADS_SUBTRACT = 2;
-inline constexpr const char* DEFAULT_ECHO_SERVER_ADDRESS = "95.81.125.224";
+inline constexpr const char* DEFAULT_ECHO_SERVER_ADDRESS = "127.0.0.1";//"95.81.125.224";
 inline constexpr uint16_t DEFAULT_ECHO_SERVER_PORT = 23231;
-inline constexpr uint16_t DEFAULT_UDP_CLIENT_PORT = 23233;
+inline constexpr uint16_t DEFAULT_UDP_CLIENT_PORT = 23230;
 inline constexpr int MAX_PACKET_SIZE = 1200;
 inline constexpr int DEFAULT_BUFFERSZ = 128;
 inline constexpr int MARGIN = 5;

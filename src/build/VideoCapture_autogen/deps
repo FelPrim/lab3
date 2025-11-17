@@ -938,6 +938,8 @@ VideoCapture_autogen/timestamp: \
 	T:/GitHub/my_scripts/lab3/src/networkmanager.h \
 	T:/GitHub/my_scripts/lab3/src/new/deviceselectorwidget.cpp \
 	T:/GitHub/my_scripts/lab3/src/new/deviceselectorwidget.h \
+	T:/GitHub/my_scripts/lab3/src/new/networkfacade.cpp \
+	T:/GitHub/my_scripts/lab3/src/new/networkfacade.h \
 	T:/GitHub/my_scripts/lab3/src/new/streamcontrolpanel.cpp \
 	T:/GitHub/my_scripts/lab3/src/new/streamcontrolpanel.h \
 	T:/GitHub/my_scripts/lab3/src/new/streamidinputwidget.cpp \
@@ -956,6 +958,8 @@ VideoCapture_autogen/timestamp: \
 	T:/GitHub/my_scripts/lab3/src/new/streamwindow.h \
 	T:/GitHub/my_scripts/lab3/src/new/tcpclient.cpp \
 	T:/GitHub/my_scripts/lab3/src/new/tcpclient.h \
+	T:/GitHub/my_scripts/lab3/src/new/tcpmanager.cpp \
+	T:/GitHub/my_scripts/lab3/src/new/tcpmanager.h \
 	T:/GitHub/my_scripts/lab3/src/removevideodialog.cpp \
 	T:/GitHub/my_scripts/lab3/src/removevideodialog.h \
 	T:/GitHub/my_scripts/lab3/src/video_defaults.h \
