@@ -23,6 +23,10 @@ public:
     void sendClientStreamJoin(uint32_t streamId);
     void sendClientStreamLeave(uint32_t streamId);
 
+    QTcpSocket *m_socket;
+    QString m_serverHost;
+    quint16 m_serverPort = 0;
+
 signals:
     void connected();
     void disconnected();
@@ -42,10 +46,6 @@ private slots:
 
 private:
     void processBuffer();
-
-    QTcpSocket *m_socket;
-    QString m_serverHost;
-    quint16 m_serverPort = 0;
 
     QHostAddress m_localBindAddr = QHostAddress::Any;
     quint16 m_localBindPort = 0;

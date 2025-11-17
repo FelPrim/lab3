@@ -3,6 +3,7 @@
 #include "streamidconverter.h"
 #include <QDebug>
 #include <QtEndian>
+#include <QNetworkInterface> 
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -30,6 +31,8 @@ NetworkFacade::NetworkFacade(QObject *parent)
     // Initialize UDP manager
     m_udpManager->initialize();
     m_localUdpPort = m_udpManager->getLocalPort();
+
+    
 }
 
 NetworkFacade::~NetworkFacade()
@@ -155,6 +158,38 @@ void NetworkFacade::onTcpConnected()
          << "tcpPort:" << m_serverTcpPort
          << "localUdpIp:" << m_localUdpIp << "localUdpPort:" << m_localUdpPort;
 
+    // ОПРЕДЕЛЯЕМ РЕАЛЬНЫЙ ЛОКАЛЬНЫЙ IP ДЛЯ UDP
+    if (m_localUdpIp.isNull() || m_localUdpIp == QHostAddress::Any) {
+        // Способ 1: Используем IP из TCP соединения (чаще всего правильный)
+        QHostAddress tcpLocalAddress = m_tcp->m_socket->localAddress();
+        if (!tcpLocalAddress.isNull() && tcpLocalAddress.protocol() == QAbstractSocket::IPv4Protocol) {
+            m_localUdpIp = tcpLocalAddress;
+            qDebug() << "Using TCP local address for UDP:" << m_localUdpIp.toString();
+        } else {
+            // Способ 2: Ищем первый не-loopback IPv4 адрес
+            QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
+            for (const QHostAddress &address : addresses) {
+                if (address.protocol() == QAbstractSocket::IPv4Protocol && 
+                    address != QHostAddress::LocalHost) {
+                    m_localUdpIp = address;
+                    qDebug() << "Found alternative local address:" << m_localUdpIp.toString();
+                    break;
+                }
+            }
+            // Если ничего не нашли, используем LocalHost
+            if (m_localUdpIp.isNull()) {
+                m_localUdpIp = QHostAddress::LocalHost;
+                qDebug() << "Using LocalHost as fallback";
+            }
+        }
+    }
+
+    // Убеждаемся, что порт установлен
+    if (m_localUdpPort == 0) {
+        m_localUdpPort = m_udpManager->getLocalPort();
+        qDebug() << "Using UDP manager port:" << m_localUdpPort;
+    }
+
     // Build sockaddr_in-like 16 bytes in network byte order
     QByteArray sa; 
     sa.resize(16); 
@@ -172,6 +207,11 @@ void NetworkFacade::onTcpConnected()
     quint32 ip_be = qToBigEndian<quint32>(static_cast<quint32>(m_localUdpIp.toIPv4Address()));
     memcpy(sa.data() + 4, &ip_be, 4);
     // remaining 8 bytes are zero
+
+    // ОТЛАДОЧНЫЙ ВЫВОД
+    qDebug() << "Sending UDP address to server: IP:" << m_localUdpIp.toString() 
+             << "Port:" << m_localUdpPort
+             << "Raw IP bytes:" << QString::number(ntohl(ip_be), 16);
 
     // Send UDP address to server
     if (m_tcp) {
