@@ -272,7 +272,7 @@ void StreamManager::initialize()
         m_networkFacade->setServer(QString::fromUtf8(DEFAULT_ECHO_SERVER_ADDRESS), DEFAULT_ECHO_SERVER_PORT, 23230);
 
         // Сообщаем фасаду, что у нас пока нет конкретной локальной UDP информации:
-        m_networkFacade->setLocalUdpInfo(QHostAddress::AnyIPv4, 0);
+        m_networkFacade->setLocalUdpInfo(QHostAddress(), 0);
 
         // Пересылаем сигналы фасада в методы StreamManager
         connect(m_networkFacade, &NetworkFacade::connected, this, [](){ qDebug() << "NetworkFacade connected"; });

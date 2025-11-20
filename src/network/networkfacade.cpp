@@ -156,28 +156,28 @@ void NetworkFacade::onTcpConnected()
          << "tcpPort:" << m_serverTcpPort
          << "localUdpIp:" << m_localUdpIp << "localUdpPort:" << m_localUdpPort;
 
-    // ОПРЕДЕЛЯЕМ РЕАЛЬНЫЙ ЛОКАЛЬНЫЙ IP ДЛЯ UDP
-    if (m_localUdpIp.isNull() || m_localUdpIp == QHostAddress::Any) {
-        // Способ 1: Используем IP из TCP соединения (чаще всего правильный)
+     if (m_localUdpIp.isNull() || m_localUdpIp == QHostAddress::Any) {
+        // Всегда используем IP из TCP соединения - он самый надежный
         QHostAddress tcpLocalAddress = m_tcp->m_socket->localAddress();
         if (!tcpLocalAddress.isNull() && tcpLocalAddress.protocol() == QAbstractSocket::IPv4Protocol) {
             m_localUdpIp = tcpLocalAddress;
-            qDebug() << "Using TCP local address for UDP:" << m_localUdpIp.toString();
+            qDebug() << "✅ Using TCP local address for UDP:" << m_localUdpIp.toString();
         } else {
-            // Способ 2: Ищем первый не-loopback IPv4 адрес
+            // Если TCP адрес не подошел, ищем любой IPv4 адрес
             QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
             for (const QHostAddress &address : addresses) {
                 if (address.protocol() == QAbstractSocket::IPv4Protocol && 
-                    address != QHostAddress::LocalHost) {
+                    !address.isLoopback() && 
+                    address != QHostAddress::Any) {
                     m_localUdpIp = address;
-                    qDebug() << "Found alternative local address:" << m_localUdpIp.toString();
+                    qDebug() << "✅ Using network interface address:" << m_localUdpIp.toString();
                     break;
                 }
             }
-            // Если ничего не нашли, используем LocalHost
+            // Последнее средство
             if (m_localUdpIp.isNull()) {
                 m_localUdpIp = QHostAddress::LocalHost;
-                qDebug() << "Using LocalHost as fallback";
+                qDebug() << "⚠️ Using LocalHost as fallback";
             }
         }
     }
