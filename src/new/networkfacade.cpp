@@ -8,7 +8,7 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #else
-#include <sys/socket.h>
+#include <arpa/inet.h>
 #endif
 
 NetworkFacade::NetworkFacade(QObject *parent)
@@ -31,8 +31,6 @@ NetworkFacade::NetworkFacade(QObject *parent)
     // Initialize UDP manager
     m_udpManager->initialize();
     m_localUdpPort = m_udpManager->getLocalPort();
-
-    
 }
 
 NetworkFacade::~NetworkFacade()
@@ -211,7 +209,7 @@ void NetworkFacade::onTcpConnected()
     // ОТЛАДОЧНЫЙ ВЫВОД
     qDebug() << "Sending UDP address to server: IP:" << m_localUdpIp.toString() 
              << "Port:" << m_localUdpPort
-             << "Raw IP bytes:" << QString::number(ntohl(ip_be), 16);
+             << "Raw IP bytes:" << QString::number(qFromBigEndian(ip_be), 16); // ИСПРАВЛЕНО
 
     // Send UDP address to server
     if (m_tcp) {

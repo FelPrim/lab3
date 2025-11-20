@@ -134,8 +134,8 @@ void UDPManager::routePacket(const QByteArray &data, const QHostAddress &sender,
     // Извлекаем streamId из RouteHeader (первые 4 байта)
     RouteHeader routeHeader;
     memcpy(&routeHeader, data.constData(), sizeof(RouteHeader));
-    int streamId = static_cast<int>(routeHeader.streamId);
 
+    int streamId = static_cast<int>(qFromBigEndian(routeHeader.streamId)); 
     QMutexLocker locker(&m_managersMutex);
     
     if (m_networkManagers.contains(streamId)) {

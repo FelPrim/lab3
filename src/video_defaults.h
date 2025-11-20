@@ -19,11 +19,11 @@ inline constexpr int _720P_HEIGHT  = 720;
 inline constexpr int _480P_WIDTH   = 854;
 inline constexpr int _480P_HEIGHT  = 480;
 
-inline constexpr int DEFAULT_BITRATE = BITRATE_720P_15FPS;
+inline constexpr int DEFAULT_BITRATE = BITRATE_480P_15FPS;
 inline constexpr int DEFAULT_FPS     = 15;
-inline constexpr int DEFAULT_WIDTH   = _720P_WIDTH;
-inline constexpr int DEFAULT_HEIGHT  = _720P_HEIGHT;
-inline constexpr float DEFAULT_BUFFERSECONDS = 0.1;
+inline constexpr int DEFAULT_WIDTH   = _480P_WIDTH;
+inline constexpr int DEFAULT_HEIGHT  = _480P_HEIGHT;
+inline constexpr float DEFAULT_BUFFERSECONDS = 1;
 
 // x264 presets: use "ultrafast" for lowest latency/CPU cost, and "zerolatency" tune
 inline constexpr const char DEFAULT_X264_PRESET[] = "ultrafast";

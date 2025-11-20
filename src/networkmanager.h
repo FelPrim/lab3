@@ -35,6 +35,10 @@ public:
     // New method for packet processing from UDPManager
     void processPacketFromNetwork(const QByteArray &data, const QHostAddress &sender, quint16 port);
 
+    // Методы для управления отправкой
+    void setSendingEnabled(bool enabled) { m_sendingEnabled = enabled; }
+    bool isSendingEnabled() const { return m_sendingEnabled; }
+
 signals:
     void frameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
     void errorOccurred(const QString &message);
@@ -106,9 +110,6 @@ private:
     QElapsedTimer m_operationTimer;
     bool m_initialized = false;
 
-public:
-    void setSendingEnabled(bool enabled) { m_sendingEnabled = enabled; }
-
-private:
+    // УДАЛЕНО ДУБЛИРОВАНИЕ: оставляем только одно объявление
     bool m_sendingEnabled = false;
 };

@@ -1,13 +1,10 @@
 #pragma once
 
-#include "../networkmanager.h"
-#include "../networkdisplaybuffer.h"
-#include "../videodecoder.h"
 #include "streamwindow.h"
 #include "streamcontrolpanel.h"
 #include "streamvideodisplaypanel.h"
-#include "streamidinputwidget.h"
 #include "streamstatswidget.h"
+#include "networkdisplaybuffer.h"
 
 class StreamViewerWindow : public StreamWindow
 {
@@ -22,46 +19,31 @@ public:
     void cleanup() override;
     int getStreamId() const override { return m_streamId; }
     QString getDisplayId() const override { return m_displayId; }
-    bool isActive() const override { return m_isJoined; }
+    bool isActive() const override { return m_isActive; }
 
     // Специфичные методы зрителя
-    void joinStream(const QString &streamId = "");
-    void leaveStream();
-
-signals:
-    void streamJoined(int streamId, const QString &displayId);
-    void streamLeft(int streamId);
+    void setStreamId(int streamId, const QString &displayId);
+    void setActive(bool active);
 
 public slots:
-    void setStreamId(int streamId, const QString &displayId);
-
-private slots:
-    void onJoinRequested(const QString &streamId);
+    void onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
     void onLeaveRequested();
-    void onFrameReady(const QImage &image, int streamId);
-    void onDecoderError(const QString &message);
+
+signals:
+    void streamLeft(int streamId);
 
 private:
     void setupUI();
     void setupConnections();
-    void updateStatusLabel();
+    void updateStatusLabel(); // ДОБАВЛЕНО объявление
 
     int m_streamId;
     QString m_displayId;
-    bool m_isJoined;
+    bool m_isActive;
 
     // Специфичные для зрителя виджеты
-    StreamIdInputWidget *m_idInputWidget;
     StreamControlPanel *m_controlPanel;
     StreamVideoDisplayPanel *m_videoDisplay;
     StreamStatsWidget *m_statsWidget;
-
-    // Сетевые компоненты
     NetworkDisplayBuffer *m_displayBuffer;
-    VideoDecoder *m_videoDecoder;
-
-    static const QString STATUS_DISCONNECTED;
-    static const QString STATUS_CONNECTING;
-    static const QString STATUS_CONNECTED;
-    static const QString STATUS_ENDED;
 };

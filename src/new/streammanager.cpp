@@ -47,7 +47,7 @@ void StreamManager::createStream(int deviceIndex)
     m_pendingDeviceIndex = deviceIndex;
 
     // Показываем окно сразу с временным заголовком
-    m_pendingWindow->setStreamId(0, "Creating...");
+    m_pendingWindow->setStreamId(0, "Unknown");;
     m_pendingWindow->initialize();
     emit streamWindowCreated(m_pendingWindow);
     
@@ -108,30 +108,31 @@ void StreamManager::joinStream(const QString &displayId)
         return;
     }
 
-    // Отправляем запрос на сервер
-    if (m_networkFacade) {
-        qDebug() << "StreamManager: sending CLIENT_STREAM_JOIN id=" << streamId;
-        m_networkFacade->sendStreamJoin(streamId);
-    } else {
-        qWarning() << "StreamManager: no network facade - cannot send JOIN";
-        emit errorOccurred("Not connected to server");
-        return;
-    }
-
-    // Создаем окно зрителя
+    // Создаем окно зрителя СРАЗУ
     StreamViewerWindow *window = new StreamViewerWindow();
     connect(window, &StreamViewerWindow::streamLeft, this, &StreamManager::onStreamLeft);
     connect(window, &StreamWindow::windowClosed, this, &StreamManager::onWindowClosed);
 
     m_openWindows[streamId] = window;
 
-    QTimer::singleShot(500, this, [this, window, streamId, displayId]() {
-        window->setStreamId(streamId, displayId);
-        window->initialize();
-        emit streamWindowCreated(window);
-        
-        qDebug() << "Stream viewer window created for server ID:" << streamId << "display:" << displayId;
-    });
+    // Устанавливаем ID и инициализируем окно
+    window->setStreamId(streamId, displayId);
+    window->initialize();
+    emit streamWindowCreated(window);
+    
+    qDebug() << "Stream viewer window created for server ID:" << streamId << "display:" << displayId;
+
+    // Отправляем запрос на сервер ПОСЛЕ создания окна
+    if (m_networkFacade) {
+        qDebug() << "StreamManager: sending CLIENT_STREAM_JOIN id=" << streamId;
+        m_networkFacade->sendStreamJoin(streamId);
+    } else {
+        qWarning() << "StreamManager: no network facade - cannot send JOIN";
+        emit errorOccurred("Not connected to server");
+        // Закрываем окно если нет соединения
+        window->close();
+        m_openWindows.remove(streamId);
+    }
 }
 
 void StreamManager::deleteStream(uint32_t streamId)
@@ -225,18 +226,32 @@ QString StreamManager::getStreamStatus(uint32_t streamId) const
     return m_openWindows.contains(streamId) ? "Active" : "Inactive";
 }
 
-// Добавляем метод для настройки соединений
 void StreamManager::setupStreamConnections(StreamPublisherWindow* window, uint32_t streamId)
 {
+    // Отключаем старые соединения перед созданием новых
+    disconnect(window, &StreamPublisherWindow::encodedPacketReady, 0, 0);
+    disconnect(window, &StreamPublisherWindow::streamingStateChanged, 0, 0);
+    
     connect(window, &StreamPublisherWindow::streamingStateChanged,
             this, [this, streamId](bool enabled) {
                 if (m_networkFacade) {
                     NetworkManager* manager = m_networkFacade->getNetworkManager(streamId);
                     if (manager) {
                         manager->setSendingEnabled(enabled);
+                        qDebug() << "Stream" << streamId << "sending enabled:" << enabled;
                     }
                 }
             });
+    
+    connect(window, &StreamPublisherWindow::encodedPacketReady,
+            this, [this](int streamId, int frameNumber, const QByteArray &packet) {
+                if (m_networkFacade) {
+                    NetworkManager* manager = m_networkFacade->getNetworkManager(streamId);
+                    if (manager && manager->isSendingEnabled()) {
+                        manager->sendVideoFrame(frameNumber, packet);
+                    }
+                }
+            }, Qt::DirectConnection); // DirectConnection для минимизации задержки
 }
 
 
@@ -343,29 +358,70 @@ void StreamManager::onServerStreamDeleted(uint32_t streamId)
     }
 }
 
+
 void StreamManager::onServerStreamJoined(uint32_t streamId)
 {
-    qDebug() << "StreamManager: SERVER_STREAM_JOINED id=" << streamId;
-    // Заглушка: можно создать окно viewer или обновить существующее — сейчас просто логируем.
-}
-
-void StreamManager::onServerStreamStart(uint32_t streamId)
-{
-    qDebug() << "StreamManager: SERVER_STREAM_START id=" << streamId;
+    qDebug() << "🟢🟢🟢 StreamManager: SERVER_STREAM_JOINED id=" << streamId;
     
     if (m_openWindows.contains(streamId)) {
-        auto w = m_openWindows[streamId];
-        StreamPublisherWindow *pub = qobject_cast<StreamPublisherWindow*>(w);
-        if (pub) {
-            pub->setViewersStatus(true);
-            pub->setStreamingEnabled(true); 
-            qDebug() << "Stream publishing enabled for:" << streamId;
+        StreamViewerWindow *viewerWindow = qobject_cast<StreamViewerWindow*>(m_openWindows[streamId]);
+        if (viewerWindow) {
+            // Активируем окно зрителя
+            viewerWindow->setActive(true);
+            
+            // Связываем NetworkManager с окном зрителя
+            NetworkManager* manager = m_networkFacade->getNetworkManager(streamId);
+            if (manager) {
+                connect(manager, &NetworkManager::frameAssembled,
+                        viewerWindow, &StreamViewerWindow::onFrameAssembled,
+                        Qt::QueuedConnection);
+                
+                qDebug() << "✅ Connected NetworkManager to StreamViewerWindow for stream" << streamId;
+                
+                // Обновляем статус в UI
+                viewerWindow->setStatus("Receiving video...", "#17a2b8");
+            } else {
+                qWarning() << "❌ NetworkManager not found for stream" << streamId;
+                viewerWindow->setStatus("Network error", "#dc3545");
+            }
         } else {
-            qDebug() << "StreamManager: window is not a publisher for id" << streamId;
+            qDebug() << "❌ StreamManager: window is not a viewer for id" << streamId;
         }
     } else {
-        qDebug() << "StreamManager: no open window for stream" << streamId;
+        qDebug() << "❌ StreamManager: no open window for stream" << streamId;
+        // Окно не найдено - создаем новое
+        QTimer::singleShot(0, this, [this, streamId]() {
+            createViewerWindowForStream(streamId);
+        });
     }
+    
+    // УДАЛЕНО: emit serverStreamJoined(streamId); // Этот сигнал не нужен в StreamManager
+}
+
+void StreamManager::createViewerWindowForStream(uint32_t streamId)
+{
+    QString displayId = StreamIdConverter::streamIdToDisplayString(streamId);
+    qDebug() << "Creating late viewer window for stream:" << streamId << "display:" << displayId;
+    
+    StreamViewerWindow *window = new StreamViewerWindow();
+    connect(window, &StreamViewerWindow::streamLeft, this, &StreamManager::onStreamLeft);
+    connect(window, &StreamWindow::windowClosed, this, &StreamManager::onWindowClosed);
+
+    m_openWindows[streamId] = window;
+    window->setStreamId(streamId, displayId);
+    window->initialize();
+    window->setActive(true);
+    
+    // Связываем с NetworkManager
+    NetworkManager* manager = m_networkFacade->getNetworkManager(streamId);
+    if (manager) {
+        connect(manager, &NetworkManager::frameAssembled,
+                window, &StreamViewerWindow::onFrameAssembled,
+                Qt::QueuedConnection);
+        qDebug() << "✅ Late connection: NetworkManager to StreamViewerWindow for stream" << streamId;
+    }
+    
+    emit streamWindowCreated(window);
 }
 
 void StreamManager::onServerStreamEnd(uint32_t streamId)
@@ -384,5 +440,33 @@ void StreamManager::onServerStreamEnd(uint32_t streamId)
         }
     } else {
         qDebug() << "StreamManager: no open window for stream" << streamId;
+    }
+}
+
+
+void StreamManager::onServerStreamStart(uint32_t streamId)
+{
+    qDebug() << " StreamManager: SERVER_STREAM_START received for stream" << streamId;
+    
+    if (m_openWindows.contains(streamId)) {
+        auto w = m_openWindows[streamId];
+        StreamPublisherWindow *pub = qobject_cast<StreamPublisherWindow*>(w);
+        if (pub) {
+            pub->setViewersStatus(true);
+            pub->setStreamingEnabled(true); 
+            qDebug() << "✅ Stream publishing ENABLED for:" << streamId;
+            
+            // Проверим NetworkManager
+            NetworkManager* manager = m_networkFacade->getNetworkManager(streamId);
+            if (manager) {
+                qDebug() << "✅ NetworkManager found for stream" << streamId << "- sending enabled:" << manager->isSendingEnabled();
+            } else {
+                qDebug() << "❌ NetworkManager NOT found for stream" << streamId;
+            }
+        } else {
+            qDebug() << "❌ StreamManager: window is not a publisher for id" << streamId;
+        }
+    } else {
+        qDebug() << "❌ StreamManager: no open window for stream" << streamId;
     }
 }

@@ -250,7 +250,6 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
         return;
     }
 
-    // Получаем пакеты произведенные энкодером и эмитируем их
     while (ret >= 0) {
         ret = avcodec_receive_packet(m_enc_ctx, m_pkt);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
@@ -261,10 +260,15 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
 
         QByteArray encodedData(reinterpret_cast<const char*>(m_pkt->data), m_pkt->size);
         
-        // Исправляем сигнал - правильный порядок параметров
         emit encodedPacketReady(m_streamId, m_currentFrameNumber, encodedData);
         m_currentFrameNumber++;  // Увеличиваем счетчик кадров
         
         av_packet_unref(m_pkt);
     }
+}
+
+void VideoEncoder::setStreamId(int streamId)
+{
+    m_streamId = streamId;
+    qDebug() << "VideoEncoder: streamId updated to" << streamId;
 }

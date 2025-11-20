@@ -1,4 +1,5 @@
 #include "streampublisherwindow.h"
+#include "../video_defaults.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -29,6 +30,34 @@ StreamPublisherWindow::StreamPublisherWindow(int streamId, int deviceIndex, QWid
 
     // Инициализируем видеозахват с устройством по умолчанию (deviceIndex передан в конструктор)
     initializeVideoCapture();
+    initializeVideoEncoder();
+}
+
+
+void StreamPublisherWindow::initializeVideoEncoder()
+{
+    if (m_videoEncoder) {
+        cleanupVideoEncoder();
+    }
+
+    m_videoEncoder = new VideoEncoder(m_streamId, this);
+    m_videoEncoder->initialize(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS);
+    
+    connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
+            this, &StreamPublisherWindow::encodedPacketReady);
+    
+    qDebug() << "VideoEncoder initialized for stream:" << m_streamId;
+}
+
+void StreamPublisherWindow::cleanupVideoEncoder()
+{
+    if (m_videoEncoder) {
+        m_videoEncoder->cleanup();
+        m_videoEncoder->deleteLater();
+        m_videoEncoder = nullptr;
+    }
+    
+    qDebug() << "VideoEncoder cleaned up";
 }
 
 StreamPublisherWindow::~StreamPublisherWindow()
@@ -175,13 +204,28 @@ void StreamPublisherWindow::setViewersStatus(bool hasViewers)
     qDebug() << "Viewers status changed for stream" << m_streamId << ":" << hasViewers;
 }
 
-void StreamPublisherWindow::setStreamId(int streamId, const QString &displayId)
+void StreamPublisherWindow::setStreamId(uint32_t streamId, const QString &displayId)
 {
     m_streamId = streamId;
     m_displayId = displayId;
-    setStreamInfo(QString("Stream ID: %1").arg(displayId));
-    m_controlPanel->setStreamId(displayId);
-    setWindowTitle(QString("Stream Publisher - %1").arg(displayId));
+    
+    setWindowTitle(QString("Stream: %1").arg(displayId));
+    
+    // ТЕПЕРЬ инициализировать кодировщик с правильным ID
+    if (!m_videoEncoder) {
+        m_videoEncoder = new VideoEncoder(static_cast<int>(streamId), this);
+        m_videoEncoder->initialize(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS);
+        
+        // Подключить сигналы после инициализации
+        connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
+                this, &StreamPublisherWindow::onFrameEncoded, Qt::DirectConnection);
+    } else {
+        // Если кодировщик уже существует - обновить его ID
+        m_videoEncoder->setStreamId(static_cast<int>(streamId));
+    }
+    
+    updateStreamInfo();
+    qDebug() << "✅ StreamPublisherWindow: streamId set to" << streamId << "display:" << displayId;
 }
 
 void StreamPublisherWindow::startStream()
@@ -223,7 +267,15 @@ void StreamPublisherWindow::cleanup()
 
     stopStream();
     cleanupVideoCapture();
+    cleanupVideoEncoder();  
     StreamWindow::cleanup();
+}
+
+void StreamPublisherWindow::onFrameForEncoding(const cv::Mat &frame)
+{
+    if (m_streamingEnabled && m_videoEncoder) {
+        m_videoEncoder->encodeFrame(frame);
+    }
 }
 
 void StreamPublisherWindow::initializeVideoCapture()
@@ -239,10 +291,15 @@ void StreamPublisherWindow::initializeVideoCapture()
 
     m_videoCapture = new VideoCapture(m_deviceIndex, this);
 
+    // Подключение для превью
     connect(m_videoCapture, &VideoCapture::rawFrameReady,
             m_videoDisplay, &StreamVideoDisplayPanel::displayFrame);
     connect(m_videoCapture, &VideoCapture::errorOccurred,
             this, &StreamPublisherWindow::onVideoError);
+
+    // НОВОЕ: подключение для кодирования - используем rawFrameReady
+    connect(m_videoCapture, &VideoCapture::rawFrameReady,
+            this, &StreamPublisherWindow::onRawFrameReady);
 
     // Запускаем захват для превью
     m_videoCapture->startCapture();
@@ -266,21 +323,84 @@ void StreamPublisherWindow::cleanupVideoCapture()
     qDebug() << "VideoCapture cleaned up";
 }
 
+
+
+
 void StreamPublisherWindow::setStreamingEnabled(bool enabled)
 {
     if (m_streamingEnabled != enabled) {
         m_streamingEnabled = enabled;
         qDebug() << "Streaming enabled:" << enabled << "for stream:" << m_streamId;
         
-        // Управляем видеозахватом в зависимости от состояния
-        if (enabled) {
-            // Включаем передачу видео
+        if (enabled && m_videoEncoder) {
+            // Переинициализируем кодер при старте стрима
+            m_videoEncoder->initialize(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS);
             startStream();
-        } else {
-            // Выключаем передачу видео, но оставляем превью
+        } else if (!enabled && m_videoEncoder) {
+            // Очищаем кодер при остановке стрима
+            m_videoEncoder->cleanup();
             stopStream();
         }
         
         emit streamingStateChanged(m_streamId, enabled);
+    }
+}
+
+
+// ДОБАВЬТЕ эти методы в конец файла streampublisherwindow.cpp
+
+void StreamPublisherWindow::onRawFrameReady(const QImage &image)
+{
+    if (m_streamingEnabled && m_videoEncoder) {
+        cv::Mat frame = qImageToCvMat(image);
+        m_videoEncoder->encodeFrame(frame);
+    }
+}
+
+cv::Mat StreamPublisherWindow::qImageToCvMat(const QImage &image)
+{
+    QImage converted = image.convertToFormat(QImage::Format_RGB888);
+    cv::Mat mat(converted.height(), converted.width(), CV_8UC3, 
+                const_cast<uchar*>(converted.bits()), converted.bytesPerLine());
+    return mat.clone();
+}
+
+
+
+void StreamPublisherWindow::initializeWithRealId(uint32_t streamId, const QString &displayId)
+{
+    setStreamId(streamId, displayId);
+    
+    // Теперь можно запускать захват видео
+    if (m_videoCapture) {
+        m_videoCapture->startCapture();
+    }
+    
+    qDebug() << "🎬 StreamPublisherWindow fully initialized with real ID:" << streamId;
+}
+
+
+
+void StreamPublisherWindow::onFrameEncoded(int streamId, int frameNumber, const QByteArray &packet)
+{
+    qDebug() << "🎥 StreamPublisherWindow: Encoded frame - Stream:" << streamId 
+             << "Frame:" << frameNumber << "Size:" << packet.size() << "bytes";
+             
+    if (m_streamingEnabled) {
+        qDebug() << "📤 SENDING to NetworkManager - Stream:" << streamId;
+        emit encodedPacketReady(streamId, frameNumber, packet);
+    } else {
+        qDebug() << "⏸️ SKIPPING (streaming disabled) - Stream:" << streamId;
+    }
+}
+
+void StreamPublisherWindow::updateStreamInfo()
+{
+    // Если у вас уже есть setStreamInfo, используйте его
+    // Или реализуйте логику обновления информации о стриме
+    if (m_streamInfoLabel) {
+        m_streamInfoLabel->setText(QString("Stream ID: %1 | Status: %2")
+                                  .arg(m_displayId)
+                                  .arg(m_streamingEnabled ? "Active" : "Inactive"));
     }
 }

@@ -40,6 +40,7 @@ public:
     QVector<uint32_t> getActiveStreams() const;    // Изменено на uint32_t
     QString getStreamStatus(uint32_t streamId) const; // Изменено на uint32_t
 
+    void createViewerWindowForStream(uint32_t streamId);
 signals:
     void streamWindowCreated(StreamWindow *window);
     void streamWindowClosed(uint32_t streamId);    // Изменено на uint32_t

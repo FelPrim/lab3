@@ -1,23 +1,16 @@
-
 #include "streamviewerwindow.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QMessageBox>
-#include <QTimer>
-#include <QFrame>
 #include <QDebug>
-
-const QString StreamViewerWindow::STATUS_DISCONNECTED = "Disconnected";
-const QString StreamViewerWindow::STATUS_CONNECTING = "Connecting...";
-const QString StreamViewerWindow::STATUS_CONNECTED = "Connected";
-const QString StreamViewerWindow::STATUS_ENDED = "Stream ended";
 
 StreamViewerWindow::StreamViewerWindow(QWidget *parent)
     : StreamWindow(parent)
-    , m_streamId(-1)
-    , m_isJoined(false)
+    , m_streamId(0)
+    , m_isActive(false)
+    , m_displayBuffer(nullptr)
 {
     setupUI();
     setWindowTitle("Stream Viewer");
@@ -25,12 +18,53 @@ StreamViewerWindow::StreamViewerWindow(QWidget *parent)
     resize(800, 650);
 }
 
+StreamViewerWindow::~StreamViewerWindow()
+{
+    qDebug() << "StreamViewerWindow destroyed, ID:" << m_streamId;
+}
+
+void StreamViewerWindow::initialize()
+{
+    // Инициализируем буфер отображения
+    if (!m_displayBuffer) {
+        m_displayBuffer = new NetworkDisplayBuffer(m_streamId, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS, this);
+        connect(m_displayBuffer, &NetworkDisplayBuffer::frameReady,
+                m_videoDisplay, &StreamVideoDisplayPanel::displayFrame);
+        connect(m_displayBuffer, &NetworkDisplayBuffer::errorOccurred,
+                this, [this](const QString &error) {
+                    showError(QString("Display error: %1").arg(error));
+                });
+        
+        m_displayBuffer->initialize();
+    }
+    
+    m_isActive = true;
+    m_controlPanel->setActive(true);
+    updateStatusLabel();
+    
+    qDebug() << "StreamViewerWindow initialized for stream:" << m_streamId;
+}
+
+void StreamViewerWindow::cleanup()
+{
+    qDebug() << "StreamViewerWindow cleanup for stream:" << m_streamId;
+    
+    m_isActive = false;
+    m_controlPanel->setActive(false);
+    
+    if (m_displayBuffer) {
+        m_displayBuffer->cleanup();
+        m_displayBuffer->deleteLater();
+        m_displayBuffer = nullptr;
+    }
+    
+    StreamWindow::cleanup();
+}
+
 void StreamViewerWindow::setupUI()
 {
-    // Вызываем общую настройку UI из базового класса
     setupCommonUI();
-    
-    // Main container with better styling
+
     setStyleSheet(
         "QWidget {"
         "   background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1,"
@@ -38,41 +72,34 @@ void StreamViewerWindow::setupUI()
         "   color: #ffffff;"
         "}"
     );
-    
-    // Stream ID input section
-    auto inputSection = new QFrame(this);
-    inputSection->setStyleSheet(
+
+    // Stream info section
+    auto infoSection = new QFrame(this);
+    infoSection->setStyleSheet(
         "QFrame {"
         "   background: rgba(255, 255, 255, 0.05);"
         "   border: 1px solid #444;"
         "   border-radius: 8px;"
-        "   padding: 15px;"
+        "   padding: 10px;"
         "}"
     );
-    auto inputLayout = new QVBoxLayout(inputSection);
-    
-    auto inputHeader = new QLabel("Join Stream", this);
-    inputHeader->setStyleSheet(
+    auto infoLayout = new QVBoxLayout(infoSection); // ИСПРАВЛЕНО: infoLayout
+
+    auto infoHeader = new QLabel("Stream Information", this);
+    infoHeader->setStyleSheet(
         "font-size: 16px;"
         "font-weight: bold;"
         "color: #e9ecef;"
         "padding: 5px 0;"
     );
-    inputLayout->addWidget(inputHeader);
-    
-    auto inputHelp = new QLabel("Enter the 6-character stream ID to join:", this);
-    inputHelp->setStyleSheet(
-        "color: #adb5bd;"
-        "font-size: 12px;"
-        "padding: 2px 0 10px 0;"
-    );
-    inputLayout->addWidget(inputHelp);
-    
-    m_idInputWidget = new StreamIdInputWidget(this);
-    inputLayout->addWidget(m_idInputWidget);
-    
-    m_mainLayout->addWidget(inputSection);
-    
+    infoLayout->addWidget(infoHeader);
+
+    auto streamInfoLabel = new QLabel("Waiting for stream data...", this);
+    streamInfoLabel->setStyleSheet("color: #cfd8dc; font-size: 13px;");
+    infoLayout->addWidget(streamInfoLabel); // ИСПРАВЛЕНО: infoLayout
+
+    m_mainLayout->addWidget(infoSection);
+
     // Video display section
     auto videoSection = new QFrame(this);
     videoSection->setStyleSheet(
@@ -84,13 +111,13 @@ void StreamViewerWindow::setupUI()
         "}"
     );
     auto videoLayout = new QVBoxLayout(videoSection);
-    
+
     m_videoDisplay = new StreamVideoDisplayPanel(this);
-    m_videoDisplay->setPlaceholderText("Stream Preview\n\nEnter Stream ID and click Join to start watching");
+    m_videoDisplay->setPlaceholderText("Waiting for video stream...\n\nVideo will appear here when the stream starts");
     videoLayout->addWidget(m_videoDisplay);
-    
+
     m_mainLayout->addWidget(videoSection, 1);
-    
+
     // Statistics section
     auto statsSection = new QFrame(this);
     statsSection->setStyleSheet(
@@ -102,7 +129,7 @@ void StreamViewerWindow::setupUI()
         "}"
     );
     auto statsLayout = new QVBoxLayout(statsSection);
-    
+
     auto statsHeader = new QLabel("Stream Statistics", this);
     statsHeader->setStyleSheet(
         "font-size: 14px;"
@@ -111,13 +138,13 @@ void StreamViewerWindow::setupUI()
         "padding: 2px 0;"
     );
     statsLayout->addWidget(statsHeader);
-    
+
     m_statsWidget = new StreamStatsWidget(StreamStatsWidget::ViewerStats, this);
     statsLayout->addWidget(m_statsWidget);
-    
+
     m_mainLayout->addWidget(statsSection);
-    
-    // Control panel section (скрыт до подключения)
+
+    // Control panel section
     auto controlSection = new QFrame(this);
     controlSection->setStyleSheet(
         "QFrame {"
@@ -128,133 +155,70 @@ void StreamViewerWindow::setupUI()
         "}"
     );
     auto controlLayout = new QVBoxLayout(controlSection);
-    
+
     m_controlPanel = new StreamControlPanel(StreamControlPanel::Viewer, this);
-    m_controlPanel->setVisible(false);
     controlLayout->addWidget(m_controlPanel);
-    
+
     m_mainLayout->addWidget(controlSection);
-    
+
     setupConnections();
 }
 
-StreamViewerWindow::~StreamViewerWindow()
-{
-    qDebug() << "StreamViewerWindow destroyed, ID:" << m_streamId;
-}
-
-void StreamViewerWindow::initialize()  // Исправлено: убран параметр NetworkManager
-{
-    qDebug() << "StreamViewerWindow initialized";
-}
-
-
-
 void StreamViewerWindow::setupConnections()
 {
-    connect(m_idInputWidget, &StreamIdInputWidget::joinRequested, this, &StreamViewerWindow::onJoinRequested);
-    connect(m_controlPanel, &StreamControlPanel::leaveRequested, this, &StreamViewerWindow::onLeaveRequested);
-}
-
-void StreamViewerWindow::onJoinRequested(const QString &streamId)
-{
-    qDebug() << "Join stream requested:" << streamId;
-    
-    if (streamId.length() != 6) {
-        showError("Stream ID must be exactly 6 capital letters");
-        return;
-    }
-    
-    setStatus(STATUS_CONNECTING, "#FF8F00");
-    
-    // Заглушка: имитируем подключение через 2 секунды
-    QTimer::singleShot(2000, this, [this, streamId]() {
-        int numericId = streamId.length(); // Простая заглушка
-        setStreamId(numericId, streamId);
-        m_isJoined = true;
-        
-        setStatus(STATUS_CONNECTED, "#388E3C");
-        
-        m_idInputWidget->setVisible(false);
-        m_controlPanel->setVisible(true);
-        m_controlPanel->setStreamId(streamId);
-        m_controlPanel->setActive(true);
-        
-        m_videoDisplay->setPlaceholderText("📺 Receiving Stream...\n\nVideo data will appear here");
-        
-        emit streamJoined(m_streamId, m_displayId);
-    });
-}
-
-void StreamViewerWindow::onLeaveRequested()
-{
-    qDebug() << "Leave stream requested for:" << m_streamId;
-    
-    auto reply = QMessageBox::question(this, "Leave Stream", 
-                                     "Are you sure you want to leave this stream?",
-                                     QMessageBox::Yes | QMessageBox::No);
-    
-    if (reply == QMessageBox::Yes) {
-        m_isJoined = false;
-        emit streamLeft(m_streamId);
-        close();
-    }
+    connect(m_controlPanel, &StreamControlPanel::leaveRequested, 
+            this, &StreamViewerWindow::onLeaveRequested);
 }
 
 void StreamViewerWindow::setStreamId(int streamId, const QString &displayId)
 {
     m_streamId = streamId;
     m_displayId = displayId;
-    setStreamInfo(QString("Stream ID: %1").arg(displayId));  // Исправлено: используем базовый метод
+    setStreamInfo(QString("Stream ID: %1").arg(displayId));
     m_controlPanel->setStreamId(displayId);
     setWindowTitle(QString("Stream Viewer - %1").arg(displayId));
 }
 
-void StreamViewerWindow::joinStream(const QString &streamId)
+void StreamViewerWindow::setActive(bool active)
 {
-    if (!streamId.isEmpty()) {
-        m_idInputWidget->setStreamId(streamId);
-        onJoinRequested(streamId);
+    m_isActive = active;
+    m_controlPanel->setActive(active);
+    updateStatusLabel();
+}
+
+void StreamViewerWindow::onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData)
+{
+    if (streamId == m_streamId && m_displayBuffer && m_isActive) {
+        m_displayBuffer->addFrame(frameNumber, frameData);
+        
+        // Обновляем статистику
+        m_statsWidget->setFps(m_displayBuffer->getCurrentFps());
+        m_statsWidget->setBitrate(frameData.size() * 8 / 1024); // Примерный расчет битрейта
     }
 }
 
-void StreamViewerWindow::leaveStream()
+void StreamViewerWindow::onLeaveRequested()
 {
-    onLeaveRequested();
+    qDebug() << "Leave stream requested for:" << m_streamId;
+
+    auto reply = QMessageBox::question(this, "Leave Stream",
+                                       "Are you sure you want to leave this stream?",
+                                       QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        m_isActive = false;
+        updateStatusLabel();
+        emit streamLeft(m_streamId);
+        close();
+    }
 }
 
+// ДОБАВЛЕНА РЕАЛИЗАЦИЯ МЕТОДА
 void StreamViewerWindow::updateStatusLabel()
 {
-    // Теперь используем базовый метод setStatus
-    if (m_isJoined) {
-        setStatus(STATUS_CONNECTED, "#388E3C");
+    if (m_isActive) {
+        setStatus("Connected", "#28a745");
     } else {
-        setStatus(STATUS_DISCONNECTED, "#2d2d2d");
+        setStatus("Disconnected", "#dc3545");
     }
-}
-
-// Добавляем недостающие методы (заглушки)
-void StreamViewerWindow::onFrameReady(const QImage &image, int streamId)
-{
-    Q_UNUSED(image)
-    Q_UNUSED(streamId)
-    // Заглушка для тестирования
-}
-
-void StreamViewerWindow::onDecoderError(const QString &message)
-{
-    showError(message);
-}
-
-void StreamViewerWindow::cleanup()
-{
-    qDebug() << "StreamViewerWindow cleanup for stream:" << m_streamId;
-    
-    // Отключаемся от потока если подключены
-    if (m_isJoined) {
-        leaveStream();
-    }
-    
-    // Базовый cleanup
-    StreamWindow::cleanup();
 }

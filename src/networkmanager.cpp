@@ -1,5 +1,5 @@
 #include "networkmanager.h"
-#include "new/udpmanager.h"  // Добавляем для полного определения UDPManager
+#include "new/udpmanager.h"
 #include <QDataStream>
 #include <QDebug>
 #include <QNetworkInterface>
@@ -7,7 +7,6 @@
 #include "network_packet.h"
 #include "video_defaults.h"
 
-// Конструктор должен быть упрощен без инициализации полей, которые были удалены
 NetworkManager::NetworkManager(int streamId, QObject *parent)
     : QObject(parent)
     , m_streamId(streamId)
@@ -111,7 +110,6 @@ void NetworkManager::setServerAddress(const QString &address, quint16 port)
     qDebug() << "NetworkManager: Server address set to" << address << ":" << port;
 }
 
-// Заменяем onPacketReceived на processPacketFromNetwork
 void NetworkManager::processPacketFromNetwork(const QByteArray &data, const QHostAddress &sender, quint16 port)
 {
     Q_UNUSED(sender);
@@ -154,7 +152,6 @@ void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray &frameData
     }
 }
 
-// Обновляем sendPacketNewProtocol - используем m_streamId и m_udpManager
 void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType type)
 {
     sendPacketNewProtocol(data, type, m_packetSequence++);
@@ -180,7 +177,7 @@ void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType ty
     m_stats.totalPacketsSent++;
     m_stats.totalBytesSent += data.size();
     
-    // FEC логика без изменений
+    // FEC логика
     int groupId = customSequence / FEC_GROUP_SIZE;
     int positionInGroup = customSequence % FEC_GROUP_SIZE;
     
@@ -200,7 +197,6 @@ void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType ty
     }
 }
 
-// Обновляем processPacketNewProtocol - теперь принимает QByteArray вместо QNetworkDatagram
 void NetworkManager::processPacketNewProtocol(const QByteArray& data) {
     if (data.size() < sizeof(NetworkPacket)) {
         qDebug() << "Packet too small:" << data.size();
@@ -217,7 +213,7 @@ void NetworkManager::processPacketNewProtocol(const QByteArray& data) {
         // Обрабатываем обычный пакет
         const DataPacket* dataPacket = packet.asDataPacket();
         if (dataPacket && PacketProcessor::isValidPacketType(packet)) {    
-	    QByteArray payload = PacketProcessor::getDataPacketPayload(packet);
+            QByteArray payload = PacketProcessor::getDataPacketPayload(packet);
             
             qDebug() << "Received data packet - Stream:" << packet.route.streamId 
                      << "Type:" << dataPacket->type 
@@ -344,7 +340,6 @@ QByteArray NetworkManager::calculateXorForGroup(int groupId)
     return result;
 }
 
-// В tryRecoverLostPackets исправляем вызов processPacketNewProtocol
 void NetworkManager::tryRecoverLostPackets(int groupId)
 {
     if (!m_fecReceiveBuffers.contains(groupId) || !m_fecReceived.contains(groupId)) {
@@ -439,10 +434,10 @@ void NetworkManager::tryRecoverLostPackets(int groupId)
 
 void NetworkManager::cleanupOldAssemblies()
 {
-    // 1. Очищаем старые сборки фреймов (существующая логика)
+    // 1. Очищаем старые сборки фреймов
     m_frameAssembler->cleanupOldAssemblies(10000); // 10 секунд
     
-    // 2. Очищаем старые FEC группы (новая логика)
+    // 2. Очищаем старые FEC группы
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
     QList<int> groupsToRemove;
     

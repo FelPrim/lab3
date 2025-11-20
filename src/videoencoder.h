@@ -21,6 +21,7 @@ public:
 
     void initialize(int width, int height, int fps);
     void cleanup();
+    void setStreamId(int streamId);
 
 public slots:
     void encodeFrame(const cv::Mat &frame);

@@ -1,4 +1,6 @@
 #pragma once
+// ПРОБЛЕМА В HTONL!!! или NTOHL!!!
+#include <QtEndian>
 
 #include <cstdint>
 #include <QByteArray>
@@ -77,18 +79,25 @@ public:
         NetworkPacket packet;
         if (data.size() >= sizeof(NetworkPacket)) {
             memcpy(&packet, data.constData(), sizeof(NetworkPacket));
+	        packet.route.streamId = qFromBigEndian(packet.route.streamId);
+        	packet.route.packetSequence = qFromBigEndian(packet.route.packetSequence);
         }
         return packet;
     }
     
-    static QByteArray toByteArray(const NetworkPacket& packet) {
-        return QByteArray(reinterpret_cast<const char*>(&packet), sizeof(NetworkPacket));
-    }
+    
+static QByteArray toByteArray(const NetworkPacket& packet) {
+    NetworkPacket networkOrderPacket = packet;
+    networkOrderPacket.route.streamId = qToBigEndian(networkOrderPacket.route.streamId);
+    networkOrderPacket.route.packetSequence = qToBigEndian(networkOrderPacket.route.packetSequence);
+    
+    return QByteArray(reinterpret_cast<const char*>(&networkOrderPacket), sizeof(NetworkPacket));
+}
     
     static NetworkPacket createDataPacket(int streamId, int sequence, uint8_t type, const QByteArray& payload) {
-        NetworkPacket packet;
-        packet.route.streamId = streamId;
-        packet.route.packetSequence = sequence;
+	NetworkPacket packet;
+    	packet.route.streamId = qToBigEndian(static_cast<uint32_t>(streamId)); 
+    	packet.route.packetSequence = qToBigEndian(static_cast<uint32_t>(sequence)); 
         packet.content.dataPacket.type = type & 0x7F; // FEC_FLAG = 0
         int copySize = qMin(payload.size(), 1191);
         if (copySize > 0) {
@@ -98,10 +107,9 @@ public:
     }
     
     static NetworkPacket createXorPacket(int streamId, int sequence, const QByteArray& xorData) {
-        NetworkPacket packet;
-        packet.route.streamId = streamId;
-        packet.route.packetSequence = sequence;
-        
+         NetworkPacket packet;
+    packet.route.streamId = qToBigEndian(static_cast<uint32_t>(streamId));  // ДОБАВИТЬ
+    packet.route.packetSequence = qToBigEndian(static_cast<uint32_t>(sequence));  // ДОБАВИТЬ
         // Устанавливаем FEC_FLAG = 1 в первом байте
         packet.content.dataPacket.type = 0x80;
         
