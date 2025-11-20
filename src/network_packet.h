@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <QByteArray>
+#include "endianness.h"
 
 #pragma pack(push, 1)
 
@@ -11,6 +12,12 @@
 struct RouteHeader {
     uint32_t streamId;
     uint32_t packetSequence;
+};
+
+// Для обозначения того, что значения хранятся в network byte ordering
+struct nRouteHeader{
+    nuint32_t streamId;
+    nuint32_t packetSequence;
 };
 
 // Обычный пакет (FEC_FLAG = 0)
@@ -38,8 +45,31 @@ union PacketContent {
     XorPacket xorPacket;
 };
 
+union PacketHeader{
+    RouteHeader   header;
+    nRouteHeader nheader;
+};
+
+inline static void cast_to_nbe(PacketHeader& source){
+    const uint32_t streamId = source.header.streamId;
+    const uint32_t packetSequence = source.header.packetSequence;
+    const nuint32_t nstreamId = qToBigEndian(streamId);
+    const nuint32_t npacketSequence = qToBigEndian(packetSequence);
+    source.nheader.streamId = nstreamId;
+    source.nheader.packetSequence = npacketSequence;
+}
+
+inline static void cast_from_nbe(PacketHeader& source){
+    const nuint32_t nstreamId = source.nheader.streamId;
+    const nuint32_t npacketSequence = source.nheader.packetSequence;
+    const uint32_t streamId = qFromBigEndian(nstreamId);
+    const uint32_t packetSequence = qFromBigEndian(npacketSequence);
+    source.header.streamId = streamId;
+    source.header.packetSequence = packetSequence;
+}
+
 struct NetworkPacket {
-    RouteHeader route;      // 8 байт
+    nRouteHeader route;      // 8 байт
     PacketContent content;  // 1192 байта
     
     bool isXorPacket() const {
@@ -79,25 +109,27 @@ public:
         NetworkPacket packet;
         if (data.size() >= sizeof(NetworkPacket)) {
             memcpy(&packet, data.constData(), sizeof(NetworkPacket));
-	        packet.route.streamId = qFromBigEndian(packet.route.streamId);
-        	packet.route.packetSequence = qFromBigEndian(packet.route.packetSequence);
         }
         return packet;
     }
     
     
-static QByteArray toByteArray(const NetworkPacket& packet) {
-    NetworkPacket networkOrderPacket = packet;
-    networkOrderPacket.route.streamId = qToBigEndian(networkOrderPacket.route.streamId);
-    networkOrderPacket.route.packetSequence = qToBigEndian(networkOrderPacket.route.packetSequence);
-    
-    return QByteArray(reinterpret_cast<const char*>(&networkOrderPacket), sizeof(NetworkPacket));
-}
+    static QByteArray toByteArray(const NetworkPacket& packet) {
+        NetworkPacket networkOrderPacket = packet;
+        return QByteArray(reinterpret_cast<const char*>(&networkOrderPacket), sizeof(NetworkPacket));
+    }
     
     static NetworkPacket createDataPacket(int streamId, int sequence, uint8_t type, const QByteArray& payload) {
-	NetworkPacket packet;
-    	packet.route.streamId = qToBigEndian(static_cast<uint32_t>(streamId)); 
-    	packet.route.packetSequence = qToBigEndian(static_cast<uint32_t>(sequence)); 
+	    NetworkPacket packet;
+        
+        PacketHeader route = {
+            streamId, 
+            sequence
+        };
+        cast_to_nbe(route);
+        packet.route.streamId = route.nheader.streamId;
+        packet.route.packetSequence = route.nheader.packetSequence;
+
         packet.content.dataPacket.type = type & 0x7F; // FEC_FLAG = 0
         int copySize = qMin(payload.size(), 1191);
         if (copySize > 0) {
@@ -108,15 +140,22 @@ static QByteArray toByteArray(const NetworkPacket& packet) {
     
     static NetworkPacket createXorPacket(int streamId, int sequence, const QByteArray& xorData) {
          NetworkPacket packet;
-    packet.route.streamId = qToBigEndian(static_cast<uint32_t>(streamId));  // ДОБАВИТЬ
-    packet.route.packetSequence = qToBigEndian(static_cast<uint32_t>(sequence));  // ДОБАВИТЬ
-        // Устанавливаем FEC_FLAG = 1 в первом байте
-        packet.content.dataPacket.type = 0x80;
+
+        PacketHeader route = {
+            streamId, 
+            sequence
+        };
+        cast_to_nbe(route);
+        packet.route.streamId = route.nheader.streamId;
+        packet.route.packetSequence = route.nheader.packetSequence;
         
         int copySize = qMin(xorData.size(), 1192);
         if (copySize > 0) {
             memcpy(packet.content.xorPacket.xorData, xorData.constData(), copySize);
         }
+        
+        // Устанавливаем FEC_FLAG = 1 в первом байте
+        packet.content.xorPacket.xorData[0] |= 0x80;
         return packet;
     }
     
@@ -127,7 +166,9 @@ static QByteArray toByteArray(const NetworkPacket& packet) {
     
     static QByteArray getXorPacketData(const NetworkPacket& packet) {
         if (!packet.isXorPacket()) return QByteArray();
-        return QByteArray(reinterpret_cast<const char*>(packet.content.xorPacket.xorData), 1192);
+        QByteArray result = QByteArray(reinterpret_cast<const char*>(packet.content.xorPacket.xorData), 1192);
+        result[0] &= 0x7f;
+        return result;
     }
     
     // Получить тип пакета (для обычных пакетов)

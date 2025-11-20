@@ -101,6 +101,7 @@ set(HEADERS
     new/tcpmanager.h
     new/udpmanager.h
     new/streamidconverter.h
+    endianness.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})

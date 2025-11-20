@@ -107,7 +107,7 @@ void UDPManager::sendPacket(const QByteArray &data, const QHostAddress &host, qu
 void UDPManager::onPacketReceived()
 {
     if (!m_udpSocket) return;
-    
+    printf("+");
     while (m_udpSocket->hasPendingDatagrams()) {
         QByteArray datagram;
         datagram.resize(m_udpSocket->pendingDatagramSize());
