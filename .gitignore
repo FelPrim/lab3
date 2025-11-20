@@ -56,3 +56,5 @@ dkms.conf
 
 # else
 *.swp
+
+src/build/
