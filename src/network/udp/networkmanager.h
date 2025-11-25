@@ -6,12 +6,12 @@
 #include <QSet>
 #include <QHostAddress>
 #include <QNetworkDatagram>
-#include "video_defaults.h"
-#include <QDateTime> 
+#include "../../video_defaults.h"
+#include <QDateTime>
 #include <QVariant>
 #include <zlib.h>
 #include "myfec.h"
-#include "network_packet.h" 
+#include "network_packet.h"
 
 // Forward declaration
 class UDPManager;

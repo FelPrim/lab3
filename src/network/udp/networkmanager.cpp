@@ -1,11 +1,11 @@
 #include "networkmanager.h"
-#include "new/udpmanager.h"
+#include "udpmanager.h"
 #include <QDataStream>
 #include <QDebug>
 #include <QNetworkInterface>
 #include <QVariant>
 #include "network_packet.h"
-#include "video_defaults.h"
+#include "../../video_defaults.h"
 
 NetworkManager::NetworkManager(int streamId, QObject *parent)
     : QObject(parent)

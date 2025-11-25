@@ -1,6 +1,11 @@
 {
     "files.associations": {
         "valarray": "cpp",
-        "cstring": "cpp"
+        "cstring": "cpp",
+        "cstdint": "cpp",
+        "qhboxlayout": "cpp",
+        "qpushbutton": "cpp",
+        "qmainwindow": "cpp",
+        "qscrollarea": "cpp"
     }
 }

@@ -1,10 +1,9 @@
 #pragma once
-// ПРОБЛЕМА В HTONL!!! или NTOHL!!!
-#include <QtEndian>
 
+#include <QtEndian>
 #include <cstdint>
 #include <QByteArray>
-#include "endianness.h"
+#include "../endianness.h"
 
 #pragma pack(push, 1)
 
@@ -119,32 +118,32 @@ public:
         return QByteArray(reinterpret_cast<const char*>(&networkOrderPacket), sizeof(NetworkPacket));
     }
     
-    static NetworkPacket createDataPacket(int streamId, int sequence, uint8_t type, const QByteArray& payload) {
-	    NetworkPacket packet;
+    static NetworkPacket createDataPacket(uint32_t streamId, uint32_t sequence, uint8_t type, const QByteArray& payload) {
+        NetworkPacket packet;
         
-        PacketHeader route = {
-            streamId, 
-            sequence
-        };
+        // ИСПРАВИТЬ инициализацию:
+        PacketHeader route;
+        route.header.streamId = streamId;
+        route.header.packetSequence = sequence;
         cast_to_nbe(route);
         packet.route.streamId = route.nheader.streamId;
         packet.route.packetSequence = route.nheader.packetSequence;
 
-        packet.content.dataPacket.type = type & 0x7F; // FEC_FLAG = 0
+        packet.content.dataPacket.type = type & 0x7F;
         int copySize = qMin(payload.size(), 1191);
         if (copySize > 0) {
             memcpy(packet.content.dataPacket.payload, payload.constData(), copySize);
         }
         return packet;
     }
-    
-    static NetworkPacket createXorPacket(int streamId, int sequence, const QByteArray& xorData) {
-         NetworkPacket packet;
 
-        PacketHeader route = {
-            streamId, 
-            sequence
-        };
+    static NetworkPacket createXorPacket(uint32_t streamId, uint32_t sequence, const QByteArray& xorData) {
+        NetworkPacket packet;
+
+        // ИСПРАВИТЬ инициализацию:
+        PacketHeader route;
+        route.header.streamId = streamId;
+        route.header.packetSequence = sequence;
         cast_to_nbe(route);
         packet.route.streamId = route.nheader.streamId;
         packet.route.packetSequence = route.nheader.packetSequence;
@@ -154,11 +153,10 @@ public:
             memcpy(packet.content.xorPacket.xorData, xorData.constData(), copySize);
         }
         
-        // Устанавливаем FEC_FLAG = 1 в первом байте
         packet.content.xorPacket.xorData[0] |= 0x80;
         return packet;
     }
-    
+
     static QByteArray getDataPacketPayload(const NetworkPacket& packet) {
         if (packet.isXorPacket()) return QByteArray();
         return QByteArray(reinterpret_cast<const char*>(packet.content.dataPacket.payload), 1191);

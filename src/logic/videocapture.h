@@ -3,7 +3,7 @@
 #include <QThread>
 #include <QImage>
 #include <opencv2/opencv.hpp>
-#include "video_defaults.h"
+#include "../video_defaults.h"
 
 class VideoCapture : public QThread
 {
@@ -32,4 +32,7 @@ private:
     std::atomic<bool> m_running{false};
     cv::VideoCapture m_capture;
     float m_fps = DEFAULT_FPS;
+public:
+    // Статический метод для получения списка доступных устройств
+    static QList<int> getAvailableDevices();
 };

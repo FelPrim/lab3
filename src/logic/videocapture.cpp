@@ -185,3 +185,38 @@ void VideoCapture::run()
     m_capture.release();
     qDebug() << "VideoCapture: stopped device" << m_deviceIndex << "total frames:" << frameCount;
 }
+
+QList<int> VideoCapture::getAvailableDevices()
+{
+    QList<int> devices;
+    
+    qDebug() << "Scanning for video devices...";
+    for (int i = 0; i < 10; ++i) {
+        cv::VideoCapture cap;
+#ifdef _WIN32
+        try {
+            cap.open(i, cv::CAP_DSHOW);
+        } catch (...) {
+            continue;
+        }
+#else
+#ifdef __linux__
+        if (!cap.open(i, cv::CAP_V4L2)) continue;
+#else
+#ifdef __APPLE__
+        if (!cap.open(i, cv::CAP_AVFOUNDATION)) continue;
+#else
+        if (!cap.open(i)) continue;
+#endif
+#endif
+#endif
+        if (cap.isOpened()) {
+            devices.append(i);
+            qDebug() << "Found device:" << i;
+            cap.release();
+        }
+    }
+
+    qDebug() << "Total devices found:" << devices.size();
+    return devices;
+}

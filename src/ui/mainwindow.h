@@ -1,40 +1,108 @@
 #pragma once
 
+#include "videogridwidget.h"
 #include <QMainWindow>
-#include <QPushButton>
-#include <QLabel>
+#include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QMap>
-#include "new/streammanager.h"
-#include "new/streamwindow.h"
+#include <QSplitter>
+#include "videogridwidget.h"
+#include "maincontrolpanel.h"
+#include "videoselectiondialog.h"
+#include "../network/streammanager.h"
+#include "id_utils.h"
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow() override;
+    ~MainWindow();
+
+    void initialize();
+    void cleanup();
 
 private slots:
-    void onStartStreamClicked();
-    void onJoinStreamClicked();
-    void onStreamWindowCreated(StreamWindow *window);
-    void onStreamWindowClosed(int streamId);
+    // Слоты для MainControlPanel
+    void onAddDeviceRequested();
+    void onCreateConferenceRequested();
+    void onJoinConferenceRequested(const QString& conferenceId);
+    void onJoinPublicStreamRequested(const QString& streamId);
+    
+    // Слоты для VideoGridWidget
+    void onStreamerDisconnectRequested(int deviceIndex);
+    void onViewerLeaveRequested(uint32_t streamId);
+    void onStreamStartRequested(int deviceIndex);
+    void onStreamStopRequested(uint32_t streamId);
+    void onEncodedPacketReady(uint32_t streamId, int frameNumber, const QByteArray& packet);
+
+    // Слоты для VideoSelectionDialog
+    void onDeviceSelected(int deviceIndex);
+    
+    // Слоты для StreamManager
     void onConnectionStatusChanged(bool connected);
+    void onErrorOccurred(const QString& message);
 
 private:
     void setupUI();
     void setupConnections();
     
-    // UI elements
-    QPushButton *m_btnStartStream;
-    QPushButton *m_btnJoinStream;
-    QLabel *m_connectionStatusLabel;
-    QLabel *m_infoLabel;
+    // Вспомогательные методы
+    void createConferenceWindow(uint32_t callId, const QString& displayId);
+    void showError(const QString& message);
+    void updateStatus();
+
+    // Основные компоненты
+    QSplitter* m_mainSplitter;
+    MainControlPanel* m_controlPanel;
+    VideoGridWidget* m_videoGrid;
     
-    // Stream management
-    StreamManager *m_streamManager;
+    // Диалоги
+    VideoSelectionDialog* m_videoSelectionDialog;
     
-    // Track open windows
-    QMap<int, StreamWindow*> m_openWindows;
+    // Менеджеры
+    StreamManager* m_streamManager;
+    
+    // Состояние
+    bool m_initialized;
+    bool m_connectedToServer;
+    
+    // Счетчики
+    int m_nextDeviceIndex;
+    QMap<uint32_t, QString> m_activeConferences;
+
+public slots:
+    void onStreamWindowCreated(QWidget* window) {
+        qDebug() << "Stream window created:" << window; // Заглушка
+    }
+    
+    void onStreamWindowClosed(uint32_t streamId) {
+        qDebug() << "Stream window closed:" << streamId; // Заглушка
+    }
+
+private slots:
+    void onViewerWidgetCreated(uint32_t streamId) {
+        qDebug() << "MainWindow: viewer widget created for stream" << streamId;
+    }
+    
+    void onViewerWidgetClosed(uint32_t streamId) {
+        qDebug() << "MainWindow: viewer widget closed for stream" << streamId;
+    }
+    
+    void onStreamerWidgetCreated(int deviceIndex, uint32_t streamId) {
+        qDebug() << "MainWindow: streamer widget created for device" << deviceIndex << "stream" << streamId;
+    }
+    
+    void onStreamerWidgetClosed(int deviceIndex) {
+        qDebug() << "MainWindow: streamer widget closed for device" << deviceIndex;
+    }
+private:
+    // Вспомогательные методы для управления устройствами
+    void refreshAvailableDevices();
+    void updateDeviceAvailability();
+    void initializeStreamerForDevice(int deviceIndex);
+    
+    // Состояние
+    QList<int> m_availableDevices;    // Все доступные устройства
+    QList<int> m_usedDevices;         // Используемые устройства
 };

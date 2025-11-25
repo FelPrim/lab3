@@ -5,16 +5,7 @@
 #include <QTimer>
 #include <QVector>
 #include <cstdint>
-
-#include "tcpclient.h"
-#include "../networkmanager.h"
-#include "streamwindow.h"
-#include "networkfacade.h"
-#include "streamidconverter.h"  // Добавляем
-
-// Forward declarations
-class StreamPublisherWindow;
-class StreamViewerWindow;
+#include <QDebug> 
 
 class StreamManager : public QObject
 {
@@ -27,48 +18,87 @@ public:
     void initialize();
     void cleanup();
 
+    // ЗАКОММЕНТИРОВАТЬ все методы, связанные со старым GUI
+    /*
     void createStream(int deviceIndex);
     void joinStream(const QString &streamId);
-    void deleteStream(uint32_t streamId);  // Изменено на uint32_t
-    void leaveStream(uint32_t streamId);   // Изменено на uint32_t
+    void deleteStream(uint32_t streamId);
+    void leaveStream(uint32_t streamId);
 
     void setServerAddress(const QString &address, quint16 port);
     void connectToServer();
     void disconnectFromServer();
 
-    bool isStreamActive(uint32_t streamId) const;  // Изменено на uint32_t
-    QVector<uint32_t> getActiveStreams() const;    // Изменено на uint32_t
-    QString getStreamStatus(uint32_t streamId) const; // Изменено на uint32_t
+    bool isStreamActive(uint32_t streamId) const;
+    QVector<uint32_t> getActiveStreams() const;
+    QString getStreamStatus(uint32_t streamId) const;
 
     void createViewerWindowForStream(uint32_t streamId);
+    */
+    
 signals:
-    void streamWindowCreated(StreamWindow *window);
-    void streamWindowClosed(uint32_t streamId);    // Изменено на uint32_t
+    // void streamWindowCreated(QWidget *window);
+    // void streamWindowClosed(uint32_t streamId);
     void connectionStatusChanged(bool connected);
     void errorOccurred(const QString &message);
 
 private slots:
-    // Existing UI-related handlers
-    void onStreamStopped(uint32_t streamId);       // Изменено на uint32_t
-    void onStreamLeft(uint32_t streamId);          // Изменено на uint32_t
-    void onWindowClosed(uint32_t streamId);        // Изменено на uint32_t
+    // void onStreamStopped(uint32_t streamId);
+    // void onStreamLeft(uint32_t streamId);
+    // void onWindowClosed(uint32_t streamId);
 
-    // Handlers for server messages
-    void onServerStreamCreated(uint32_t streamId);
-    void onServerStreamDeleted(uint32_t streamId);
-    void onServerStreamJoined(uint32_t streamId);
-    void onServerStreamStart(uint32_t streamId);
-    void onServerStreamEnd(uint32_t streamId);
+    // void onServerStreamCreated(uint32_t streamId);
+    // void onServerStreamDeleted(uint32_t streamId);
+    // void onServerStreamJoined(uint32_t streamId);
+    // void onServerStreamStart(uint32_t streamId);
+    // void onServerStreamEnd(uint32_t streamId);
 
 private:
     bool m_connectedToServer;
-    QMap<uint32_t, StreamWindow*> m_openWindows;  // Изменено на uint32_t
-    NetworkFacade *m_networkFacade = nullptr;
+    // QMap<uint32_t, QWidget*> m_openWindows;
+    // NetworkFacade *m_networkFacade = nullptr;
+
+
+public:
+    // Заглушки для GUI
+    void setServerAddress(const QString &address, quint16 port) {
+        qDebug() << "StreamManager: setServerAddress" << address << port;
+    }
     
-    // Для ожидающих создания стримов
-    StreamPublisherWindow *m_pendingWindow = nullptr;
-    int m_pendingDeviceIndex = -1;
+    void connectToServer() {
+        qDebug() << "StreamManager: connectToServer";
+        m_connectedToServer = true;
+        emit connectionStatusChanged(true);
+    }
     
-    // Вспомогательные методы
-    void setupStreamConnections(StreamPublisherWindow* window, uint32_t streamId);
+    void disconnectFromServer() {
+        qDebug() << "StreamManager: disconnectFromServer";
+        m_connectedToServer = false;
+        emit connectionStatusChanged(false);
+    }
+    
+    void createStream(int deviceIndex) {
+        qDebug() << "StreamManager: createStream for device" << deviceIndex;
+        // Временная заглушка
+    }
+    
+    void joinStream(const QString &streamId) {
+        qDebug() << "StreamManager: joinStream" << streamId;
+        // Временная заглушка
+    }
+    
+    void deleteStream(uint32_t streamId) {
+        qDebug() << "StreamManager: deleteStream" << streamId;
+        // Временная заглушка
+    }
+    
+    void leaveStream(uint32_t streamId) {
+        qDebug() << "StreamManager: leaveStream" << streamId;
+        // Временная заглушка
+    }
+
+// Добавить сигналы, которые ожидает GUI:
+signals:
+    void streamWindowCreated(QWidget *window);
+    void streamWindowClosed(uint32_t streamId);
 };

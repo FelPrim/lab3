@@ -5,8 +5,8 @@
 #include <QElapsedTimer>
 #include <QMap>
 #include <atomic>
-#include "videodecoder.h"
-#include "video_defaults.h"
+#include "../../logic/videodecoder.h"
+#include "../../video_defaults.h"
 
 class NetworkDisplayBuffer : public QObject
 {

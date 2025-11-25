@@ -4,7 +4,7 @@
 #include <QByteArray>
 #include <atomic>
 #include <opencv2/opencv.hpp>
-#include "video_defaults.h"
+#include "../video_defaults.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>

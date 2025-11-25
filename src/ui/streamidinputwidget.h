@@ -36,4 +36,13 @@ private:
     QRegularExpressionValidator *m_validator;
     
     static const QRegularExpression STREAM_ID_REGEX;
+
+public:
+    void setPlaceholderText(const QString& text) {
+        // Заглушка для совместимости
+        m_placeholder = text;
+    }
+    
+private:
+    QString m_placeholder;
 };

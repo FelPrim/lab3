@@ -1,9 +1,9 @@
 #include "networkfacade.h"
-#include "networkmanager.h"
-#include "streamidconverter.h"
+#include "udp/networkmanager.h"
 #include <QDebug>
 #include <QtEndian>
-#include <QNetworkInterface> 
+#include <QNetworkInterface>
+#include "../ui/id_utils.h"
 
 #ifdef _WIN32
 #include <winsock2.h>

@@ -20,94 +20,101 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Test)
 find_package(OpenCV REQUIRED)
 
 # ---------------------------------------------------------------------------
-# Test executables (commented out as in original)
-# ---------------------------------------------------------------------------
-#enable_testing()
-#qt_add_executable(test_myfec test_myfec.cpp myfec.cpp)
-#qt_add_executable(test_packet_format test_packet_format.cpp myfec.cpp)
-#target_link_libraries(test_myfec PRIVATE Qt6::Test Qt6::Core ${OpenCV_LIBS})
-#target_link_libraries(test_packet_format PRIVATE Qt6::Test Qt6::Core ${OpenCV_LIBS})
-#target_include_directories(test_myfec PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-#target_include_directories(test_packet_format PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-#add_test(NAME test_myfec COMMAND test_myfec)
-#add_test(NAME test_packet_format COMMAND test_packet_format)
-
-# ---------------------------------------------------------------------------
-# Sources & headers (combined from old and new)
+# Sources & headers (updated for new structure)
 # ---------------------------------------------------------------------------
 set(SOURCES
     main.cpp
-    mainwindow.cpp
-    videocapture.cpp
-    videodisplay.cpp
-    videoencoder.cpp
-    networkmanager.cpp
-    videoselectiondialog.cpp
-    videolayoutcalculator.cpp
-    darktheme.cpp
-    removevideodialog.cpp
-    videodecoder.cpp
-    networkdisplaybuffer.cpp
-    framebuffer.cpp
-    myfec.cpp
     
-    new/tcpclient.cpp
+    # Logic files
+    logic/videocapture.cpp
+    logic/videodisplay.cpp
+    logic/videoencoder.cpp
+    logic/videodecoder.cpp
+    logic/framebuffer.cpp
+    
+    # Network files
+    network/udp/networkmanager.cpp
+    network/udp/networkdisplaybuffer.cpp
+    network/networkfacade.cpp
+    network/streammanager.cpp
+    network/tcp/tcpclient.cpp
+    network/tcp/tcpmanager.cpp
+    network/udp/udpmanager.cpp
+    network/udp/myfec.cpp
+    
+    # UI files
+    ui/mainwindow.cpp
+    ui/videoselectiondialog.cpp
+    ui/darktheme.cpp
+    
+    ui/streamcontrolpanel.cpp
+    ui/streamidinputwidget.cpp
+    ui/deviceselectorwidget.cpp
 
-    # New GUI files
-    new/streammanager.cpp
-    new/streampublisherwindow.cpp
-    new/streamviewerwindow.cpp
-    new/streamcontrolpanel.cpp
-    new/streamvideodisplaypanel.cpp
-    new/streamidinputwidget.cpp
-    new/deviceselectorwidget.cpp
-    new/streamstatswidget.cpp
-    new/streamwindow.cpp
-    new/networkfacade.cpp
-    new/tcpmanager.cpp
-    new/udpmanager.cpp
-    new/streamidconverter.cpp
+    ui/conferencewindow.cpp
+    ui/streamerwidget.cpp
+    ui/viewerwidget.cpp  
+    ui/videogridwidget.cpp
+    ui/streamselectorwidget.cpp
+    ui/conferencecontrolpanel.cpp
+    ui/maincontrolpanel.cpp
+    
 )
 
 set(HEADERS
     video_defaults.h
-    mainwindow.h
-    videocapture.h
-    videodisplay.h
-    videoencoder.h
-    networkmanager.h
-    videoselectiondialog.h
-    videolayoutcalculator.h
-    darktheme.h
-    removevideodialog.h
-    videodecoder.h
-    networkdisplaybuffer.h
-    framebuffer.h
-    myfec.h
-    network_packet.h
     
-    # New GUI headers
-    new/streammanager.h
-    new/streampublisherwindow.h
-    new/streamviewerwindow.h
-    new/streamcontrolpanel.h
-    new/streamvideodisplaypanel.h
-    new/streamidinputwidget.h
-    new/deviceselectorwidget.h
-    new/streamstatswidget.h
-    new/tcpclient.h
-    new/streamwindow.h
-    new/networkfacade.h
-    new/tcpmanager.h
-    new/udpmanager.h
-    new/streamidconverter.h
-    endianness.h
+    # Logic headers
+    logic/videocapture.h
+    logic/videodisplay.h
+    logic/videoencoder.h
+    logic/videodecoder.h
+    logic/framebuffer.h
+    
+    # Network headers
+    network/udp/networkmanager.h
+    network/udp/networkdisplaybuffer.h
+    network/networkfacade.h
+    network/streammanager.h
+    network/tcp/tcpclient.h
+    network/tcp/tcpmanager.h
+    network/udp/udpmanager.h
+    network/udp/myfec.h
+    network/udp/network_packet.h
+    network/endianness.h
+    
+    # UI headers
+    ui/mainwindow.h
+    ui/videoselectiondialog.h
+    ui/darktheme.h
+    
+   
+    ui/streamcontrolpanel.h
+    ui/streamidinputwidget.h
+    ui/deviceselectorwidget.h
+    
+    ui/id_utils.h
+
+    ui/conferencewindow.h
+    ui/streamerwidget.h
+    ui/viewerwidget.h
+    ui/videogridwidget.h
+    ui/streamselectorwidget.h
+    ui/conferencecontrolpanel.h
+    ui/maincontrolpanel.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 # Include directories
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/logic
+    ${CMAKE_CURRENT_SOURCE_DIR}/network
+    ${CMAKE_CURRENT_SOURCE_DIR}/network/tcp
+    ${CMAKE_CURRENT_SOURCE_DIR}/network/udp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui
+)
 
 # ---------------------------------------------------------------------------
 # FEC Library (feclib) - from original version

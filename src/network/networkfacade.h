@@ -3,8 +3,8 @@
 #include <QObject>
 #include <QHostAddress>
 #include <QMap>
-#include "udpmanager.h"
-#include "tcpmanager.h"
+#include "udp/udpmanager.h"
+#include "tcp/tcpmanager.h"
 #include "../video_defaults.h"
 
 class NetworkManager;

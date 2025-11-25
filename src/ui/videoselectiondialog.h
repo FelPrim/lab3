@@ -10,7 +10,8 @@ class VideoSelectionDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit VideoSelectionDialog(const QList<int> &availableDevices, QWidget *parent = nullptr);
+    // Унифицированный конструктор - без параметра availableDevices
+    explicit VideoSelectionDialog(QWidget *parent = nullptr);
     int selectedDevice() const { return m_selectedDevice; }
 
 private slots:
@@ -19,4 +20,11 @@ private slots:
 private:
     QListWidget *m_listWidget;
     int m_selectedDevice = -1;
+
+public:
+    int getSelectedDeviceIndex() const;
+    void refreshDevices();
+    
+signals:
+    void deviceSelected(int deviceIndex);
 };

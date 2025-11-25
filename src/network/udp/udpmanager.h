@@ -1,4 +1,5 @@
 #pragma once
+
 #include <QtEndian>
 #include <QObject>
 #include <QUdpSocket>

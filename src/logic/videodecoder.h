@@ -4,6 +4,7 @@
 #include <QImage>
 #include <QByteArray>
 #include <atomic>
+#include "../video_defaults.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>

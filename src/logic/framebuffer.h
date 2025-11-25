@@ -4,7 +4,7 @@
 #include <QVector>
 #include <QMutex>
 #include <QByteArray>
-#include "video_defaults.h"
+#include "../video_defaults.h"
 
 class FrameBuffer
 {

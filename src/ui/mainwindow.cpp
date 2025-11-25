@@ -1,331 +1,467 @@
+// mainwindow.cpp
 #include "mainwindow.h"
 #include "darktheme.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
-#include <QInputDialog>
-#include <QLineEdit>
-#include <QFrame>
-#include <QFont>
-#include <QRegularExpression>
 #include <QDebug>
+#include "id_utils.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , m_btnStartStream(nullptr)
-    , m_btnJoinStream(nullptr)
-    , m_connectionStatusLabel(nullptr)
-    , m_infoLabel(nullptr)
-    , m_streamManager(new StreamManager(this))
+    , m_mainSplitter(nullptr)
+    , m_controlPanel(nullptr)
+    , m_videoGrid(nullptr)
+    , m_videoSelectionDialog(nullptr)
+    , m_streamManager(nullptr)
+    , m_initialized(false)
+    , m_connectedToServer(false)
+    , m_nextDeviceIndex(0)
 {
     setupUI();
     setupConnections();
     
-    // Initialize stream manager
-    m_streamManager->initialize();
-    m_streamManager->setServerAddress(DEFAULT_ECHO_SERVER_ADDRESS, DEFAULT_ECHO_SERVER_PORT);
-    m_streamManager->connectToServer();
+    // Инициализируем списки устройств
+    refreshAvailableDevices();
     
-    setMinimumSize(500, 400);
+    initialize();
 }
 
 MainWindow::~MainWindow()
 {
-    m_streamManager->disconnectFromServer();
-    m_streamManager->cleanup();
+    cleanup();
 }
 
 void MainWindow::setupUI()
 {
     DarkTheme::applyToApplication();
     
-    setWindowTitle("Video Streaming Client");
-    
-    // Central widget with same style as stream windows
-    auto central = new QWidget(this);
-    central->setObjectName("centralWidget");
-    central->setStyleSheet(
-        "#centralWidget {"
-        "   background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1,"
-        "                               stop: 0 #1e1e2e, stop: 1 #252536);"
-        "}"
-    );
-    
-    auto mainLayout = new QVBoxLayout(central);
-    mainLayout->setSpacing(25);
-    mainLayout->setContentsMargins(40, 40, 40, 40);
-    
-    // Header only
-    auto headerLabel = new QLabel("Video Streaming", this);
-    headerLabel->setAlignment(Qt::AlignCenter);
-    headerLabel->setStyleSheet(
-        "font-size: 24px;"
-        "font-weight: 300;"
-        "color: #e0e0e0;"
-        "padding: 20px 0;"
-        "margin-bottom: 10px;"
-    );
-    mainLayout->addWidget(headerLabel);
-    
-    // Connection status
-    m_connectionStatusLabel = new QLabel("● Disconnected", this);
-    m_connectionStatusLabel->setAlignment(Qt::AlignCenter);
-    m_connectionStatusLabel->setStyleSheet(
-        "font-size: 13px;"
-        "font-weight: 500;"
-        "padding: 8px 20px;"
-        "background: #333;"
-        "color: #999;"
-        "border: 1px solid #444;"
-        "border-radius: 12px;"
-        "margin: 10px 0;"
-    );
-    mainLayout->addWidget(m_connectionStatusLabel);
-    
-    // Info label with same style as stream windows
-    m_infoLabel = new QLabel("Select an action to begin streaming", this);
-    m_infoLabel->setAlignment(Qt::AlignCenter);
-    m_infoLabel->setStyleSheet(
-        "color: #adb5bd;"
-        "font-size: 13px;"
-        "padding: 12px;"
-        "background: rgba(255, 255, 255, 0.05);"
-        "border: 1px solid #444;"
-        "border-radius: 6px;"
-        "margin: 10px 0;"
-    );
-    mainLayout->addWidget(m_infoLabel);
-    
-    mainLayout->addStretch();
-    
-    // Action buttons container
-    auto buttonContainer = new QWidget(this);
-    buttonContainer->setStyleSheet("background: transparent;");
-    auto buttonLayout = new QVBoxLayout(buttonContainer);
-    buttonLayout->setSpacing(12);
-    buttonLayout->setContentsMargins(0, 0, 0, 0);
-    
-    // Start Stream button
-    m_btnStartStream = new QPushButton("Start Streaming", this);
-    m_btnStartStream->setMinimumHeight(50);
-    m_btnStartStream->setStyleSheet(
-        "QPushButton {"
-        "   background: #2a2a2a;"
-        "   color: #e0e0e0;"
-        "   font-size: 14px;"
-        "   font-weight: 500;"
-        "   border: 1px solid #444;"
-        "   border-radius: 8px;"
-        "   padding: 12px;"
-        "}"
-        "QPushButton:hover {"
-        "   background: #333;"
-        "   border: 1px solid #555;"
-        "}"
-        "QPushButton:pressed {"
-        "   background: #3a3a3a;"
-        "   border: 1px solid #666;"
-        "}"
-        "QPushButton:disabled {"
-        "   background: #1a1a1a;"
-        "   color: #555;"
-        "   border: 1px solid #333;"
-        "}"
-    );
-    
-    // Join Stream button
-    m_btnJoinStream = new QPushButton("Join Stream", this);
-    m_btnJoinStream->setMinimumHeight(50);
-    m_btnJoinStream->setStyleSheet(
-        "QPushButton {"
-        "   background: #2a2a2a;"
-        "   color: #e0e0e0;"
-        "   font-size: 14px;"
-        "   font-weight: 500;"
-        "   border: 1px solid #444;"
-        "   border-radius: 8px;"
-        "   padding: 12px;"
-        "}"
-        "QPushButton:hover {"
-        "   background: #333;"
-        "   border: 1px solid #555;"
-        "}"
-        "QPushButton:pressed {"
-        "   background: #3a3a3a;"
-        "   border: 1px solid #666;"
-        "}"
-        "QPushButton:disabled {"
-        "   background: #1a1a1a;"
-        "   color: #555;"
-        "   border: 1px solid #333;"
-        "}"
-    );
-    
-    buttonLayout->addWidget(m_btnStartStream);
-    buttonLayout->addWidget(m_btnJoinStream);
-    
-    mainLayout->addWidget(buttonContainer);
-    mainLayout->addStretch();
-    
-    setCentralWidget(central);
+    setWindowTitle("Video Streaming Client - New Protocol");
+    setMinimumSize(800, 600);
+
+    // Central widget
+    auto centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
+
+    // Main layout
+    auto mainLayout = new QVBoxLayout(centralWidget);
+    mainLayout->setSpacing(0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    // Create main splitter
+    m_mainSplitter = new QSplitter(Qt::Horizontal, this);
+    m_mainSplitter->setChildrenCollapsible(false);
+    m_mainSplitter->setHandleWidth(2);
+    m_mainSplitter->setStyleSheet(R"(
+        QSplitter::handle {
+            background: #444;
+        }
+        QSplitter::handle:hover {
+            background: #666;
+        }
+    )");
+
+    // Create control panel (left side)
+    m_controlPanel = new MainControlPanel(this);
+    m_controlPanel->setMinimumWidth(300);
+    m_controlPanel->setMaximumWidth(400);
+
+    // Create video grid (right side)
+    m_videoGrid = new VideoGridWidget(this);
+
+    // Add widgets to splitter
+    m_mainSplitter->addWidget(m_controlPanel);
+    m_mainSplitter->addWidget(m_videoGrid);
+
+    // Set initial splitter sizes (30% control panel, 70% video grid)
+    m_mainSplitter->setSizes({300, 700});
+
+    mainLayout->addWidget(m_mainSplitter);
+
+    // Create video selection dialog (will be shown when needed)
+    m_videoSelectionDialog = new VideoSelectionDialog(this); // Example devices
+    m_videoSelectionDialog->setWindowTitle("Select Video Device");
 }
 
 void MainWindow::setupConnections()
 {
-    connect(m_btnStartStream, &QPushButton::clicked, this, &MainWindow::onStartStreamClicked);
-    connect(m_btnJoinStream, &QPushButton::clicked, this, &MainWindow::onJoinStreamClicked);
-    
-    // Stream manager signals
-    connect(m_streamManager, &StreamManager::streamWindowCreated, 
-            this, &MainWindow::onStreamWindowCreated);
-    connect(m_streamManager, &StreamManager::streamWindowClosed,
-            this, &MainWindow::onStreamWindowClosed);
-    connect(m_streamManager, &StreamManager::connectionStatusChanged,
-            this, &MainWindow::onConnectionStatusChanged);
-    connect(m_streamManager, &StreamManager::errorOccurred,
-            this, [this](const QString& error) {
-                QMessageBox::warning(this, "Error", error);
-            });
+    // MainControlPanel signals
+    connect(m_controlPanel, &MainControlPanel::addDeviceRequested,
+            this, &MainWindow::onAddDeviceRequested);
+    connect(m_controlPanel, &MainControlPanel::createConferenceRequested,
+            this, &MainWindow::onCreateConferenceRequested);
+    connect(m_controlPanel, &MainControlPanel::joinConferenceRequested,
+            this, &MainWindow::onJoinConferenceRequested);
+    connect(m_controlPanel, &MainControlPanel::joinPublicStreamRequested,
+            this, &MainWindow::onJoinPublicStreamRequested);
+
+    // VideoGridWidget signals
+    connect(m_videoGrid, &VideoGridWidget::streamerDisconnectRequested,
+            this, &MainWindow::onStreamerDisconnectRequested);
+    connect(m_videoGrid, &VideoGridWidget::viewerLeaveRequested,
+            this, &MainWindow::onViewerLeaveRequested);
+    connect(m_videoGrid, &VideoGridWidget::streamStartRequested,
+            this, &MainWindow::onStreamStartRequested);
+    connect(m_videoGrid, &VideoGridWidget::streamStopRequested,
+            this, &MainWindow::onStreamStopRequested);
+    connect(m_videoGrid, &VideoGridWidget::encodedPacketReady,
+            this, &MainWindow::onEncodedPacketReady);
+
+    // VideoSelectionDialog signal
+    connect(m_videoSelectionDialog, &VideoSelectionDialog::deviceSelected,
+            this, &MainWindow::onDeviceSelected);
+
+    // StreamManager signals (when implemented)
+    if (m_streamManager) {
+        connect(m_streamManager, &StreamManager::connectionStatusChanged,
+                this, &MainWindow::onConnectionStatusChanged);
+        connect(m_streamManager, &StreamManager::streamWindowCreated,
+                this, &MainWindow::onStreamWindowCreated);
+        connect(m_streamManager, &StreamManager::streamWindowClosed,
+                this, &MainWindow::onStreamWindowClosed);
+        connect(m_streamManager, &StreamManager::errorOccurred,
+                this, &MainWindow::onErrorOccurred);
+    }
 }
 
-void MainWindow::onStartStreamClicked()
+void MainWindow::initialize()
 {
-    qDebug() << "Start stream button clicked";
+    qDebug() << "Initializing MainWindow";
+
+    // Initialize StreamManager
+    m_streamManager = new StreamManager(this);
+    m_streamManager->initialize();
     
-    // Заглушка: всегда используем устройство 0
-    int deviceIndex = 0;
-    m_streamManager->createStream(deviceIndex);
-    
-    m_infoLabel->setText("Creating new stream...");
-    m_infoLabel->setStyleSheet(
-        "color: #888;"
-        "font-size: 13px;"
-        "padding: 12px;"
-        "background: #252525;"
-        "border: 1px solid #444;"
-        "border-radius: 6px;"
-        "margin: 10px 0;"
-    );
+    // TODO: Set actual server address from configuration
+    m_streamManager->setServerAddress("localhost", 8080);
+    m_streamManager->connectToServer();
+
+    m_initialized = true;
+    qDebug() << "MainWindow initialized successfully";
 }
 
-void MainWindow::onJoinStreamClicked()
+void MainWindow::cleanup()
 {
-    qDebug() << "Join stream button clicked";
-    
-    bool ok;
-    QString streamId = QInputDialog::getText(this, "Join Stream", 
-                                           "Enter 6-character Stream ID:",
-                                           QLineEdit::Normal, "", &ok);
-    if (ok && !streamId.isEmpty()) {
-        // Проверяем формат ID
-        if (streamId.length() != 6) {
-            QMessageBox::warning(this, "Invalid ID", "Stream ID must be exactly 6 characters");
-            return;
-        }
+    qDebug() << "Cleaning up MainWindow";
+
+    if (m_streamManager) {
+        m_streamManager->disconnectFromServer();
+        m_streamManager->cleanup();
+        delete m_streamManager;
+        m_streamManager = nullptr;
+    }
+
+    m_initialized = false;
+}
+
+// ===== MainControlPanel Slots =====
+
+void MainWindow::onCreateConferenceRequested()
+{
+    qDebug() << "Create conference requested";
+
+    // Отправляем запрос на сервер для создания конференции
+    // ID будет сгенерирован на сервере
+    if (m_streamManager) {
+        // TODO: Реализовать отправку CLIENT_CALL_CREATE через StreamManager
+        qDebug() << "Sending CLIENT_CALL_CREATE to server";
         
-        // Проверяем что все символы - заглавные буквы
-        QRegularExpression regex("^[A-Z]{6}$");
-        if (!regex.match(streamId).hasMatch()) {
-            QMessageBox::warning(this, "Invalid ID", "Stream ID must contain only uppercase letters (A-Z)");
-            return;
-        }
+        // Временная заглушка - показываем сообщение
+        QMessageBox::information(this, "Conference Creation", 
+            "Conference creation request sent to server. Waiting for conference ID...");
+    } else {
+        showError("Stream manager not available");
+    }
+}
+
+
+void MainWindow::onJoinConferenceRequested(const QString& conferenceId)
+{
+    qDebug() << "Join conference requested:" << conferenceId;
+
+    if (conferenceId.length() != 6) {
+        showError("Conference ID must be 6 characters");
+        return;
+    }
+
+    // Отправляем запрос на сервер для присоединения к конференции
+    if (m_streamManager) {
+        // TODO: Реализовать отправку CLIENT_CALL_CONN_JOIN через StreamManager
+        qDebug() << "Sending CLIENT_CALL_CONN_JOIN to server for conference:" << conferenceId;
         
+        // Временная заглушка
+        QMessageBox::information(this, "Join Conference", 
+            QString("Join request sent for conference: %1").arg(conferenceId));
+    } else {
+        showError("Stream manager not available");
+    }
+}
+
+void MainWindow::onJoinPublicStreamRequested(const QString& streamId)
+{
+    qDebug() << "Join public stream requested:" << streamId;
+
+    if (streamId.length() != 6) {
+        showError("Stream ID must be 6 characters");
+        return;
+    }
+
+    if (m_streamManager) {
         m_streamManager->joinStream(streamId);
-        m_infoLabel->setText("Joining stream: " + streamId);
-        m_infoLabel->setStyleSheet(
-            "color: #888;"
-            "font-size: 13px;"
-            "padding: 12px;"
-            "background: #252525;"
-            "border: 1px solid #444;"
-            "border-radius: 6px;"
-            "margin: 10px 0;"
-        );
+    } else {
+        showError("Stream manager not available");
     }
 }
 
-void MainWindow::onStreamWindowCreated(StreamWindow *window)
+// ===== VideoGridWidget Slots =====
+
+void MainWindow::onViewerLeaveRequested(uint32_t streamId)
 {
-    if (!window) return;
-    
-    // Просто показываем окно
-    window->show();
-    window->raise();
-    window->activateWindow();
-    
-    qDebug() << "Stream window created, ID:" << window->getStreamId();
-    
-    // Обновляем счетчик окон
-    int activeWindows = 0;
-    QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
-    for (QWidget* widget : topLevelWidgets) {
-        if (qobject_cast<StreamWindow*>(widget) && widget->isVisible()) {
-            activeWindows++;
-        }
+    qDebug() << "Viewer leave requested for stream:" << streamId;
+
+    // Remove viewer widget from grid
+    m_videoGrid->removeViewerWidget(streamId);
+
+    // Notify StreamManager
+    if (m_streamManager) {
+        m_streamManager->leaveStream(streamId);
     }
-    
-    m_infoLabel->setText(QString("Active streams: %1").arg(activeWindows));
 }
 
-
-void MainWindow::onStreamWindowClosed(int streamId)
+void MainWindow::onStreamStartRequested(int deviceIndex)
 {
-    qDebug() << "Stream window closed, ID:" << streamId;
-    
-    // Обновляем счетчик окон
-    int activeWindows = 0;
-    QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
-    for (QWidget* widget : topLevelWidgets) {
-        if (qobject_cast<StreamWindow*>(widget) && widget->isVisible()) {
-            activeWindows++;
-        }
-    }
-    
-    m_infoLabel->setText(QString("Active streams: %1").arg(activeWindows));
-    
-    if (activeWindows == 0) {
-        m_infoLabel->setText("Select an action to begin streaming");
-        m_infoLabel->setStyleSheet(
-            "color: #666;"
-            "font-size: 13px;"
-            "padding: 12px;"
-            "background: #222;"
-            "border: 1px solid #333;"
-            "border-radius: 6px;"
-            "margin: 10px 0;"
-        );
+    qDebug() << "Stream start requested for device:" << deviceIndex;
+
+    // This is handled by StreamManager when creating the stream
+    // The actual start happens after stream creation
+}
+
+void MainWindow::onStreamStopRequested(uint32_t streamId)
+{
+    qDebug() << "Stream stop requested for stream:" << streamId;
+
+    // Notify StreamManager to stop the stream
+    if (m_streamManager) {
+        m_streamManager->deleteStream(streamId);
     }
 }
+
+void MainWindow::onEncodedPacketReady(uint32_t streamId, int frameNumber, const QByteArray& packet)
+{
+    // Forward encoded packets to StreamManager for network transmission
+    if (m_streamManager) {
+        // TODO: StreamManager needs interface for sending video packets
+        qDebug() << "Encoded packet ready for stream:" << streamId << "frame:" << frameNumber << "size:" << packet.size();
+    }
+}
+
+// ===== VideoSelectionDialog Slot =====
+
+// ===== StreamManager Slots =====
 
 void MainWindow::onConnectionStatusChanged(bool connected)
 {
-    if (connected) {
-        m_connectionStatusLabel->setText("● Connected");
-        m_connectionStatusLabel->setStyleSheet(
-            "font-size: 13px;"
-            "font-weight: 500;"
-            "padding: 8px 20px;"
-            "background: #1a3a1a;"
-            "color: #8bc34a;"
-            "border: 1px solid #2a5a2a;"
-            "border-radius: 12px;"
-            "margin: 10px 0;"
-        );
-        m_btnStartStream->setEnabled(true);
-        m_btnJoinStream->setEnabled(true);
-    } else {
-        m_connectionStatusLabel->setText("● Disconnected");
-        m_connectionStatusLabel->setStyleSheet(
-            "font-size: 13px;"
-            "font-weight: 500;"
-            "padding: 8px 20px;"
-            "background: #333;"
-            "color: #999;"
-            "border: 1px solid #444;"
-            "border-radius: 12px;"
-            "margin: 10px 0;"
-        );
-        m_btnStartStream->setEnabled(false);
-        m_btnJoinStream->setEnabled(false);
+    qDebug() << "Connection status changed:" << connected;
+
+    m_connectedToServer = connected;
+    
+    // Update control panel status
+    if (m_controlPanel) {
+        m_controlPanel->setConnectionStatus(connected);
     }
+
+    updateStatus();
+}
+
+
+
+void MainWindow::onErrorOccurred(const QString& message)
+{
+    qCritical() << "Error occurred:" << message;
+    showError(message);
+}
+
+// ===== Helper Methods =====
+
+void MainWindow::createConferenceWindow(uint32_t callId, const QString& displayId)
+{
+    qDebug() << "Creating conference window - ID:" << callId << "Display:" << displayId;
+
+    // TODO: Implement ConferenceWindow creation
+    // ConferenceWindow *conferenceWindow = new ConferenceWindow(callId, displayId, this);
+    // conferenceWindow->initialize();
+    // conferenceWindow->show();
+    
+    showError("Conference windows not yet implemented");
+}
+
+void MainWindow::showError(const QString& message)
+{
+    QMessageBox::warning(this, "Error", message);
+}
+
+void MainWindow::updateStatus()
+{
+    // Update window title with connection status
+    QString status = m_connectedToServer ? "Connected" : "Disconnected";
+    setWindowTitle(QString("Video Streaming Client - %1").arg(status));
+}
+
+// ===== MainControlPanel Slots =====
+
+void MainWindow::onAddDeviceRequested()
+{
+    qDebug() << "Add device requested";
+
+    // Обновляем список доступных устройств
+    refreshAvailableDevices();
+    
+    // Проверяем есть ли доступные устройства
+    if (m_availableDevices.isEmpty()) {
+        QMessageBox::information(this, "No Devices", 
+            "No video devices found on your system.");
+        return;
+    }
+
+    // Исключаем уже используемые устройства
+    QList<int> availableForUse;
+    for (int device : m_availableDevices) {
+        if (!m_usedDevices.contains(device)) {
+            availableForUse.append(device);
+        }
+    }
+    
+    if (availableForUse.isEmpty()) {
+        QMessageBox::information(this, "No Available Devices", 
+            "All video devices are already in use. Please disconnect a device first.");
+        return;
+    }
+
+    // Создаем диалог выбора
+    VideoSelectionDialog dialog(this);
+    
+    // Показываем диалог и обрабатываем результат
+    if (dialog.exec() == QDialog::Accepted) {
+        int selectedDevice = dialog.getSelectedDeviceIndex();
+        if (selectedDevice != -1) {
+            // Проверяем, что устройство все еще доступно (на случай параллельного использования)
+            if (m_usedDevices.contains(selectedDevice)) {
+                QMessageBox::warning(this, "Device Busy", 
+                    QString("Camera %1 is already in use. Please select another device.").arg(selectedDevice));
+                return;
+            }
+            
+            if (!m_availableDevices.contains(selectedDevice)) {
+                QMessageBox::warning(this, "Device Not Available", 
+                    QString("Camera %1 is no longer available.").arg(selectedDevice));
+                return;
+            }
+            
+            // Добавляем устройство
+            onDeviceSelected(selectedDevice);
+        } else {
+            qDebug() << "No device selected or selection invalid";
+        }
+    } else {
+        qDebug() << "Device selection canceled by user";
+    }
+}
+
+void MainWindow::onDeviceSelected(int deviceIndex)
+{
+    qDebug() << "Device selected:" << deviceIndex;
+
+    if (m_usedDevices.contains(deviceIndex)) {
+        qWarning() << "Device" << deviceIndex << "is already in use!";
+        QMessageBox::warning(this, "Device Busy", 
+            QString("Camera %1 is already in use. Please select another device.").arg(deviceIndex));
+        return;
+    }
+
+    // Добавляем устройство в список используемых
+    m_usedDevices.append(deviceIndex);
+    
+    // Добавляем streamer widget в video grid
+    m_videoGrid->addStreamerWidget(deviceIndex);
+    
+    // Инициализируем стрим через StreamManager
+    if (m_streamManager) {
+        m_streamManager->createStream(deviceIndex);
+    }
+    
+    qDebug() << "Successfully added device:" << deviceIndex << "Total used devices:" << m_usedDevices.size();
+}
+
+void MainWindow::onStreamerDisconnectRequested(int deviceIndex)
+{
+    qDebug() << "Streamer disconnect requested for device:" << deviceIndex;
+
+    // Удаляем streamer widget из grid
+    m_videoGrid->removeStreamerWidget(deviceIndex);
+
+    // Освобождаем устройство
+    m_usedDevices.removeAll(deviceIndex);
+    
+    // Уведомляем StreamManager об остановке стрима
+    if (m_streamManager) {
+        // Здесь нужно найти streamId по deviceIndex
+        // Временная реализация - ищем через виджет
+        StreamerWidget* widget = m_videoGrid->findStreamerWidget(deviceIndex);
+        if (widget && widget->getStreamId() != 0) {
+            uint32_t streamId = widget->getStreamId();
+            qDebug() << "Notifying stream manager to delete stream:" << streamId;
+            m_streamManager->deleteStream(streamId);
+        }
+    }
+
+    qDebug() << "Device" << deviceIndex << "disconnected and removed. Total used devices:" << m_usedDevices.size();
+    
+    // Обновляем статус доступности кнопки добавления устройств
+    updateDeviceAvailability();
+}
+
+// Добавим вспомогательный метод для обновления доступности устройств
+void MainWindow::updateDeviceAvailability()
+{
+    // Обновляем список доступных устройств
+    refreshAvailableDevices();
+    
+    // Можно добавить логику для обновления состояния кнопки "Add Device"
+    // если в MainControlPanel есть соответствующий метод
+    bool hasAvailableDevices = !m_availableDevices.isEmpty() && 
+                              (m_availableDevices.size() > m_usedDevices.size());
+    
+    qDebug() << "Device availability - Total:" << m_availableDevices.size() 
+             << "Used:" << m_usedDevices.size() 
+             << "Available:" << hasAvailableDevices;
+}
+
+// ===== Вспомогательные методы =====
+
+void MainWindow::refreshAvailableDevices()
+{
+    m_availableDevices = VideoCapture::getAvailableDevices();
+    
+    if (m_availableDevices.isEmpty()) {
+        qDebug() << "No video devices found on system";
+    } else {
+        qDebug() << "Available devices:" << m_availableDevices;
+    }
+    
+    // Обновляем состояние кнопок на основе доступности устройств
+    if (m_controlPanel) {
+        // Можно добавить индикатор количества доступных устройств
+        bool hasAvailableDevices = !m_availableDevices.isEmpty();
+        // m_controlPanel->setAddDeviceEnabled(hasAvailableDevices); // Если добавим такой метод
+    }
+}
+
+void MainWindow::initializeStreamerForDevice(int deviceIndex)
+{
+    // Эта функция будет вызываться из StreamerWidget когда он будет готов к инициализации
+    // с реальным streamId от сервера
+    qDebug() << "Initializing streamer for device:" << deviceIndex;
+    
+    // Временная заглушка - в реальной реализации здесь будет инициализация
+    // видеозахвата и кодировщика с полученным streamId
 }

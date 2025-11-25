@@ -1,8 +1,8 @@
 #include <QApplication>
-#include "mainwindow.h"
+#include "ui/mainwindow.h"
 #include <opencv2/opencv.hpp> 
 #include <exception>
-#include "darktheme.h"
+#include "ui/darktheme.h"
 
 
 int main(int argc, char *argv[])

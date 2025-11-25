@@ -8,7 +8,7 @@
 #include <QSet>
 #include <QDataStream>
 #include <QIODevice>
-#include "video_defaults.h"
+#include "../../video_defaults.h"
 
 enum PacketType {
     START_FRAME = 0x01,

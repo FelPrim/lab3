@@ -24,4 +24,13 @@ private:
 
     int m_streamId = -1;
     QPixmap m_currentPixmap;  // Добавляем объявление переменной
+
+public:
+    void setPlaceholderText(const QString& text) {
+        // Заглушка для совместимости с GUI
+        m_placeholderText = text;
+    }
+    
+private:
+    QString m_placeholderText;
 };
