@@ -126,20 +126,31 @@ void ConferenceWindow::setupConnections()
     }
 }
 
+// В conferencewindow.cpp - исправленный initialize()
 void ConferenceWindow::initialize()
 {
     qDebug() << "Initializing ConferenceWindow - ID:" << m_callId << "Display:" << m_displayId;
 
-    // Initialize StreamManager for conference
+    // Инициализируем StreamManager для конференции
     m_streamManager = new StreamManager(this);
     m_streamManager->initialize();
     
-    // TODO: Set actual server address from configuration
+    // TODO: Установить реальный адрес сервера из конфигурации
     m_streamManager->setServerAddress("localhost", 8080);
     m_streamManager->connectToServer();
 
-    // Add ourselves as initial participant
-    addParticipant(m_callId); // Using callId as participant ID for simplicity
+    // ПОДКЛЮЧАЕМ СИГНАЛЫ ПОСЛЕ создания StreamManager
+    connect(m_streamManager, &StreamManager::connectionStatusChanged,
+            this, &ConferenceWindow::onConnectionStatusChanged);
+    connect(m_streamManager, &StreamManager::streamWindowCreated,
+            this, &ConferenceWindow::onStreamWindowCreated);
+    connect(m_streamManager, &StreamManager::streamWindowClosed,
+            this, &ConferenceWindow::onStreamWindowClosed);
+    connect(m_streamManager, &StreamManager::errorOccurred,
+            this, &ConferenceWindow::onErrorOccurred);
+
+    // НЕ добавляем себя как участника - это сделает сервер
+    // addParticipant(m_callId); // УДАЛИТЬ эту строку
 
     m_initialized = true;
     qDebug() << "ConferenceWindow initialized successfully";
@@ -434,4 +445,17 @@ void ConferenceWindow::updateConferenceInfo()
                   .arg(m_displayId)
                   .arg(m_participants.size())
                   .arg(m_availableStreams.size()));
+}
+
+void ConferenceWindow::closeEvent(QCloseEvent* event)
+{
+    qDebug() << "ConferenceWindow closing - ID:" << m_callId;
+    
+    // Уведомляем о закрытии конференции
+    emit conferenceClosed(m_callId);
+    
+    // Выполняем cleanup
+    cleanup();
+    
+    QMainWindow::closeEvent(event);
 }

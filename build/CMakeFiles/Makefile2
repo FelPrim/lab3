@@ -54,17 +54,15 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src
+CMAKE_SOURCE_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build
+CMAKE_BINARY_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3/build
 
 #=============================================================================
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/test_myfec.dir/all
-all: CMakeFiles/test_packet_format.dir/all
 all: CMakeFiles/VideoCapture.dir/all
 .PHONY : all
 
@@ -73,65 +71,9 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/test_myfec.dir/clean
-clean: CMakeFiles/test_packet_format.dir/clean
 clean: CMakeFiles/VideoCapture.dir/clean
-clean: CMakeFiles/test_myfec_autogen.dir/clean
-clean: CMakeFiles/test_packet_format_autogen.dir/clean
 clean: CMakeFiles/VideoCapture_autogen.dir/clean
 .PHONY : clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/test_myfec.dir
-
-# All Build rule for target.
-CMakeFiles/test_myfec.dir/all: CMakeFiles/test_myfec_autogen.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=18,19,20,21 "Built target test_myfec"
-.PHONY : CMakeFiles/test_myfec.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/test_myfec.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 5
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_myfec.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 0
-.PHONY : CMakeFiles/test_myfec.dir/rule
-
-# Convenience name for target.
-test_myfec: CMakeFiles/test_myfec.dir/rule
-.PHONY : test_myfec
-
-# clean rule for target.
-CMakeFiles/test_myfec.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/clean
-.PHONY : CMakeFiles/test_myfec.dir/clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/test_packet_format.dir
-
-# All Build rule for target.
-CMakeFiles/test_packet_format.dir/all: CMakeFiles/test_packet_format_autogen.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=23,24,25,26 "Built target test_packet_format"
-.PHONY : CMakeFiles/test_packet_format.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/test_packet_format.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 5
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_packet_format.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 0
-.PHONY : CMakeFiles/test_packet_format.dir/rule
-
-# Convenience name for target.
-test_packet_format: CMakeFiles/test_packet_format.dir/rule
-.PHONY : test_packet_format
-
-# clean rule for target.
-CMakeFiles/test_packet_format.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/clean
-.PHONY : CMakeFiles/test_packet_format.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/VideoCapture.dir
@@ -140,14 +82,14 @@ CMakeFiles/test_packet_format.dir/clean:
 CMakeFiles/VideoCapture.dir/all: CMakeFiles/VideoCapture_autogen.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 "Built target VideoCapture"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29 "Built target VideoCapture"
 .PHONY : CMakeFiles/VideoCapture.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/VideoCapture.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 17
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles 30
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/VideoCapture.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles 0
 .PHONY : CMakeFiles/VideoCapture.dir/rule
 
 # Convenience name for target.
@@ -160,72 +102,20 @@ CMakeFiles/VideoCapture.dir/clean:
 .PHONY : CMakeFiles/VideoCapture.dir/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/test_myfec_autogen.dir
-
-# All Build rule for target.
-CMakeFiles/test_myfec_autogen.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec_autogen.dir/build.make CMakeFiles/test_myfec_autogen.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec_autogen.dir/build.make CMakeFiles/test_myfec_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=22 "Built target test_myfec_autogen"
-.PHONY : CMakeFiles/test_myfec_autogen.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/test_myfec_autogen.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 1
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_myfec_autogen.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 0
-.PHONY : CMakeFiles/test_myfec_autogen.dir/rule
-
-# Convenience name for target.
-test_myfec_autogen: CMakeFiles/test_myfec_autogen.dir/rule
-.PHONY : test_myfec_autogen
-
-# clean rule for target.
-CMakeFiles/test_myfec_autogen.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec_autogen.dir/build.make CMakeFiles/test_myfec_autogen.dir/clean
-.PHONY : CMakeFiles/test_myfec_autogen.dir/clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/test_packet_format_autogen.dir
-
-# All Build rule for target.
-CMakeFiles/test_packet_format_autogen.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format_autogen.dir/build.make CMakeFiles/test_packet_format_autogen.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format_autogen.dir/build.make CMakeFiles/test_packet_format_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=27 "Built target test_packet_format_autogen"
-.PHONY : CMakeFiles/test_packet_format_autogen.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/test_packet_format_autogen.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 1
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_packet_format_autogen.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 0
-.PHONY : CMakeFiles/test_packet_format_autogen.dir/rule
-
-# Convenience name for target.
-test_packet_format_autogen: CMakeFiles/test_packet_format_autogen.dir/rule
-.PHONY : test_packet_format_autogen
-
-# clean rule for target.
-CMakeFiles/test_packet_format_autogen.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format_autogen.dir/build.make CMakeFiles/test_packet_format_autogen.dir/clean
-.PHONY : CMakeFiles/test_packet_format_autogen.dir/clean
-
-#=============================================================================
 # Target rules for target CMakeFiles/VideoCapture_autogen.dir
 
 # All Build rule for target.
 CMakeFiles/VideoCapture_autogen.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture_autogen.dir/build.make CMakeFiles/VideoCapture_autogen.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture_autogen.dir/build.make CMakeFiles/VideoCapture_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=17 "Built target VideoCapture_autogen"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=30 "Built target VideoCapture_autogen"
 .PHONY : CMakeFiles/VideoCapture_autogen.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/VideoCapture_autogen.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles 1
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/VideoCapture_autogen.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles 0
 .PHONY : CMakeFiles/VideoCapture_autogen.dir/rule
 
 # Convenience name for target.

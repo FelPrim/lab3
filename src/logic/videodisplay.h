@@ -26,10 +26,7 @@ private:
     QPixmap m_currentPixmap;  // Добавляем объявление переменной
 
 public:
-    void setPlaceholderText(const QString& text) {
-        // Заглушка для совместимости с GUI
-        m_placeholderText = text;
-    }
+    void setPlaceholderText(const QString& text); 
     
 private:
     QString m_placeholderText;

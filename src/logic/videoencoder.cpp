@@ -48,6 +48,8 @@ void VideoEncoder::initialize(int width, int height, int fps)
                  << "bitrate:" << m_enc_ctx->bit_rate
                  << "threads:" << m_enc_ctx->thread_count;
     }
+
+    m_encoderActive = true;
 }
 
 void VideoEncoder::cleanup()
@@ -194,6 +196,9 @@ void VideoEncoder::cleanupFFmpeg()
 
 void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
 {
+     if (!m_encoderActive) {
+        return; // Кодировщик неактивен
+    }
     if (!m_initialized || !m_enc_ctx || !m_enc_frame || !m_pkt || !m_sws_enc) {
         return;
     }

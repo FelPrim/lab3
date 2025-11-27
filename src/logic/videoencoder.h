@@ -51,4 +51,6 @@ private:
     std::atomic<bool> m_busy{false};
     int64_t m_pts = 0;
     bool m_initialized = false;
+private:
+    bool m_encoderActive;
 };

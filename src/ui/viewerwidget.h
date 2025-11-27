@@ -1,3 +1,4 @@
+// viewerwidget.h
 #pragma once
 
 #include <QWidget>
@@ -6,6 +7,9 @@
 #include "../logic/videodisplay.h"
 #include "streamcontrolpanel.h"
 #include "../network/udp/networkdisplaybuffer.h"
+#include "../logic/videodecoder.h"
+// УБРАТЬ дублирование: #include "../network/udp/networkdisplaybuffer.h"
+#include "../network/udp/networkmanager.h"  // ДОБАВИТЬ
 
 class ViewerWidget : public QWidget
 {
@@ -15,36 +19,25 @@ public:
     explicit ViewerWidget(uint32_t streamId, const QString &displayId, QWidget *parent = nullptr);
     ~ViewerWidget();
 
-    // Управление виджетом
     void initialize();
     void cleanup();
     
-    // StreamWindow-like interface
     uint32_t getStreamId() const { return m_streamId; }
     QString getDisplayId() const { return m_displayId; }
     bool isActive() const { return m_active; }
     
-    // Специфичные методы зрителя
     void setActive(bool active);
     void setStreamId(uint32_t streamId, const QString &displayId);
 
-    // Видео методы
     void displayFrame(const QImage &frame);
     void clearDisplay();
 
     void setControlPanel(StreamControlPanel* panel);  
 
+    void setNetworkManager(NetworkManager* networkManager);
 public slots:
-    void onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
+    void onFrameReady(const QImage &frame, int frameNumber);
     void onLeaveRequested();
-public slots:
-    void onFrameReady(const QImage &frame, int frameNumber) {
-        Q_UNUSED(frame)
-        Q_UNUSED(frameNumber)
-        qDebug() << "ViewerWidget::onFrameReady - frame:" << frameNumber;
-    }
-signals:
-    void streamLeft(uint32_t streamId);
 
 private slots:
     void onLeaveButtonClicked();
@@ -54,23 +47,36 @@ private:
     void setupConnections();
     void updateStatus();
 
-    // Компоненты
     VideoDisplay *m_videoDisplay;
     StreamControlPanel *m_controlPanel;
     QVBoxLayout *m_mainLayout;
     
-    // КРИТИЧЕСКИ ВАЖНО: NetworkDisplayBuffer для буферизации видео
+    // ОСТАВИТЬ только одно объявление NetworkDisplayBuffer
     NetworkDisplayBuffer *m_displayBuffer;
     
-    // Состояние
     uint32_t m_streamId;
     QString m_displayId;
     bool m_active;
     
-    // Константы
     static const QString PLACEHOLDER_TEXT;
     static const QString STATUS_ACTIVE;
     static const QString STATUS_INACTIVE;
+
 signals:
-    void frameReady(const QImage &frame, int frameNumber);
+    void streamLeft(uint32_t streamId);
+
+private:
+    VideoDecoder *m_videoDecoder;
+    NetworkManager *m_networkManager;
+    // УБРАТЬ дублирование: NetworkDisplayBuffer *m_displayBuffer;
+
+public slots:
+    void onStreamJoined(uint32_t streamId);
+    void onStreamLeft(uint32_t streamId);
+    // УБРАТЬ: void onVideoPacketReceived(uint32_t streamId, const QByteArray& packet);
+
+    // ДОБАВИТЬ метод для установки NetworkManager
+
+private:
+    NetworkManager* m_networkManager; // ДОБАВИТЬ
 };

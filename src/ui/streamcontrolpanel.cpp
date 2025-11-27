@@ -14,6 +14,8 @@ StreamControlPanel::StreamControlPanel(Mode mode, QWidget *parent)
     , m_active(false)
     , m_streaming(false)
     , m_viewersCount(0)
+    , m_streamState(StateNoStream)
+    , m_viewersConnected(false)
 {
     setupUI();
     updateUI();
@@ -165,39 +167,33 @@ void StreamControlPanel::setupUI()
     }
 }
 
+// Новый метод для установки состояния трансляции
+void StreamControlPanel::setStreamState(StreamState state)
+{
+    if (m_streamState == state) return;
+    
+    m_streamState = state;
+    updateUI();
+}
+
+
+// Полностью перерабатываем updateUI для отражения состояний
 void StreamControlPanel::updateUI()
 {
-    // Update stream ID
+    // Обновляем stream ID
     if (!m_streamId.isEmpty()) {
         m_streamIdLabel->setText(QString("Stream ID: %1").arg(m_streamId));
     }
 
-    // Update based on mode
     if (m_mode == StreamerMode) {
-        // Update streaming status
-        if (m_streaming) {
-            m_statusLabel->setText("Status: Streaming");
-            m_statusLabel->setStyleSheet("font-size: 11px; color: #4CAF50;");
-            if (m_startStopButton) {
-                m_startStopButton->setText("Stop Stream");
-                m_startStopButton->setStyleSheet(R"(
-                    QPushButton {
-                        background-color: #d32f2f;
-                        color: white;
-                    }
-                    QPushButton:hover {
-                        background-color: #c62828;
-                    }
-                    QPushButton:pressed {
-                        background-color: #b71c1c;
-                    }
-                )");
-            }
-        } else {
-            m_statusLabel->setText("Status: Ready");
-            m_statusLabel->setStyleSheet("font-size: 11px; color: #FFA000;");
+        // Streamer mode - отображаем состояния трансляции
+        switch (m_streamState) {
+        case StateNoStream:
+            m_statusLabel->setText("Status: Ready to stream");
+            m_statusLabel->setStyleSheet("font-size: 11px; color: #FFA000;"); // Оранжевый
             if (m_startStopButton) {
                 m_startStopButton->setText("Start Stream");
+                m_startStopButton->setEnabled(m_active);
                 m_startStopButton->setStyleSheet(R"(
                     QPushButton {
                         background-color: #1976D2;
@@ -211,25 +207,95 @@ void StreamControlPanel::updateUI()
                     }
                 )");
             }
+            break;
+            
+        case StateStreamCreated:
+            m_statusLabel->setText("Status: Waiting for viewers...");
+            m_statusLabel->setStyleSheet("font-size: 11px; color: #FFA000;"); // Оранжевый
+            if (m_startStopButton) {
+                m_startStopButton->setText("Stop Stream");
+                m_startStopButton->setEnabled(true);
+                m_startStopButton->setStyleSheet(R"(
+                    QPushButton {
+                        background-color: #d32f2f;
+                        color: white;
+                    }
+                    QPushButton:hover {
+                        background-color: #c62828;
+                    }
+                    QPushButton:pressed {
+                        background-color: #b71c1c;
+                    }
+                )");
+            }
+            break;
+            
+        case StateStreamActive:
+            if (m_viewersConnected) {
+                m_statusLabel->setText("Status: Streaming ● Viewers connected");
+                m_statusLabel->setStyleSheet("font-size: 11px; color: #4CAF50;"); // Зеленый
+            } else {
+                m_statusLabel->setText("Status: Streaming ● No viewers");
+                m_statusLabel->setStyleSheet("font-size: 11px; color: #FFA000;"); // Оранжевый
+            }
+            if (m_startStopButton) {
+                m_startStopButton->setText("Stop Stream");
+                m_startStopButton->setEnabled(true);
+                m_startStopButton->setStyleSheet(R"(
+                    QPushButton {
+                        background-color: #d32f2f;
+                        color: white;
+                    }
+                    QPushButton:hover {
+                        background-color: #c62828;
+                    }
+                    QPushButton:pressed {
+                        background-color: #b71c1c;
+                    }
+                )");
+            }
+            break;
+            
+        case StateStreamError:
+            m_statusLabel->setText("Status: Error ● Check connection");
+            m_statusLabel->setStyleSheet("font-size: 11px; color: #f44336;"); // Красный
+            if (m_startStopButton) {
+                m_startStopButton->setText("Restart Stream");
+                m_startStopButton->setEnabled(true);
+                m_startStopButton->setStyleSheet(R"(
+                    QPushButton {
+                        background-color: #1976D2;
+                        color: white;
+                    }
+                    QPushButton:hover {
+                        background-color: #1565C0;
+                    }
+                    QPushButton:pressed {
+                        background-color: #0D47A1;
+                    }
+                )");
+            }
+            break;
         }
 
-        // Update viewers count
+        // Обновляем статус зрителей
         if (m_viewersLabel) {
-            m_viewersLabel->setText(QString("Viewers: %1").arg(m_viewersCount));
-            if (m_viewersCount > 0) {
+            if (m_viewersConnected) {
+                m_viewersLabel->setText("Viewers: ● Connected");
                 m_viewersLabel->setStyleSheet("font-size: 11px; color: #4CAF50;");
             } else {
+                m_viewersLabel->setText("Viewers: ● None");
                 m_viewersLabel->setStyleSheet("font-size: 11px; color: #adb5bd;");
             }
         }
 
-        // Enable/disable controls based on active state
-        bool enabled = m_active;
-        if (m_startStopButton) m_startStopButton->setEnabled(enabled);
-        if (m_disconnectButton) m_disconnectButton->setEnabled(enabled);
+        // Кнопка Disconnect всегда активна
+        if (m_disconnectButton) {
+            m_disconnectButton->setEnabled(true);
+        }
 
     } else {
-        // Viewer mode
+        // Viewer mode - оставляем существующую логику
         if (m_active) {
             m_statusLabel->setText("Status: Connected");
             m_statusLabel->setStyleSheet("font-size: 11px; color: #4CAF50;");
@@ -237,8 +303,6 @@ void StreamControlPanel::updateUI()
             m_statusLabel->setText("Status: Disconnected");
             m_statusLabel->setStyleSheet("font-size: 11px; color: #f44336;");
         }
-
-        // Enable/disable leave button based on active state
         if (m_leaveButton) m_leaveButton->setEnabled(m_active);
     }
 }
@@ -258,12 +322,6 @@ void StreamControlPanel::setActive(bool active)
 void StreamControlPanel::setStreaming(bool streaming)
 {
     m_streaming = streaming;
-    updateUI();
-}
-
-void StreamControlPanel::setViewersCount(int count)
-{
-    m_viewersCount = count;
     updateUI();
 }
 
@@ -295,4 +353,12 @@ void StreamControlPanel::onDisconnectClicked()
 {
     qDebug() << "Disconnect requested for device with stream:" << m_streamId;
     emit disconnectRequested();
+}
+
+void StreamControlPanel::setViewersStatus(bool hasViewers)
+{
+    if (m_viewersConnected == hasViewers) return;
+    
+    m_viewersConnected = hasViewers;
+    updateUI();
 }

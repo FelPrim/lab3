@@ -37,7 +37,7 @@ set(SOURCES
     network/udp/networkdisplaybuffer.cpp
     network/networkfacade.cpp
     network/streammanager.cpp
-    network/tcp/tcpclient.cpp
+    #  network/tcp/tcpclient.cpp
     network/tcp/tcpmanager.cpp
     network/udp/udpmanager.cpp
     network/udp/myfec.cpp
@@ -76,7 +76,7 @@ set(HEADERS
     network/udp/networkdisplaybuffer.h
     network/networkfacade.h
     network/streammanager.h
-    network/tcp/tcpclient.h
+    #    network/tcp/tcpclient.h
     network/tcp/tcpmanager.h
     network/udp/udpmanager.h
     network/udp/myfec.h

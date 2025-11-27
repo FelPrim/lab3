@@ -1,15 +1,66 @@
 {
-	"BUILD_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/VideoCapture_autogen",
-	"CMAKE_BINARY_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build",
-	"CMAKE_CURRENT_BINARY_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build",
-	"CMAKE_CURRENT_SOURCE_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src",
+	"BUILD_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3/build/VideoCapture_autogen",
+	"CMAKE_BINARY_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3/build",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3/src",
 	"CMAKE_EXECUTABLE" : "/usr/bin/cmake",
 	"CMAKE_LIST_FILES" : 
 	[
-		"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/CMakeLists.txt",
-		"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/3.25.1/CMakeSystem.cmake",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/src/CMakeLists.txt",
+		"/usr/share/cmake-3.25/Modules/CMakeDetermineSystem.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeSystem.cmake.in",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/3.25.1/CMakeSystem.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeUnixFindMake.cmake",
 		"/usr/share/cmake-3.25/Modules/CMakeSystemSpecificInitialize.cmake",
-		"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/3.25.1/CMakeCXXCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeDetermineCXXCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeDetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Platform/Linux-Determine-CXX.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeDetermineCompilerId.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeCompilerIdDetection.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/ADSP-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/ARMCC-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/ARMClang-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/AppleClang-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Clang-DetermineCompilerInternal.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Borland-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Clang-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Clang-DetermineCompilerInternal.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Comeau-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Cray-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Embarcadero-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Fujitsu-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/GHS-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/HP-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/IAR-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Intel-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/MSVC-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/NVHPC-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/NVIDIA-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/PGI-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/PathScale-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/SCO-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/TI-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Tasking-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/Watcom-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/XL-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeFindBinUtils.cmake",
+		"/usr/share/cmake-3.25/Modules/Compiler/GNU-FindBinUtils.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeCXXCompiler.cmake.in",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/3.25.1/CMakeCXXCompiler.cmake",
 		"/usr/share/cmake-3.25/Modules/CMakeSystemSpecificInformation.cmake",
 		"/usr/share/cmake-3.25/Modules/CMakeGenericSystem.cmake",
 		"/usr/share/cmake-3.25/Modules/CMakeInitializeConfigs.cmake",
@@ -23,6 +74,18 @@
 		"/usr/share/cmake-3.25/Modules/Platform/Linux-GNU-CXX.cmake",
 		"/usr/share/cmake-3.25/Modules/Platform/Linux-GNU.cmake",
 		"/usr/share/cmake-3.25/Modules/CMakeCommonLanguageInclude.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeTestCXXCompiler.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeTestCompilerCommon.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeDetermineCompilerABI.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeParseImplicitIncludeInfo.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeParseImplicitLinkInfo.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeParseLibraryArchitecture.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeTestCompilerCommon.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeCXXCompilerABI.cpp",
+		"/usr/share/cmake-3.25/Modules/CMakeDetermineCompileFeatures.cmake",
+		"/usr/share/cmake-3.25/Modules/Internal/FeatureTesting.cmake",
+		"/usr/share/cmake-3.25/Modules/CMakeCXXCompiler.cmake.in",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/3.25.1/CMakeCXXCompiler.cmake",
 		"/usr/lib/x86_64-linux-gnu/cmake/Qt6/Qt6ConfigVersion.cmake",
 		"/usr/lib/x86_64-linux-gnu/cmake/Qt6/Qt6ConfigVersionImpl.cmake",
 		"/usr/lib/x86_64-linux-gnu/cmake/Qt6/Qt6Config.cmake",
@@ -186,105 +249,204 @@
 		"/usr/share/cmake-3.25/Modules/FindPackageHandleStandardArgs.cmake",
 		"/usr/share/cmake-3.25/Modules/FindPackageMessage.cmake"
 	],
-	"CMAKE_SOURCE_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src",
+	"CMAKE_SOURCE_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3/src",
 	"DEP_FILE" : "",
 	"DEP_FILE_RULE_NAME" : "",
 	"HEADERS" : 
 	[
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/darktheme.h",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/framebuffer.h",
 			"MU",
-			"EWIEGA46WW/moc_darktheme.cpp",
+			"V5QSWVS6RF/moc_framebuffer.cpp",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/framebuffer.h",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videocapture.h",
 			"MU",
-			"EWIEGA46WW/moc_framebuffer.cpp",
+			"V5QSWVS6RF/moc_videocapture.cpp",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/mainwindow.h",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodecoder.h",
 			"MU",
-			"EWIEGA46WW/moc_mainwindow.cpp",
+			"V5QSWVS6RF/moc_videodecoder.cpp",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/myfec.h",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodisplay.h",
 			"MU",
-			"EWIEGA46WW/moc_myfec.cpp",
+			"V5QSWVS6RF/moc_videodisplay.cpp",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkdisplaybuffer.h",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videoencoder.h",
 			"MU",
-			"EWIEGA46WW/moc_networkdisplaybuffer.cpp",
+			"V5QSWVS6RF/moc_videoencoder.cpp",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkmanager.h",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/endianness.h",
 			"MU",
-			"EWIEGA46WW/moc_networkmanager.cpp",
+			"5SSUPNRDSB/moc_endianness.cpp",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/removevideodialog.h",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/networkfacade.h",
 			"MU",
-			"EWIEGA46WW/moc_removevideodialog.cpp",
+			"5SSUPNRDSB/moc_networkfacade.cpp",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/video_defaults.h",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/streammanager.h",
+			"MU",
+			"5SSUPNRDSB/moc_streammanager.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpclient.h",
+			"MU",
+			"R5XPJB3IBK/moc_tcpclient.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpmanager.h",
+			"MU",
+			"R5XPJB3IBK/moc_tcpmanager.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/myfec.h",
+			"MU",
+			"MJCHBNYEHQ/moc_myfec.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/network_packet.h",
+			"MU",
+			"MJCHBNYEHQ/moc_network_packet.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkdisplaybuffer.h",
+			"MU",
+			"MJCHBNYEHQ/moc_networkdisplaybuffer.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkmanager.h",
+			"MU",
+			"MJCHBNYEHQ/moc_networkmanager.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/udpmanager.h",
+			"MU",
+			"MJCHBNYEHQ/moc_udpmanager.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencecontrolpanel.h",
+			"MU",
+			"UYX5XTB5RZ/moc_conferencecontrolpanel.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencewindow.h",
+			"MU",
+			"UYX5XTB5RZ/moc_conferencewindow.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/darktheme.h",
+			"MU",
+			"UYX5XTB5RZ/moc_darktheme.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/deviceselectorwidget.h",
+			"MU",
+			"UYX5XTB5RZ/moc_deviceselectorwidget.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/id_utils.h",
+			"MU",
+			"UYX5XTB5RZ/moc_id_utils.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/maincontrolpanel.h",
+			"MU",
+			"UYX5XTB5RZ/moc_maincontrolpanel.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/mainwindow.h",
+			"MU",
+			"UYX5XTB5RZ/moc_mainwindow.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamcontrolpanel.h",
+			"MU",
+			"UYX5XTB5RZ/moc_streamcontrolpanel.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamerwidget.h",
+			"MU",
+			"UYX5XTB5RZ/moc_streamerwidget.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamidinputwidget.h",
+			"MU",
+			"UYX5XTB5RZ/moc_streamidinputwidget.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamselectorwidget.h",
+			"MU",
+			"UYX5XTB5RZ/moc_streamselectorwidget.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videogridwidget.h",
+			"MU",
+			"UYX5XTB5RZ/moc_videogridwidget.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videoselectiondialog.h",
+			"MU",
+			"UYX5XTB5RZ/moc_videoselectiondialog.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/viewerwidget.h",
+			"MU",
+			"UYX5XTB5RZ/moc_viewerwidget.cpp",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/video_defaults.h",
 			"MU",
 			"EWIEGA46WW/moc_video_defaults.cpp",
-			null
-		],
-		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videocapture.h",
-			"MU",
-			"EWIEGA46WW/moc_videocapture.cpp",
-			null
-		],
-		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodecoder.h",
-			"MU",
-			"EWIEGA46WW/moc_videodecoder.cpp",
-			null
-		],
-		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodisplay.h",
-			"MU",
-			"EWIEGA46WW/moc_videodisplay.cpp",
-			null
-		],
-		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoencoder.h",
-			"MU",
-			"EWIEGA46WW/moc_videoencoder.cpp",
-			null
-		],
-		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videolayoutcalculator.h",
-			"MU",
-			"EWIEGA46WW/moc_videolayoutcalculator.cpp",
-			null
-		],
-		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoselectiondialog.h",
-			"MU",
-			"EWIEGA46WW/moc_videoselectiondialog.cpp",
 			null
 		]
 	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
-	"INCLUDE_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/VideoCapture_autogen/include",
-	"MOC_COMPILATION_FILE" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/VideoCapture_autogen/mocs_compilation.cpp",
+	"INCLUDE_DIR" : "/home/aprihodko/t/GitHub/my_scripts/lab3/build/VideoCapture_autogen/include",
+	"MOC_COMPILATION_FILE" : "/home/aprihodko/t/GitHub/my_scripts/lab3/build/VideoCapture_autogen/mocs_compilation.cpp",
 	"MOC_DEFINITIONS" : 
 	[
 		"QT_CORE_LIB",
 		"QT_GUI_LIB",
 		"QT_NETWORK_LIB",
 		"QT_NO_DEBUG",
+		"QT_TESTCASE_BUILDDIR=\"/home/aprihodko/t/GitHub/my_scripts/lab3/build\"",
+		"QT_TESTCASE_SOURCEDIR=\"/home/aprihodko/t/GitHub/my_scripts/lab3/src\"",
+		"QT_TESTLIB_LIB",
 		"QT_WIDGETS_LIB"
 	],
 	"MOC_DEPEND_FILTERS" : 
@@ -296,13 +458,20 @@
 	],
 	"MOC_INCLUDES" : 
 	[
-		"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/deps/Linux/fec/include",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/src",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui",
+		"/home/aprihodko/t/GitHub/my_scripts/lab3/deps/Linux/fec/include",
 		"/usr/include/x86_64-linux-gnu/qt6/QtCore",
 		"/usr/include/x86_64-linux-gnu/qt6",
 		"/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++",
 		"/usr/include/x86_64-linux-gnu/qt6/QtGui",
 		"/usr/include/x86_64-linux-gnu/qt6/QtWidgets",
 		"/usr/include/x86_64-linux-gnu/qt6/QtNetwork",
+		"/usr/include/x86_64-linux-gnu/qt6/QtTest",
 		"/usr/include/opencv4",
 		"/usr/include/x86_64-linux-gnu",
 		"/usr/include",
@@ -332,101 +501,154 @@
 		"-c",
 		"/usr/share/cmake-3.25/Modules/CMakeCXXCompilerABI.cpp"
 	],
-	"MOC_PREDEFS_FILE" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/VideoCapture_autogen/moc_predefs.h",
+	"MOC_PREDEFS_FILE" : "/home/aprihodko/t/GitHub/my_scripts/lab3/build/VideoCapture_autogen/moc_predefs.h",
 	"MOC_RELAXED_MODE" : false,
-	"MOC_SKIP" : 
-	[
-		"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/test_myfec_autogen/mocs_compilation.cpp",
-		"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/test_packet_format_autogen/mocs_compilation.cpp"
-	],
+	"MOC_SKIP" : [],
 	"MULTI_CONFIG" : false,
 	"PARALLEL" : 2,
-	"PARSE_CACHE_FILE" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/VideoCapture_autogen.dir/ParseCache.txt",
+	"PARSE_CACHE_FILE" : "/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/VideoCapture_autogen.dir/ParseCache.txt",
 	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/libexec/moc",
 	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/libexec/uic",
 	"QT_VERSION_MAJOR" : 6,
 	"QT_VERSION_MINOR" : 4,
-	"SETTINGS_FILE" : "/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/VideoCapture_autogen.dir/AutogenUsed.txt",
+	"SETTINGS_FILE" : "/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/VideoCapture_autogen.dir/AutogenUsed.txt",
 	"SOURCES" : 
 	[
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/darktheme.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/framebuffer.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/framebuffer.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videocapture.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/main.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodecoder.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/mainwindow.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodisplay.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/myfec.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videoencoder.cpp",
+			"MU",
+			null
+		],
+		[ "/home/aprihodko/t/GitHub/my_scripts/lab3/src/main.cpp", "MU", null ],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/networkfacade.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkdisplaybuffer.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/streammanager.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkmanager.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpclient.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/removevideodialog.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpmanager.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videocapture.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/myfec.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodecoder.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkdisplaybuffer.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodisplay.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkmanager.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoencoder.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/udpmanager.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videolayoutcalculator.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencecontrolpanel.cpp",
 			"MU",
 			null
 		],
 		[
-			"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoselectiondialog.cpp",
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencewindow.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/darktheme.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/deviceselectorwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/maincontrolpanel.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/mainwindow.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamcontrolpanel.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamerwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamidinputwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamselectorwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videogridwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videoselectiondialog.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/viewerwidget.cpp",
 			"MU",
 			null
 		]
 	],
 	"UIC_OPTIONS" : [],
 	"UIC_SEARCH_PATHS" : [],
-	"UIC_SKIP" : 
-	[
-		"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/test_myfec_autogen/mocs_compilation.cpp",
-		"/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/test_packet_format_autogen/mocs_compilation.cpp"
-	],
+	"UIC_SKIP" : [],
 	"UIC_UI_FILES" : [],
 	"VERBOSITY" : 0
 }

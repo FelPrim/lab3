@@ -1,4 +1,2 @@
 # Hashes of file build rules.
-916bda3dfb20fc0859396042b2c56bd0 CMakeFiles/VideoCapture_autogen
-0ae6ef0aa5f5bb99a528db074d7cbf97 CMakeFiles/test_myfec_autogen
-c0f9605097708fcee56eed61c829e2e5 CMakeFiles/test_packet_format_autogen
+f50cb9c65dd1707124f6b89bef88c688 CMakeFiles/VideoCapture_autogen

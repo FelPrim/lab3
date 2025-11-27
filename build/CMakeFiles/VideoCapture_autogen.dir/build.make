@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src
+CMAKE_SOURCE_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build
+CMAKE_BINARY_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3/build
 
 # Utility rule file for VideoCapture_autogen.
 
@@ -67,8 +67,8 @@ include CMakeFiles/VideoCapture_autogen.dir/compiler_depend.make
 include CMakeFiles/VideoCapture_autogen.dir/progress.make
 
 CMakeFiles/VideoCapture_autogen:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Automatic MOC and UIC for target VideoCapture"
-	/usr/bin/cmake -E cmake_autogen /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/VideoCapture_autogen.dir/AutogenInfo.json Release
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Automatic MOC and UIC for target VideoCapture"
+	/usr/bin/cmake -E cmake_autogen /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/VideoCapture_autogen.dir/AutogenInfo.json Release
 
 VideoCapture_autogen: CMakeFiles/VideoCapture_autogen
 VideoCapture_autogen: CMakeFiles/VideoCapture_autogen.dir/build.make
@@ -83,6 +83,6 @@ CMakeFiles/VideoCapture_autogen.dir/clean:
 .PHONY : CMakeFiles/VideoCapture_autogen.dir/clean
 
 CMakeFiles/VideoCapture_autogen.dir/depend:
-	cd /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/VideoCapture_autogen.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/aprihodko/t/GitHub/my_scripts/lab3/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/aprihodko/t/GitHub/my_scripts/lab3/src /home/aprihodko/t/GitHub/my_scripts/lab3/src /home/aprihodko/t/GitHub/my_scripts/lab3/build /home/aprihodko/t/GitHub/my_scripts/lab3/build /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/VideoCapture_autogen.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/VideoCapture_autogen.dir/depend
 

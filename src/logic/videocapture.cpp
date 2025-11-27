@@ -31,192 +31,123 @@ void VideoCapture::stopCapture()
 
 void VideoCapture::run()
 {
-    qDebug() << "VideoCapture: starting device" << m_deviceIndex;
+    qDebug() << "VideoCapture: quick starting device" << m_deviceIndex;
     
-    bool deviceOpened = false;
-    int attempts = 0;
-    const int maxAttempts = 3;
-    
-    // Пытаемся открыть устройство с экспоненциальной backoff задержкой
-    while (!deviceOpened && attempts < maxAttempts && m_running) {
-        attempts++;
-        
+    // Быстрое открытие устройства
+    try {
 #ifdef _WIN32
-        try {
-            qDebug() << "Attempt" << attempts << "opening device with DSHOW backend";
-            m_capture.open(m_deviceIndex, cv::CAP_DSHOW);
-        } catch (const cv::Exception &e) {
-            qWarning() << "OpenCV DSHOW exception:" << e.what();
-            QThread::msleep(100 * attempts); // 100ms, 200ms, 300ms
-            continue;
-        }
+        m_capture.open(m_deviceIndex, cv::CAP_DSHOW);
 #elif __linux__
-        try {
-            qDebug() << "Attempt" << attempts << "opening device with V4L2 backend";
-            m_capture.open(m_deviceIndex, cv::CAP_V4L2);
-        } catch (const cv::Exception &e) {
-            qWarning() << "OpenCV V4L2 exception:" << e.what();
-            QThread::msleep(100 * attempts);
-            continue;
-        }
+        m_capture.open(m_deviceIndex, cv::CAP_V4L2);
 #elif __APPLE__
-        try {
-            qDebug() << "Attempt" << attempts << "opening device with AVFOUNDATION backend";
-            m_capture.open(m_deviceIndex, cv::CAP_AVFOUNDATION);
-        } catch (const cv::Exception &e) {
-            qWarning() << "OpenCV AVFOUNDATION exception:" << e.what();
-            QThread::msleep(100 * attempts);
-            continue;
-        }
+        m_capture.open(m_deviceIndex, cv::CAP_AVFOUNDATION);
 #else
-        if (!m_capture.open(m_deviceIndex)) {
-            qWarning() << "Failed to open device with default backend";
-            QThread::msleep(100 * attempts);
-            continue;
-        }
+        m_capture.open(m_deviceIndex);
 #endif
-
-        if (m_capture.isOpened()) {
-            deviceOpened = true;
-            qDebug() << "Successfully opened device" << m_deviceIndex << "on attempt" << attempts;
-        } else {
-            qWarning() << "Failed to open device" << m_deviceIndex << "on attempt" << attempts;
-            QThread::msleep(100 * attempts);
-        }
-    }
-
-    if (!deviceOpened || !m_capture.isOpened()) {
-        emit errorOccurred(QString("Cannot open video device %1 after %2 attempts").arg(m_deviceIndex).arg(attempts));
+    } catch (const cv::Exception& e) {
+        emit errorOccurred(QString("Cannot open video device %1: %2").arg(m_deviceIndex).arg(e.what()));
         return;
     }
 
-    // Оптимизированные настройки для низкой задержки
+    if (!m_capture.isOpened()) {
+        emit errorOccurred(QString("Cannot open video device %1").arg(m_deviceIndex));
+        return;
+    }
+
+    // Быстрые базовые настройки (не блокирующие)
     m_capture.set(cv::CAP_PROP_FRAME_WIDTH, DEFAULT_WIDTH);
     m_capture.set(cv::CAP_PROP_FRAME_HEIGHT, DEFAULT_HEIGHT);
     m_capture.set(cv::CAP_PROP_FPS, m_fps);
-    
-    // КРИТИЧЕСКИ ВАЖНО: устанавливаем минимальный размер буфера
     m_capture.set(cv::CAP_PROP_BUFFERSIZE, 1);
-    
-    // Пробуем установить формат MJPEG для лучшей производительности
-    m_capture.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M','J','P','G'));
-    
-    // Автоматическая фокусировка и экспозиция (если доступно)
-    m_capture.set(cv::CAP_PROP_AUTOFOCUS, 0);
-    m_capture.set(cv::CAP_PROP_AUTO_EXPOSURE, 1);
 
-    // Даем камере время на инициализацию
-    QThread::msleep(50);
-    
-    // Быстрый прогрев - захватываем несколько кадров без обработки
-    qDebug() << "Warming up camera...";
+    // Минимальный прогрев - 2 кадра
     cv::Mat warmupFrame;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2 && m_running; i++) {
         if (m_capture.read(warmupFrame) && !warmupFrame.empty()) {
-            break; // Успешно получили кадр
+            break;
         }
         QThread::msleep(10);
     }
 
+    qDebug() << "Starting fast capture loop for device" << m_deviceIndex;
+    
+    // Основной цикл захвата
     cv::Mat frame;
-    QElapsedTimer timer;
-    QElapsedTimer fpsTimer;
     int frameCount = 0;
-    int consecutiveFailures = 0;
-    const int maxConsecutiveFailures = 5;
-
+    QElapsedTimer fpsTimer;
     fpsTimer.start();
 
-    qDebug() << "Starting video capture loop for device" << m_deviceIndex;
-
     while (m_running) {
-        timer.restart();
-        
         if (!m_capture.read(frame) || frame.empty()) {
-            consecutiveFailures++;
-            qWarning() << "Failed to read frame from device" << m_deviceIndex << "consecutive failures:" << consecutiveFailures;
-            
-            if (consecutiveFailures >= maxConsecutiveFailures) {
-                emit errorOccurred(QString("Too many consecutive capture failures (%1)").arg(consecutiveFailures));
-                break;
-            }
-            
+            // Быстрая обработка ошибок - небольшая пауза и продолжаем
             QThread::msleep(5);
             continue;
         }
         
-        consecutiveFailures = 0; // Сброс счетчика ошибок при успешном захвате
         frameCount++;
-
-        // Периодический вывод FPS (каждые 60 кадров)
-        if (frameCount % 60 == 0) {
-            double elapsed = fpsTimer.restart() / 1000.0;
-            double currentFps = 60.0 / elapsed;
-            qDebug() << "Device" << m_deviceIndex << "FPS:" << currentFps;
-        }
 
         // Быстрая конвертация для прямого показа
         cv::Mat rgbFrame;
         cv::cvtColor(frame, rgbFrame, cv::COLOR_BGR2RGB);
+        
+        // Создаем QImage напрямую из данных кадра (без копирования)
         QImage image(rgbFrame.data, rgbFrame.cols, rgbFrame.rows, 
                     rgbFrame.step, QImage::Format_RGB888);
         
-        // Отправляем для прямого показа
+        // Критически важно: создаем копию, так как данные rgbFrame временные
         emit rawFrameReady(image.copy());
-        
-        // Отправляем для кодирования (оригинальный BGR кадр)
-        emit frameForEncodingReady(frame.clone());
 
-        // Адаптивный контроль FPS - не блокируем если отстаем
-        int elapsed = timer.elapsed();
-        int targetFrameTime = 1000 / m_fps;
-        
-        if (elapsed < targetFrameTime) {
-            int remaining = targetFrameTime - elapsed;
-            if (remaining > 0 && remaining < 50) { // Защита от слишком долгого сна
-                QThread::msleep(remaining);
-            }
-        } else {
-            // Если не успеваем - просто продолжаем
-            qDebug() << "Device" << m_deviceIndex << "can't keep up with target FPS. Frame time:" << elapsed << "ms";
+        // Периодический лог FPS (каждые 100 кадров)
+        if (frameCount % 100 == 0) {
+            double elapsed = fpsTimer.restart() / 1000.0;
+            double currentFps = 100.0 / elapsed;
+            qDebug() << "Device" << m_deviceIndex << "FPS:" << currentFps;
         }
+
+        // Небольшая пауза для контроля FPS
+        QThread::msleep(1);
     }
 
     m_capture.release();
-    qDebug() << "VideoCapture: stopped device" << m_deviceIndex << "total frames:" << frameCount;
+    qDebug() << "VideoCapture: stopped device" << m_deviceIndex;
 }
+
 
 QList<int> VideoCapture::getAvailableDevices()
 {
     QList<int> devices;
     
-    qDebug() << "Scanning for video devices...";
-    for (int i = 0; i < 10; ++i) {
+    qDebug() << "Quick scanning for video devices...";
+    
+    for (int i = 0; i < 5; ++i) { // Проверяем только первые 5 устройств
         cv::VideoCapture cap;
+        bool opened = false;
+        
+        // Быстрая попытка открытия без исключений
 #ifdef _WIN32
-        try {
-            cap.open(i, cv::CAP_DSHOW);
-        } catch (...) {
-            continue;
+        opened = cap.open(i, cv::CAP_DSHOW);
+#elif __linux__
+        opened = cap.open(i, cv::CAP_V4L2);
+#elif __APPLE__
+        opened = cap.open(i, cv::CAP_AVFOUNDATION);
+#else
+        opened = cap.open(i);
+#endif
+
+        if (opened && cap.isOpened()) {
+            // Быстрая проверка - один тестовый кадр
+            cv::Mat testFrame;
+            if (cap.read(testFrame) && !testFrame.empty()) {
+                devices.append(i);
+                qDebug() << "Found device:" << i;
+            }
+            cap.release(); // Немедленно освобождаем
         }
-#else
-#ifdef __linux__
-        if (!cap.open(i, cv::CAP_V4L2)) continue;
-#else
-#ifdef __APPLE__
-        if (!cap.open(i, cv::CAP_AVFOUNDATION)) continue;
-#else
-        if (!cap.open(i)) continue;
-#endif
-#endif
-#endif
-        if (cap.isOpened()) {
-            devices.append(i);
-            qDebug() << "Found device:" << i;
-            cap.release();
-        }
+        
+        // Минимальная задержка между проверками
+        QThread::msleep(10);
     }
 
-    qDebug() << "Total devices found:" << devices.size();
+    qDebug() << "Quick scan completed. Found" << devices.size() << "devices";
     return devices;
 }

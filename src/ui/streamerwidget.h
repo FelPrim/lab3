@@ -8,7 +8,7 @@
 #include <QLabel>
 #include "../logic/videodisplay.h"
 #include "streamcontrolpanel.h"
-
+class StreamManager; 
 
 class StreamerWidget : public QWidget
 {
@@ -93,4 +93,30 @@ public:
     void forceDisconnect();
 private:
     bool m_disconnecting = false;
+private:
+    enum StreamState {
+        State_NoStream,      // Только превью, нет трансляции
+        State_StreamCreated, // Трансляция создана, кодировщик работает, но пакеты не отправляются
+        State_StreamActive,  // Трансляция активна, пакеты отправляются (есть зрители)
+        State_StreamError    // Ошибка трансляции
+    };
+
+    StreamState m_streamState;
+    bool m_encoderInitialized;
+    bool m_sendingPackets;
+
+public slots:
+    void onServerStreamCreated(uint32_t streamId, const QString& displayId);
+    void onServerStreamStart(uint32_t streamId);
+    void onServerStreamEnd(uint32_t streamId);
+    void onServerStreamError(uint32_t streamId);
+
+private:
+    void setStreamState(StreamState newState);
+    StreamManager* m_streamManager; 
+
+public:
+    void setViewersStatus(bool hasViewers);
+    void onNetworkError(const QString& error);
+
 };

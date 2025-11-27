@@ -7,14 +7,16 @@
 
 #pragma pack(push, 1)
 
-// ROUTE_HEADER - 8 байт
+// ROUTE_HEADER - 12 байт
 struct RouteHeader {
+    uint32_t callId;
     uint32_t streamId;
     uint32_t packetSequence;
 };
 
 // Для обозначения того, что значения хранятся в network byte ordering
 struct nRouteHeader{
+    nuint32_t callId;
     nuint32_t streamId;
     nuint32_t packetSequence;
 };
@@ -22,7 +24,7 @@ struct nRouteHeader{
 // Обычный пакет (FEC_FLAG = 0)
 struct DataPacket {
     uint8_t type;  // 7 бит - тип пакета, старший бит = 0
-    uint8_t payload[1191]; // данные пакета
+    uint8_t payload[1187]; // данные пакета
     
     bool isValidType() const {
         uint8_t packetType = type & 0x7F; // Игнорируем FEC_FLAG
@@ -36,7 +38,7 @@ struct DataPacket {
 
 // XOR пакет (FEC_FLAG = 1)  
 struct XorPacket {
-    uint8_t xorData[1192]; // XOR данных 4 пакетов (включая их type байты)
+    uint8_t xorData[1188]; // XOR данных 4 пакетов (включая их type байты)
 };
 
 union PacketContent {
@@ -52,24 +54,30 @@ union PacketHeader{
 inline static void cast_to_nbe(PacketHeader& source){
     const uint32_t streamId = source.header.streamId;
     const uint32_t packetSequence = source.header.packetSequence;
+    const uint32_t callId = source.header.callId;
     const nuint32_t nstreamId = qToBigEndian(streamId);
     const nuint32_t npacketSequence = qToBigEndian(packetSequence);
+    const nuint32_t ncallId = qToBigEndian(callId);
     source.nheader.streamId = nstreamId;
     source.nheader.packetSequence = npacketSequence;
+    source.nheader.callId = ncallId;
 }
 
 inline static void cast_from_nbe(PacketHeader& source){
     const nuint32_t nstreamId = source.nheader.streamId;
     const nuint32_t npacketSequence = source.nheader.packetSequence;
+    const nuint32_t ncallId = source.nheader.callId;
     const uint32_t streamId = qFromBigEndian(nstreamId);
     const uint32_t packetSequence = qFromBigEndian(npacketSequence);
+    const uint32_t callId = qFromBigEndian(ncallId);
     source.header.streamId = streamId;
     source.header.packetSequence = packetSequence;
+    source.header.callId = callId;
 }
 
 struct NetworkPacket {
     nRouteHeader route;      // 8 байт
-    PacketContent content;  // 1192 байта
+    PacketContent content;  // 1188 байта
     
     bool isXorPacket() const {
         return (content.dataPacket.type & 0x80) != 0;
@@ -101,8 +109,8 @@ struct NetworkPacket {
 class PacketProcessor
 {
 public:
-    static const int ROUTE_HEADER_SIZE = 8;
-    static const int XOR_PACKET_DATA_SIZE = 1192;
+    static const int ROUTE_HEADER_SIZE = 12;
+    static const int XOR_PACKET_DATA_SIZE = 1188;
     
     static NetworkPacket fromByteArray(const QByteArray& data) {
         NetworkPacket packet;
@@ -118,37 +126,40 @@ public:
         return QByteArray(reinterpret_cast<const char*>(&networkOrderPacket), sizeof(NetworkPacket));
     }
     
-    static NetworkPacket createDataPacket(uint32_t streamId, uint32_t sequence, uint8_t type, const QByteArray& payload) {
+    static NetworkPacket createDataPacket(uint32_t callId, uint32_t streamId, uint32_t sequence, uint8_t type, const QByteArray& payload) {
         NetworkPacket packet;
         
-        // ИСПРАВИТЬ инициализацию:
         PacketHeader route;
+        route.header.callId = callId;
         route.header.streamId = streamId;
         route.header.packetSequence = sequence;
         cast_to_nbe(route);
+        packet.route.callId = route.nheader.callId;
         packet.route.streamId = route.nheader.streamId;
         packet.route.packetSequence = route.nheader.packetSequence;
 
         packet.content.dataPacket.type = type & 0x7F;
-        int copySize = qMin(payload.size(), 1191);
+        int copySize = qMin(payload.size(), 1187);
         if (copySize > 0) {
             memcpy(packet.content.dataPacket.payload, payload.constData(), copySize);
         }
         return packet;
     }
 
-    static NetworkPacket createXorPacket(uint32_t streamId, uint32_t sequence, const QByteArray& xorData) {
+    static NetworkPacket createXorPacket(uint32_t callId, uint32_t streamId, uint32_t sequence, const QByteArray& xorData) {
         NetworkPacket packet;
 
-        // ИСПРАВИТЬ инициализацию:
         PacketHeader route;
+        route.header.callId = callId;
         route.header.streamId = streamId;
         route.header.packetSequence = sequence;
         cast_to_nbe(route);
+
+        packet.route.callId = route.nheader.callId;
         packet.route.streamId = route.nheader.streamId;
         packet.route.packetSequence = route.nheader.packetSequence;
         
-        int copySize = qMin(xorData.size(), 1192);
+        int copySize = qMin(xorData.size(), 1188);
         if (copySize > 0) {
             memcpy(packet.content.xorPacket.xorData, xorData.constData(), copySize);
         }
@@ -159,12 +170,12 @@ public:
 
     static QByteArray getDataPacketPayload(const NetworkPacket& packet) {
         if (packet.isXorPacket()) return QByteArray();
-        return QByteArray(reinterpret_cast<const char*>(packet.content.dataPacket.payload), 1191);
+        return QByteArray(reinterpret_cast<const char*>(packet.content.dataPacket.payload), 1187);
     }
     
     static QByteArray getXorPacketData(const NetworkPacket& packet) {
         if (!packet.isXorPacket()) return QByteArray();
-        QByteArray result = QByteArray(reinterpret_cast<const char*>(packet.content.xorPacket.xorData), 1192);
+        QByteArray result = QByteArray(reinterpret_cast<const char*>(packet.content.xorPacket.xorData), 1188);
         result[0] &= 0x7f;
         return result;
     }

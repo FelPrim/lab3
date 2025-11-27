@@ -57,23 +57,13 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src
+CMAKE_SOURCE_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build
+CMAKE_BINARY_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3/build
 
 #=============================================================================
 # Targets provided globally by CMake.
-
-# Special rule for the target test
-test:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running tests..."
-	/usr/bin/ctest --force-new-ctest-process $(ARGS)
-.PHONY : test
-
-# Special rule for the target test
-test/fast: test
-.PHONY : test/fast
 
 # Special rule for the target edit_cache
 edit_cache:
@@ -97,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles /home/aprihodko/t/GitHub/my_scripts/lab3/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -127,32 +117,6 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named test_myfec
-
-# Build rule for target.
-test_myfec: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_myfec
-.PHONY : test_myfec
-
-# fast build rule for target.
-test_myfec/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/build
-.PHONY : test_myfec/fast
-
-#=============================================================================
-# Target rules for targets named test_packet_format
-
-# Build rule for target.
-test_packet_format: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_packet_format
-.PHONY : test_packet_format
-
-# fast build rule for target.
-test_packet_format/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/build
-.PHONY : test_packet_format/fast
-
-#=============================================================================
 # Target rules for targets named VideoCapture
 
 # Build rule for target.
@@ -164,32 +128,6 @@ VideoCapture: cmake_check_build_system
 VideoCapture/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/build
 .PHONY : VideoCapture/fast
-
-#=============================================================================
-# Target rules for targets named test_myfec_autogen
-
-# Build rule for target.
-test_myfec_autogen: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_myfec_autogen
-.PHONY : test_myfec_autogen
-
-# fast build rule for target.
-test_myfec_autogen/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec_autogen.dir/build.make CMakeFiles/test_myfec_autogen.dir/build
-.PHONY : test_myfec_autogen/fast
-
-#=============================================================================
-# Target rules for targets named test_packet_format_autogen
-
-# Build rule for target.
-test_packet_format_autogen: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_packet_format_autogen
-.PHONY : test_packet_format_autogen
-
-# fast build rule for target.
-test_packet_format_autogen/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format_autogen.dir/build.make CMakeFiles/test_packet_format_autogen.dir/build
-.PHONY : test_packet_format_autogen/fast
 
 #=============================================================================
 # Target rules for targets named VideoCapture_autogen
@@ -228,53 +166,125 @@ VideoCapture_autogen/mocs_compilation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.s
 .PHONY : VideoCapture_autogen/mocs_compilation.cpp.s
 
-darktheme.o: darktheme.cpp.o
-.PHONY : darktheme.o
+logic/framebuffer.o: logic/framebuffer.cpp.o
+.PHONY : logic/framebuffer.o
 
 # target to build an object file
-darktheme.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/darktheme.cpp.o
-.PHONY : darktheme.cpp.o
+logic/framebuffer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o
+.PHONY : logic/framebuffer.cpp.o
 
-darktheme.i: darktheme.cpp.i
-.PHONY : darktheme.i
+logic/framebuffer.i: logic/framebuffer.cpp.i
+.PHONY : logic/framebuffer.i
 
 # target to preprocess a source file
-darktheme.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/darktheme.cpp.i
-.PHONY : darktheme.cpp.i
+logic/framebuffer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.i
+.PHONY : logic/framebuffer.cpp.i
 
-darktheme.s: darktheme.cpp.s
-.PHONY : darktheme.s
+logic/framebuffer.s: logic/framebuffer.cpp.s
+.PHONY : logic/framebuffer.s
 
 # target to generate assembly for a file
-darktheme.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/darktheme.cpp.s
-.PHONY : darktheme.cpp.s
+logic/framebuffer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.s
+.PHONY : logic/framebuffer.cpp.s
 
-framebuffer.o: framebuffer.cpp.o
-.PHONY : framebuffer.o
+logic/videocapture.o: logic/videocapture.cpp.o
+.PHONY : logic/videocapture.o
 
 # target to build an object file
-framebuffer.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/framebuffer.cpp.o
-.PHONY : framebuffer.cpp.o
+logic/videocapture.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o
+.PHONY : logic/videocapture.cpp.o
 
-framebuffer.i: framebuffer.cpp.i
-.PHONY : framebuffer.i
+logic/videocapture.i: logic/videocapture.cpp.i
+.PHONY : logic/videocapture.i
 
 # target to preprocess a source file
-framebuffer.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/framebuffer.cpp.i
-.PHONY : framebuffer.cpp.i
+logic/videocapture.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.i
+.PHONY : logic/videocapture.cpp.i
 
-framebuffer.s: framebuffer.cpp.s
-.PHONY : framebuffer.s
+logic/videocapture.s: logic/videocapture.cpp.s
+.PHONY : logic/videocapture.s
 
 # target to generate assembly for a file
-framebuffer.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/framebuffer.cpp.s
-.PHONY : framebuffer.cpp.s
+logic/videocapture.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.s
+.PHONY : logic/videocapture.cpp.s
+
+logic/videodecoder.o: logic/videodecoder.cpp.o
+.PHONY : logic/videodecoder.o
+
+# target to build an object file
+logic/videodecoder.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o
+.PHONY : logic/videodecoder.cpp.o
+
+logic/videodecoder.i: logic/videodecoder.cpp.i
+.PHONY : logic/videodecoder.i
+
+# target to preprocess a source file
+logic/videodecoder.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.i
+.PHONY : logic/videodecoder.cpp.i
+
+logic/videodecoder.s: logic/videodecoder.cpp.s
+.PHONY : logic/videodecoder.s
+
+# target to generate assembly for a file
+logic/videodecoder.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.s
+.PHONY : logic/videodecoder.cpp.s
+
+logic/videodisplay.o: logic/videodisplay.cpp.o
+.PHONY : logic/videodisplay.o
+
+# target to build an object file
+logic/videodisplay.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o
+.PHONY : logic/videodisplay.cpp.o
+
+logic/videodisplay.i: logic/videodisplay.cpp.i
+.PHONY : logic/videodisplay.i
+
+# target to preprocess a source file
+logic/videodisplay.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.i
+.PHONY : logic/videodisplay.cpp.i
+
+logic/videodisplay.s: logic/videodisplay.cpp.s
+.PHONY : logic/videodisplay.s
+
+# target to generate assembly for a file
+logic/videodisplay.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.s
+.PHONY : logic/videodisplay.cpp.s
+
+logic/videoencoder.o: logic/videoencoder.cpp.o
+.PHONY : logic/videoencoder.o
+
+# target to build an object file
+logic/videoencoder.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o
+.PHONY : logic/videoencoder.cpp.o
+
+logic/videoencoder.i: logic/videoencoder.cpp.i
+.PHONY : logic/videoencoder.i
+
+# target to preprocess a source file
+logic/videoencoder.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.i
+.PHONY : logic/videoencoder.cpp.i
+
+logic/videoencoder.s: logic/videoencoder.cpp.s
+.PHONY : logic/videoencoder.s
+
+# target to generate assembly for a file
+logic/videoencoder.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.s
+.PHONY : logic/videoencoder.cpp.s
 
 main.o: main.cpp.o
 .PHONY : main.o
@@ -300,371 +310,509 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/main.cpp.s
 .PHONY : main.cpp.s
 
-mainwindow.o: mainwindow.cpp.o
-.PHONY : mainwindow.o
+network/networkfacade.o: network/networkfacade.cpp.o
+.PHONY : network/networkfacade.o
 
 # target to build an object file
-mainwindow.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/mainwindow.cpp.o
-.PHONY : mainwindow.cpp.o
+network/networkfacade.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o
+.PHONY : network/networkfacade.cpp.o
 
-mainwindow.i: mainwindow.cpp.i
-.PHONY : mainwindow.i
+network/networkfacade.i: network/networkfacade.cpp.i
+.PHONY : network/networkfacade.i
 
 # target to preprocess a source file
-mainwindow.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/mainwindow.cpp.i
-.PHONY : mainwindow.cpp.i
+network/networkfacade.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.i
+.PHONY : network/networkfacade.cpp.i
 
-mainwindow.s: mainwindow.cpp.s
-.PHONY : mainwindow.s
+network/networkfacade.s: network/networkfacade.cpp.s
+.PHONY : network/networkfacade.s
 
 # target to generate assembly for a file
-mainwindow.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/mainwindow.cpp.s
-.PHONY : mainwindow.cpp.s
+network/networkfacade.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.s
+.PHONY : network/networkfacade.cpp.s
 
-myfec.o: myfec.cpp.o
-.PHONY : myfec.o
+network/streammanager.o: network/streammanager.cpp.o
+.PHONY : network/streammanager.o
 
 # target to build an object file
-myfec.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/myfec.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/myfec.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/myfec.cpp.o
-.PHONY : myfec.cpp.o
+network/streammanager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o
+.PHONY : network/streammanager.cpp.o
 
-myfec.i: myfec.cpp.i
-.PHONY : myfec.i
+network/streammanager.i: network/streammanager.cpp.i
+.PHONY : network/streammanager.i
 
 # target to preprocess a source file
-myfec.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/myfec.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/myfec.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/myfec.cpp.i
-.PHONY : myfec.cpp.i
+network/streammanager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/streammanager.cpp.i
+.PHONY : network/streammanager.cpp.i
 
-myfec.s: myfec.cpp.s
-.PHONY : myfec.s
+network/streammanager.s: network/streammanager.cpp.s
+.PHONY : network/streammanager.s
 
 # target to generate assembly for a file
-myfec.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/myfec.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/myfec.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/myfec.cpp.s
-.PHONY : myfec.cpp.s
+network/streammanager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/streammanager.cpp.s
+.PHONY : network/streammanager.cpp.s
 
-networkdisplaybuffer.o: networkdisplaybuffer.cpp.o
-.PHONY : networkdisplaybuffer.o
+network/tcp/tcpclient.o: network/tcp/tcpclient.cpp.o
+.PHONY : network/tcp/tcpclient.o
 
 # target to build an object file
-networkdisplaybuffer.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o
-.PHONY : networkdisplaybuffer.cpp.o
+network/tcp/tcpclient.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o
+.PHONY : network/tcp/tcpclient.cpp.o
 
-networkdisplaybuffer.i: networkdisplaybuffer.cpp.i
-.PHONY : networkdisplaybuffer.i
+network/tcp/tcpclient.i: network/tcp/tcpclient.cpp.i
+.PHONY : network/tcp/tcpclient.i
 
 # target to preprocess a source file
-networkdisplaybuffer.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.i
-.PHONY : networkdisplaybuffer.cpp.i
+network/tcp/tcpclient.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.i
+.PHONY : network/tcp/tcpclient.cpp.i
 
-networkdisplaybuffer.s: networkdisplaybuffer.cpp.s
-.PHONY : networkdisplaybuffer.s
+network/tcp/tcpclient.s: network/tcp/tcpclient.cpp.s
+.PHONY : network/tcp/tcpclient.s
 
 # target to generate assembly for a file
-networkdisplaybuffer.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.s
-.PHONY : networkdisplaybuffer.cpp.s
+network/tcp/tcpclient.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.s
+.PHONY : network/tcp/tcpclient.cpp.s
 
-networkmanager.o: networkmanager.cpp.o
-.PHONY : networkmanager.o
+network/tcp/tcpmanager.o: network/tcp/tcpmanager.cpp.o
+.PHONY : network/tcp/tcpmanager.o
 
 # target to build an object file
-networkmanager.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/networkmanager.cpp.o
-.PHONY : networkmanager.cpp.o
+network/tcp/tcpmanager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o
+.PHONY : network/tcp/tcpmanager.cpp.o
 
-networkmanager.i: networkmanager.cpp.i
-.PHONY : networkmanager.i
+network/tcp/tcpmanager.i: network/tcp/tcpmanager.cpp.i
+.PHONY : network/tcp/tcpmanager.i
 
 # target to preprocess a source file
-networkmanager.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/networkmanager.cpp.i
-.PHONY : networkmanager.cpp.i
+network/tcp/tcpmanager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.i
+.PHONY : network/tcp/tcpmanager.cpp.i
 
-networkmanager.s: networkmanager.cpp.s
-.PHONY : networkmanager.s
+network/tcp/tcpmanager.s: network/tcp/tcpmanager.cpp.s
+.PHONY : network/tcp/tcpmanager.s
 
 # target to generate assembly for a file
-networkmanager.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/networkmanager.cpp.s
-.PHONY : networkmanager.cpp.s
+network/tcp/tcpmanager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.s
+.PHONY : network/tcp/tcpmanager.cpp.s
 
-removevideodialog.o: removevideodialog.cpp.o
-.PHONY : removevideodialog.o
+network/udp/myfec.o: network/udp/myfec.cpp.o
+.PHONY : network/udp/myfec.o
 
 # target to build an object file
-removevideodialog.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o
-.PHONY : removevideodialog.cpp.o
+network/udp/myfec.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o
+.PHONY : network/udp/myfec.cpp.o
 
-removevideodialog.i: removevideodialog.cpp.i
-.PHONY : removevideodialog.i
+network/udp/myfec.i: network/udp/myfec.cpp.i
+.PHONY : network/udp/myfec.i
 
 # target to preprocess a source file
-removevideodialog.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/removevideodialog.cpp.i
-.PHONY : removevideodialog.cpp.i
+network/udp/myfec.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.i
+.PHONY : network/udp/myfec.cpp.i
 
-removevideodialog.s: removevideodialog.cpp.s
-.PHONY : removevideodialog.s
+network/udp/myfec.s: network/udp/myfec.cpp.s
+.PHONY : network/udp/myfec.s
 
 # target to generate assembly for a file
-removevideodialog.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/removevideodialog.cpp.s
-.PHONY : removevideodialog.cpp.s
+network/udp/myfec.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.s
+.PHONY : network/udp/myfec.cpp.s
 
-test_myfec.o: test_myfec.cpp.o
-.PHONY : test_myfec.o
+network/udp/networkdisplaybuffer.o: network/udp/networkdisplaybuffer.cpp.o
+.PHONY : network/udp/networkdisplaybuffer.o
 
 # target to build an object file
-test_myfec.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/test_myfec.cpp.o
-.PHONY : test_myfec.cpp.o
+network/udp/networkdisplaybuffer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o
+.PHONY : network/udp/networkdisplaybuffer.cpp.o
 
-test_myfec.i: test_myfec.cpp.i
-.PHONY : test_myfec.i
+network/udp/networkdisplaybuffer.i: network/udp/networkdisplaybuffer.cpp.i
+.PHONY : network/udp/networkdisplaybuffer.i
 
 # target to preprocess a source file
-test_myfec.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/test_myfec.cpp.i
-.PHONY : test_myfec.cpp.i
+network/udp/networkdisplaybuffer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.i
+.PHONY : network/udp/networkdisplaybuffer.cpp.i
 
-test_myfec.s: test_myfec.cpp.s
-.PHONY : test_myfec.s
+network/udp/networkdisplaybuffer.s: network/udp/networkdisplaybuffer.cpp.s
+.PHONY : network/udp/networkdisplaybuffer.s
 
 # target to generate assembly for a file
-test_myfec.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/test_myfec.cpp.s
-.PHONY : test_myfec.cpp.s
+network/udp/networkdisplaybuffer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.s
+.PHONY : network/udp/networkdisplaybuffer.cpp.s
 
-test_myfec_autogen/mocs_compilation.o: test_myfec_autogen/mocs_compilation.cpp.o
-.PHONY : test_myfec_autogen/mocs_compilation.o
+network/udp/networkmanager.o: network/udp/networkmanager.cpp.o
+.PHONY : network/udp/networkmanager.o
 
 # target to build an object file
-test_myfec_autogen/mocs_compilation.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/test_myfec_autogen/mocs_compilation.cpp.o
-.PHONY : test_myfec_autogen/mocs_compilation.cpp.o
+network/udp/networkmanager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o
+.PHONY : network/udp/networkmanager.cpp.o
 
-test_myfec_autogen/mocs_compilation.i: test_myfec_autogen/mocs_compilation.cpp.i
-.PHONY : test_myfec_autogen/mocs_compilation.i
+network/udp/networkmanager.i: network/udp/networkmanager.cpp.i
+.PHONY : network/udp/networkmanager.i
 
 # target to preprocess a source file
-test_myfec_autogen/mocs_compilation.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/test_myfec_autogen/mocs_compilation.cpp.i
-.PHONY : test_myfec_autogen/mocs_compilation.cpp.i
+network/udp/networkmanager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.i
+.PHONY : network/udp/networkmanager.cpp.i
 
-test_myfec_autogen/mocs_compilation.s: test_myfec_autogen/mocs_compilation.cpp.s
-.PHONY : test_myfec_autogen/mocs_compilation.s
+network/udp/networkmanager.s: network/udp/networkmanager.cpp.s
+.PHONY : network/udp/networkmanager.s
 
 # target to generate assembly for a file
-test_myfec_autogen/mocs_compilation.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_myfec.dir/build.make CMakeFiles/test_myfec.dir/test_myfec_autogen/mocs_compilation.cpp.s
-.PHONY : test_myfec_autogen/mocs_compilation.cpp.s
+network/udp/networkmanager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.s
+.PHONY : network/udp/networkmanager.cpp.s
 
-test_packet_format.o: test_packet_format.cpp.o
-.PHONY : test_packet_format.o
+network/udp/udpmanager.o: network/udp/udpmanager.cpp.o
+.PHONY : network/udp/udpmanager.o
 
 # target to build an object file
-test_packet_format.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/test_packet_format.cpp.o
-.PHONY : test_packet_format.cpp.o
+network/udp/udpmanager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o
+.PHONY : network/udp/udpmanager.cpp.o
 
-test_packet_format.i: test_packet_format.cpp.i
-.PHONY : test_packet_format.i
+network/udp/udpmanager.i: network/udp/udpmanager.cpp.i
+.PHONY : network/udp/udpmanager.i
 
 # target to preprocess a source file
-test_packet_format.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/test_packet_format.cpp.i
-.PHONY : test_packet_format.cpp.i
+network/udp/udpmanager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.i
+.PHONY : network/udp/udpmanager.cpp.i
 
-test_packet_format.s: test_packet_format.cpp.s
-.PHONY : test_packet_format.s
+network/udp/udpmanager.s: network/udp/udpmanager.cpp.s
+.PHONY : network/udp/udpmanager.s
 
 # target to generate assembly for a file
-test_packet_format.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/test_packet_format.cpp.s
-.PHONY : test_packet_format.cpp.s
+network/udp/udpmanager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.s
+.PHONY : network/udp/udpmanager.cpp.s
 
-test_packet_format_autogen/mocs_compilation.o: test_packet_format_autogen/mocs_compilation.cpp.o
-.PHONY : test_packet_format_autogen/mocs_compilation.o
+ui/conferencecontrolpanel.o: ui/conferencecontrolpanel.cpp.o
+.PHONY : ui/conferencecontrolpanel.o
 
 # target to build an object file
-test_packet_format_autogen/mocs_compilation.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/test_packet_format_autogen/mocs_compilation.cpp.o
-.PHONY : test_packet_format_autogen/mocs_compilation.cpp.o
+ui/conferencecontrolpanel.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o
+.PHONY : ui/conferencecontrolpanel.cpp.o
 
-test_packet_format_autogen/mocs_compilation.i: test_packet_format_autogen/mocs_compilation.cpp.i
-.PHONY : test_packet_format_autogen/mocs_compilation.i
+ui/conferencecontrolpanel.i: ui/conferencecontrolpanel.cpp.i
+.PHONY : ui/conferencecontrolpanel.i
 
 # target to preprocess a source file
-test_packet_format_autogen/mocs_compilation.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/test_packet_format_autogen/mocs_compilation.cpp.i
-.PHONY : test_packet_format_autogen/mocs_compilation.cpp.i
+ui/conferencecontrolpanel.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.i
+.PHONY : ui/conferencecontrolpanel.cpp.i
 
-test_packet_format_autogen/mocs_compilation.s: test_packet_format_autogen/mocs_compilation.cpp.s
-.PHONY : test_packet_format_autogen/mocs_compilation.s
+ui/conferencecontrolpanel.s: ui/conferencecontrolpanel.cpp.s
+.PHONY : ui/conferencecontrolpanel.s
 
 # target to generate assembly for a file
-test_packet_format_autogen/mocs_compilation.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_packet_format.dir/build.make CMakeFiles/test_packet_format.dir/test_packet_format_autogen/mocs_compilation.cpp.s
-.PHONY : test_packet_format_autogen/mocs_compilation.cpp.s
+ui/conferencecontrolpanel.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.s
+.PHONY : ui/conferencecontrolpanel.cpp.s
 
-videocapture.o: videocapture.cpp.o
-.PHONY : videocapture.o
+ui/conferencewindow.o: ui/conferencewindow.cpp.o
+.PHONY : ui/conferencewindow.o
 
 # target to build an object file
-videocapture.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videocapture.cpp.o
-.PHONY : videocapture.cpp.o
+ui/conferencewindow.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o
+.PHONY : ui/conferencewindow.cpp.o
 
-videocapture.i: videocapture.cpp.i
-.PHONY : videocapture.i
+ui/conferencewindow.i: ui/conferencewindow.cpp.i
+.PHONY : ui/conferencewindow.i
 
 # target to preprocess a source file
-videocapture.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videocapture.cpp.i
-.PHONY : videocapture.cpp.i
+ui/conferencewindow.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.i
+.PHONY : ui/conferencewindow.cpp.i
 
-videocapture.s: videocapture.cpp.s
-.PHONY : videocapture.s
+ui/conferencewindow.s: ui/conferencewindow.cpp.s
+.PHONY : ui/conferencewindow.s
 
 # target to generate assembly for a file
-videocapture.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videocapture.cpp.s
-.PHONY : videocapture.cpp.s
+ui/conferencewindow.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.s
+.PHONY : ui/conferencewindow.cpp.s
 
-videodecoder.o: videodecoder.cpp.o
-.PHONY : videodecoder.o
+ui/darktheme.o: ui/darktheme.cpp.o
+.PHONY : ui/darktheme.o
 
 # target to build an object file
-videodecoder.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videodecoder.cpp.o
-.PHONY : videodecoder.cpp.o
+ui/darktheme.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o
+.PHONY : ui/darktheme.cpp.o
 
-videodecoder.i: videodecoder.cpp.i
-.PHONY : videodecoder.i
+ui/darktheme.i: ui/darktheme.cpp.i
+.PHONY : ui/darktheme.i
 
 # target to preprocess a source file
-videodecoder.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videodecoder.cpp.i
-.PHONY : videodecoder.cpp.i
+ui/darktheme.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.i
+.PHONY : ui/darktheme.cpp.i
 
-videodecoder.s: videodecoder.cpp.s
-.PHONY : videodecoder.s
+ui/darktheme.s: ui/darktheme.cpp.s
+.PHONY : ui/darktheme.s
 
 # target to generate assembly for a file
-videodecoder.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videodecoder.cpp.s
-.PHONY : videodecoder.cpp.s
+ui/darktheme.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.s
+.PHONY : ui/darktheme.cpp.s
 
-videodisplay.o: videodisplay.cpp.o
-.PHONY : videodisplay.o
+ui/deviceselectorwidget.o: ui/deviceselectorwidget.cpp.o
+.PHONY : ui/deviceselectorwidget.o
 
 # target to build an object file
-videodisplay.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videodisplay.cpp.o
-.PHONY : videodisplay.cpp.o
+ui/deviceselectorwidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o
+.PHONY : ui/deviceselectorwidget.cpp.o
 
-videodisplay.i: videodisplay.cpp.i
-.PHONY : videodisplay.i
+ui/deviceselectorwidget.i: ui/deviceselectorwidget.cpp.i
+.PHONY : ui/deviceselectorwidget.i
 
 # target to preprocess a source file
-videodisplay.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videodisplay.cpp.i
-.PHONY : videodisplay.cpp.i
+ui/deviceselectorwidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.i
+.PHONY : ui/deviceselectorwidget.cpp.i
 
-videodisplay.s: videodisplay.cpp.s
-.PHONY : videodisplay.s
+ui/deviceselectorwidget.s: ui/deviceselectorwidget.cpp.s
+.PHONY : ui/deviceselectorwidget.s
 
 # target to generate assembly for a file
-videodisplay.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videodisplay.cpp.s
-.PHONY : videodisplay.cpp.s
+ui/deviceselectorwidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.s
+.PHONY : ui/deviceselectorwidget.cpp.s
 
-videoencoder.o: videoencoder.cpp.o
-.PHONY : videoencoder.o
+ui/maincontrolpanel.o: ui/maincontrolpanel.cpp.o
+.PHONY : ui/maincontrolpanel.o
 
 # target to build an object file
-videoencoder.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videoencoder.cpp.o
-.PHONY : videoencoder.cpp.o
+ui/maincontrolpanel.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o
+.PHONY : ui/maincontrolpanel.cpp.o
 
-videoencoder.i: videoencoder.cpp.i
-.PHONY : videoencoder.i
+ui/maincontrolpanel.i: ui/maincontrolpanel.cpp.i
+.PHONY : ui/maincontrolpanel.i
 
 # target to preprocess a source file
-videoencoder.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videoencoder.cpp.i
-.PHONY : videoencoder.cpp.i
+ui/maincontrolpanel.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.i
+.PHONY : ui/maincontrolpanel.cpp.i
 
-videoencoder.s: videoencoder.cpp.s
-.PHONY : videoencoder.s
+ui/maincontrolpanel.s: ui/maincontrolpanel.cpp.s
+.PHONY : ui/maincontrolpanel.s
 
 # target to generate assembly for a file
-videoencoder.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videoencoder.cpp.s
-.PHONY : videoencoder.cpp.s
+ui/maincontrolpanel.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.s
+.PHONY : ui/maincontrolpanel.cpp.s
 
-videolayoutcalculator.o: videolayoutcalculator.cpp.o
-.PHONY : videolayoutcalculator.o
+ui/mainwindow.o: ui/mainwindow.cpp.o
+.PHONY : ui/mainwindow.o
 
 # target to build an object file
-videolayoutcalculator.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o
-.PHONY : videolayoutcalculator.cpp.o
+ui/mainwindow.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o
+.PHONY : ui/mainwindow.cpp.o
 
-videolayoutcalculator.i: videolayoutcalculator.cpp.i
-.PHONY : videolayoutcalculator.i
+ui/mainwindow.i: ui/mainwindow.cpp.i
+.PHONY : ui/mainwindow.i
 
 # target to preprocess a source file
-videolayoutcalculator.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.i
-.PHONY : videolayoutcalculator.cpp.i
+ui/mainwindow.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.i
+.PHONY : ui/mainwindow.cpp.i
 
-videolayoutcalculator.s: videolayoutcalculator.cpp.s
-.PHONY : videolayoutcalculator.s
+ui/mainwindow.s: ui/mainwindow.cpp.s
+.PHONY : ui/mainwindow.s
 
 # target to generate assembly for a file
-videolayoutcalculator.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.s
-.PHONY : videolayoutcalculator.cpp.s
+ui/mainwindow.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.s
+.PHONY : ui/mainwindow.cpp.s
 
-videoselectiondialog.o: videoselectiondialog.cpp.o
-.PHONY : videoselectiondialog.o
+ui/streamcontrolpanel.o: ui/streamcontrolpanel.cpp.o
+.PHONY : ui/streamcontrolpanel.o
 
 # target to build an object file
-videoselectiondialog.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o
-.PHONY : videoselectiondialog.cpp.o
+ui/streamcontrolpanel.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o
+.PHONY : ui/streamcontrolpanel.cpp.o
 
-videoselectiondialog.i: videoselectiondialog.cpp.i
-.PHONY : videoselectiondialog.i
+ui/streamcontrolpanel.i: ui/streamcontrolpanel.cpp.i
+.PHONY : ui/streamcontrolpanel.i
 
 # target to preprocess a source file
-videoselectiondialog.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.i
-.PHONY : videoselectiondialog.cpp.i
+ui/streamcontrolpanel.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.i
+.PHONY : ui/streamcontrolpanel.cpp.i
 
-videoselectiondialog.s: videoselectiondialog.cpp.s
-.PHONY : videoselectiondialog.s
+ui/streamcontrolpanel.s: ui/streamcontrolpanel.cpp.s
+.PHONY : ui/streamcontrolpanel.s
 
 # target to generate assembly for a file
-videoselectiondialog.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.s
-.PHONY : videoselectiondialog.cpp.s
+ui/streamcontrolpanel.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.s
+.PHONY : ui/streamcontrolpanel.cpp.s
+
+ui/streamerwidget.o: ui/streamerwidget.cpp.o
+.PHONY : ui/streamerwidget.o
+
+# target to build an object file
+ui/streamerwidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o
+.PHONY : ui/streamerwidget.cpp.o
+
+ui/streamerwidget.i: ui/streamerwidget.cpp.i
+.PHONY : ui/streamerwidget.i
+
+# target to preprocess a source file
+ui/streamerwidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.i
+.PHONY : ui/streamerwidget.cpp.i
+
+ui/streamerwidget.s: ui/streamerwidget.cpp.s
+.PHONY : ui/streamerwidget.s
+
+# target to generate assembly for a file
+ui/streamerwidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.s
+.PHONY : ui/streamerwidget.cpp.s
+
+ui/streamidinputwidget.o: ui/streamidinputwidget.cpp.o
+.PHONY : ui/streamidinputwidget.o
+
+# target to build an object file
+ui/streamidinputwidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o
+.PHONY : ui/streamidinputwidget.cpp.o
+
+ui/streamidinputwidget.i: ui/streamidinputwidget.cpp.i
+.PHONY : ui/streamidinputwidget.i
+
+# target to preprocess a source file
+ui/streamidinputwidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.i
+.PHONY : ui/streamidinputwidget.cpp.i
+
+ui/streamidinputwidget.s: ui/streamidinputwidget.cpp.s
+.PHONY : ui/streamidinputwidget.s
+
+# target to generate assembly for a file
+ui/streamidinputwidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.s
+.PHONY : ui/streamidinputwidget.cpp.s
+
+ui/streamselectorwidget.o: ui/streamselectorwidget.cpp.o
+.PHONY : ui/streamselectorwidget.o
+
+# target to build an object file
+ui/streamselectorwidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o
+.PHONY : ui/streamselectorwidget.cpp.o
+
+ui/streamselectorwidget.i: ui/streamselectorwidget.cpp.i
+.PHONY : ui/streamselectorwidget.i
+
+# target to preprocess a source file
+ui/streamselectorwidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.i
+.PHONY : ui/streamselectorwidget.cpp.i
+
+ui/streamselectorwidget.s: ui/streamselectorwidget.cpp.s
+.PHONY : ui/streamselectorwidget.s
+
+# target to generate assembly for a file
+ui/streamselectorwidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.s
+.PHONY : ui/streamselectorwidget.cpp.s
+
+ui/videogridwidget.o: ui/videogridwidget.cpp.o
+.PHONY : ui/videogridwidget.o
+
+# target to build an object file
+ui/videogridwidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o
+.PHONY : ui/videogridwidget.cpp.o
+
+ui/videogridwidget.i: ui/videogridwidget.cpp.i
+.PHONY : ui/videogridwidget.i
+
+# target to preprocess a source file
+ui/videogridwidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.i
+.PHONY : ui/videogridwidget.cpp.i
+
+ui/videogridwidget.s: ui/videogridwidget.cpp.s
+.PHONY : ui/videogridwidget.s
+
+# target to generate assembly for a file
+ui/videogridwidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.s
+.PHONY : ui/videogridwidget.cpp.s
+
+ui/videoselectiondialog.o: ui/videoselectiondialog.cpp.o
+.PHONY : ui/videoselectiondialog.o
+
+# target to build an object file
+ui/videoselectiondialog.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o
+.PHONY : ui/videoselectiondialog.cpp.o
+
+ui/videoselectiondialog.i: ui/videoselectiondialog.cpp.i
+.PHONY : ui/videoselectiondialog.i
+
+# target to preprocess a source file
+ui/videoselectiondialog.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.i
+.PHONY : ui/videoselectiondialog.cpp.i
+
+ui/videoselectiondialog.s: ui/videoselectiondialog.cpp.s
+.PHONY : ui/videoselectiondialog.s
+
+# target to generate assembly for a file
+ui/videoselectiondialog.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.s
+.PHONY : ui/videoselectiondialog.cpp.s
+
+ui/viewerwidget.o: ui/viewerwidget.cpp.o
+.PHONY : ui/viewerwidget.o
+
+# target to build an object file
+ui/viewerwidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o
+.PHONY : ui/viewerwidget.cpp.o
+
+ui/viewerwidget.i: ui/viewerwidget.cpp.i
+.PHONY : ui/viewerwidget.i
+
+# target to preprocess a source file
+ui/viewerwidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.i
+.PHONY : ui/viewerwidget.cpp.i
+
+ui/viewerwidget.s: ui/viewerwidget.cpp.s
+.PHONY : ui/viewerwidget.s
+
+# target to generate assembly for a file
+ui/viewerwidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/VideoCapture.dir/build.make CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.s
+.PHONY : ui/viewerwidget.cpp.s
 
 # Help Target
 help:
@@ -674,70 +822,92 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... test"
 	@echo "... VideoCapture_autogen"
-	@echo "... test_myfec_autogen"
-	@echo "... test_packet_format_autogen"
 	@echo "... VideoCapture"
-	@echo "... test_myfec"
-	@echo "... test_packet_format"
 	@echo "... VideoCapture_autogen/mocs_compilation.o"
 	@echo "... VideoCapture_autogen/mocs_compilation.i"
 	@echo "... VideoCapture_autogen/mocs_compilation.s"
-	@echo "... darktheme.o"
-	@echo "... darktheme.i"
-	@echo "... darktheme.s"
-	@echo "... framebuffer.o"
-	@echo "... framebuffer.i"
-	@echo "... framebuffer.s"
+	@echo "... logic/framebuffer.o"
+	@echo "... logic/framebuffer.i"
+	@echo "... logic/framebuffer.s"
+	@echo "... logic/videocapture.o"
+	@echo "... logic/videocapture.i"
+	@echo "... logic/videocapture.s"
+	@echo "... logic/videodecoder.o"
+	@echo "... logic/videodecoder.i"
+	@echo "... logic/videodecoder.s"
+	@echo "... logic/videodisplay.o"
+	@echo "... logic/videodisplay.i"
+	@echo "... logic/videodisplay.s"
+	@echo "... logic/videoencoder.o"
+	@echo "... logic/videoencoder.i"
+	@echo "... logic/videoencoder.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
-	@echo "... mainwindow.o"
-	@echo "... mainwindow.i"
-	@echo "... mainwindow.s"
-	@echo "... myfec.o"
-	@echo "... myfec.i"
-	@echo "... myfec.s"
-	@echo "... networkdisplaybuffer.o"
-	@echo "... networkdisplaybuffer.i"
-	@echo "... networkdisplaybuffer.s"
-	@echo "... networkmanager.o"
-	@echo "... networkmanager.i"
-	@echo "... networkmanager.s"
-	@echo "... removevideodialog.o"
-	@echo "... removevideodialog.i"
-	@echo "... removevideodialog.s"
-	@echo "... test_myfec.o"
-	@echo "... test_myfec.i"
-	@echo "... test_myfec.s"
-	@echo "... test_myfec_autogen/mocs_compilation.o"
-	@echo "... test_myfec_autogen/mocs_compilation.i"
-	@echo "... test_myfec_autogen/mocs_compilation.s"
-	@echo "... test_packet_format.o"
-	@echo "... test_packet_format.i"
-	@echo "... test_packet_format.s"
-	@echo "... test_packet_format_autogen/mocs_compilation.o"
-	@echo "... test_packet_format_autogen/mocs_compilation.i"
-	@echo "... test_packet_format_autogen/mocs_compilation.s"
-	@echo "... videocapture.o"
-	@echo "... videocapture.i"
-	@echo "... videocapture.s"
-	@echo "... videodecoder.o"
-	@echo "... videodecoder.i"
-	@echo "... videodecoder.s"
-	@echo "... videodisplay.o"
-	@echo "... videodisplay.i"
-	@echo "... videodisplay.s"
-	@echo "... videoencoder.o"
-	@echo "... videoencoder.i"
-	@echo "... videoencoder.s"
-	@echo "... videolayoutcalculator.o"
-	@echo "... videolayoutcalculator.i"
-	@echo "... videolayoutcalculator.s"
-	@echo "... videoselectiondialog.o"
-	@echo "... videoselectiondialog.i"
-	@echo "... videoselectiondialog.s"
+	@echo "... network/networkfacade.o"
+	@echo "... network/networkfacade.i"
+	@echo "... network/networkfacade.s"
+	@echo "... network/streammanager.o"
+	@echo "... network/streammanager.i"
+	@echo "... network/streammanager.s"
+	@echo "... network/tcp/tcpclient.o"
+	@echo "... network/tcp/tcpclient.i"
+	@echo "... network/tcp/tcpclient.s"
+	@echo "... network/tcp/tcpmanager.o"
+	@echo "... network/tcp/tcpmanager.i"
+	@echo "... network/tcp/tcpmanager.s"
+	@echo "... network/udp/myfec.o"
+	@echo "... network/udp/myfec.i"
+	@echo "... network/udp/myfec.s"
+	@echo "... network/udp/networkdisplaybuffer.o"
+	@echo "... network/udp/networkdisplaybuffer.i"
+	@echo "... network/udp/networkdisplaybuffer.s"
+	@echo "... network/udp/networkmanager.o"
+	@echo "... network/udp/networkmanager.i"
+	@echo "... network/udp/networkmanager.s"
+	@echo "... network/udp/udpmanager.o"
+	@echo "... network/udp/udpmanager.i"
+	@echo "... network/udp/udpmanager.s"
+	@echo "... ui/conferencecontrolpanel.o"
+	@echo "... ui/conferencecontrolpanel.i"
+	@echo "... ui/conferencecontrolpanel.s"
+	@echo "... ui/conferencewindow.o"
+	@echo "... ui/conferencewindow.i"
+	@echo "... ui/conferencewindow.s"
+	@echo "... ui/darktheme.o"
+	@echo "... ui/darktheme.i"
+	@echo "... ui/darktheme.s"
+	@echo "... ui/deviceselectorwidget.o"
+	@echo "... ui/deviceselectorwidget.i"
+	@echo "... ui/deviceselectorwidget.s"
+	@echo "... ui/maincontrolpanel.o"
+	@echo "... ui/maincontrolpanel.i"
+	@echo "... ui/maincontrolpanel.s"
+	@echo "... ui/mainwindow.o"
+	@echo "... ui/mainwindow.i"
+	@echo "... ui/mainwindow.s"
+	@echo "... ui/streamcontrolpanel.o"
+	@echo "... ui/streamcontrolpanel.i"
+	@echo "... ui/streamcontrolpanel.s"
+	@echo "... ui/streamerwidget.o"
+	@echo "... ui/streamerwidget.i"
+	@echo "... ui/streamerwidget.s"
+	@echo "... ui/streamidinputwidget.o"
+	@echo "... ui/streamidinputwidget.i"
+	@echo "... ui/streamidinputwidget.s"
+	@echo "... ui/streamselectorwidget.o"
+	@echo "... ui/streamselectorwidget.i"
+	@echo "... ui/streamselectorwidget.s"
+	@echo "... ui/videogridwidget.o"
+	@echo "... ui/videogridwidget.i"
+	@echo "... ui/videogridwidget.s"
+	@echo "... ui/videoselectiondialog.o"
+	@echo "... ui/videoselectiondialog.i"
+	@echo "... ui/videoselectiondialog.s"
+	@echo "... ui/viewerwidget.o"
+	@echo "... ui/viewerwidget.i"
+	@echo "... ui/viewerwidget.s"
 .PHONY : help
 
 

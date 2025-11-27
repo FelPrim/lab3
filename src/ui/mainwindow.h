@@ -22,7 +22,8 @@ public:
     void initialize();
     void cleanup();
 
-private slots:
+
+
     // Слоты для MainControlPanel
     void onAddDeviceRequested();
     void onCreateConferenceRequested();
@@ -34,7 +35,6 @@ private slots:
     void onViewerLeaveRequested(uint32_t streamId);
     void onStreamStartRequested(int deviceIndex);
     void onStreamStopRequested(uint32_t streamId);
-    void onEncodedPacketReady(uint32_t streamId, int frameNumber, const QByteArray& packet);
 
     // Слоты для VideoSelectionDialog
     void onDeviceSelected(int deviceIndex);
@@ -42,6 +42,13 @@ private slots:
     // Слоты для StreamManager
     void onConnectionStatusChanged(bool connected);
     void onErrorOccurred(const QString& message);
+private slots:
+    // Слоты для StreamManager - ОБНОВИТЬ сигнатуры:
+    void onServerStreamCreated(uint32_t streamId);
+    void onServerStreamStart(uint32_t streamId);
+    void onServerStreamEnd(uint32_t streamId);
+    void onServerStreamJoined(uint32_t streamId);     
+    void onServerStreamDeleted(uint32_t streamId); 
 
 private:
     void setupUI();
@@ -105,4 +112,8 @@ private:
     // Состояние
     QList<int> m_availableDevices;    // Все доступные устройства
     QList<int> m_usedDevices;         // Используемые устройства
+    
+private slots:
+    void onConferenceClosed(uint32_t callId);
+    void onConferenceJoined(uint32_t callId, const QString& displayId);
 };

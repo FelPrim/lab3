@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src
+CMAKE_SOURCE_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build
+CMAKE_BINARY_DIR = /home/aprihodko/t/GitHub/my_scripts/lab3/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/VideoCapture.dir/depend.make
@@ -72,253 +72,462 @@ include CMakeFiles/VideoCapture.dir/flags.make
 CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
 CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o: VideoCapture_autogen/mocs_compilation.cpp
 CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o -MF CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o.d -o CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/VideoCapture_autogen/mocs_compilation.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o -MF CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o.d -o CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/build/VideoCapture_autogen/mocs_compilation.cpp
 
 CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/VideoCapture_autogen/mocs_compilation.cpp > CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.i
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/build/VideoCapture_autogen/mocs_compilation.cpp > CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.i
 
 CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/VideoCapture_autogen/mocs_compilation.cpp -o CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.s
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/build/VideoCapture_autogen/mocs_compilation.cpp -o CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.s
 
 CMakeFiles/VideoCapture.dir/main.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/main.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/main.cpp
+CMakeFiles/VideoCapture.dir/main.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/main.cpp
 CMakeFiles/VideoCapture.dir/main.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/VideoCapture.dir/main.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/main.cpp.o -MF CMakeFiles/VideoCapture.dir/main.cpp.o.d -o CMakeFiles/VideoCapture.dir/main.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/VideoCapture.dir/main.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/main.cpp.o -MF CMakeFiles/VideoCapture.dir/main.cpp.o.d -o CMakeFiles/VideoCapture.dir/main.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/main.cpp
 
 CMakeFiles/VideoCapture.dir/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/main.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/main.cpp > CMakeFiles/VideoCapture.dir/main.cpp.i
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/main.cpp > CMakeFiles/VideoCapture.dir/main.cpp.i
 
 CMakeFiles/VideoCapture.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/main.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/main.cpp -o CMakeFiles/VideoCapture.dir/main.cpp.s
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/main.cpp -o CMakeFiles/VideoCapture.dir/main.cpp.s
 
-CMakeFiles/VideoCapture.dir/mainwindow.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/mainwindow.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/mainwindow.cpp
-CMakeFiles/VideoCapture.dir/mainwindow.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/VideoCapture.dir/mainwindow.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/mainwindow.cpp.o -MF CMakeFiles/VideoCapture.dir/mainwindow.cpp.o.d -o CMakeFiles/VideoCapture.dir/mainwindow.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/mainwindow.cpp
+CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videocapture.cpp
+CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o -MF CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o.d -o CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videocapture.cpp
 
-CMakeFiles/VideoCapture.dir/mainwindow.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/mainwindow.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/mainwindow.cpp > CMakeFiles/VideoCapture.dir/mainwindow.cpp.i
+CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videocapture.cpp > CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.i
 
-CMakeFiles/VideoCapture.dir/mainwindow.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/mainwindow.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/mainwindow.cpp -o CMakeFiles/VideoCapture.dir/mainwindow.cpp.s
+CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videocapture.cpp -o CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.s
 
-CMakeFiles/VideoCapture.dir/videocapture.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/videocapture.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videocapture.cpp
-CMakeFiles/VideoCapture.dir/videocapture.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/VideoCapture.dir/videocapture.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/videocapture.cpp.o -MF CMakeFiles/VideoCapture.dir/videocapture.cpp.o.d -o CMakeFiles/VideoCapture.dir/videocapture.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videocapture.cpp
+CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodisplay.cpp
+CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o -MF CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o.d -o CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodisplay.cpp
 
-CMakeFiles/VideoCapture.dir/videocapture.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/videocapture.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videocapture.cpp > CMakeFiles/VideoCapture.dir/videocapture.cpp.i
+CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodisplay.cpp > CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.i
 
-CMakeFiles/VideoCapture.dir/videocapture.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/videocapture.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videocapture.cpp -o CMakeFiles/VideoCapture.dir/videocapture.cpp.s
+CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodisplay.cpp -o CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.s
 
-CMakeFiles/VideoCapture.dir/videodisplay.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/videodisplay.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodisplay.cpp
-CMakeFiles/VideoCapture.dir/videodisplay.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/VideoCapture.dir/videodisplay.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/videodisplay.cpp.o -MF CMakeFiles/VideoCapture.dir/videodisplay.cpp.o.d -o CMakeFiles/VideoCapture.dir/videodisplay.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodisplay.cpp
+CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videoencoder.cpp
+CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o -MF CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o.d -o CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videoencoder.cpp
 
-CMakeFiles/VideoCapture.dir/videodisplay.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/videodisplay.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodisplay.cpp > CMakeFiles/VideoCapture.dir/videodisplay.cpp.i
+CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videoencoder.cpp > CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.i
 
-CMakeFiles/VideoCapture.dir/videodisplay.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/videodisplay.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodisplay.cpp -o CMakeFiles/VideoCapture.dir/videodisplay.cpp.s
+CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videoencoder.cpp -o CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.s
 
-CMakeFiles/VideoCapture.dir/videoencoder.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/videoencoder.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoencoder.cpp
-CMakeFiles/VideoCapture.dir/videoencoder.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/VideoCapture.dir/videoencoder.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/videoencoder.cpp.o -MF CMakeFiles/VideoCapture.dir/videoencoder.cpp.o.d -o CMakeFiles/VideoCapture.dir/videoencoder.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoencoder.cpp
+CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodecoder.cpp
+CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o -MF CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o.d -o CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodecoder.cpp
 
-CMakeFiles/VideoCapture.dir/videoencoder.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/videoencoder.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoencoder.cpp > CMakeFiles/VideoCapture.dir/videoencoder.cpp.i
+CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodecoder.cpp > CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.i
 
-CMakeFiles/VideoCapture.dir/videoencoder.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/videoencoder.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoencoder.cpp -o CMakeFiles/VideoCapture.dir/videoencoder.cpp.s
+CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/videodecoder.cpp -o CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.s
 
-CMakeFiles/VideoCapture.dir/networkmanager.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/networkmanager.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkmanager.cpp
-CMakeFiles/VideoCapture.dir/networkmanager.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/VideoCapture.dir/networkmanager.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/networkmanager.cpp.o -MF CMakeFiles/VideoCapture.dir/networkmanager.cpp.o.d -o CMakeFiles/VideoCapture.dir/networkmanager.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkmanager.cpp
+CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/framebuffer.cpp
+CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o -MF CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o.d -o CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/framebuffer.cpp
 
-CMakeFiles/VideoCapture.dir/networkmanager.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/networkmanager.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkmanager.cpp > CMakeFiles/VideoCapture.dir/networkmanager.cpp.i
+CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/framebuffer.cpp > CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.i
 
-CMakeFiles/VideoCapture.dir/networkmanager.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/networkmanager.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkmanager.cpp -o CMakeFiles/VideoCapture.dir/networkmanager.cpp.s
+CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/logic/framebuffer.cpp -o CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.s
 
-CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoselectiondialog.cpp
-CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o -MF CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o.d -o CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoselectiondialog.cpp
+CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkmanager.cpp
+CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o -MF CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o.d -o CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkmanager.cpp
 
-CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoselectiondialog.cpp > CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.i
+CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkmanager.cpp > CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.i
 
-CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videoselectiondialog.cpp -o CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.s
+CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkmanager.cpp -o CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.s
 
-CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videolayoutcalculator.cpp
-CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o -MF CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o.d -o CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videolayoutcalculator.cpp
+CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkdisplaybuffer.cpp
+CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o -MF CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o.d -o CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkdisplaybuffer.cpp
 
-CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videolayoutcalculator.cpp > CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.i
+CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkdisplaybuffer.cpp > CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.i
 
-CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videolayoutcalculator.cpp -o CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.s
+CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/networkdisplaybuffer.cpp -o CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.s
 
-CMakeFiles/VideoCapture.dir/darktheme.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/darktheme.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/darktheme.cpp
-CMakeFiles/VideoCapture.dir/darktheme.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/VideoCapture.dir/darktheme.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/darktheme.cpp.o -MF CMakeFiles/VideoCapture.dir/darktheme.cpp.o.d -o CMakeFiles/VideoCapture.dir/darktheme.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/darktheme.cpp
+CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/networkfacade.cpp
+CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o -MF CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o.d -o CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/networkfacade.cpp
 
-CMakeFiles/VideoCapture.dir/darktheme.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/darktheme.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/darktheme.cpp > CMakeFiles/VideoCapture.dir/darktheme.cpp.i
+CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/networkfacade.cpp > CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.i
 
-CMakeFiles/VideoCapture.dir/darktheme.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/darktheme.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/darktheme.cpp -o CMakeFiles/VideoCapture.dir/darktheme.cpp.s
+CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/networkfacade.cpp -o CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.s
 
-CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/removevideodialog.cpp
-CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o -MF CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o.d -o CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/removevideodialog.cpp
+CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/streammanager.cpp
+CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o -MF CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o.d -o CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/streammanager.cpp
 
-CMakeFiles/VideoCapture.dir/removevideodialog.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/removevideodialog.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/removevideodialog.cpp > CMakeFiles/VideoCapture.dir/removevideodialog.cpp.i
+CMakeFiles/VideoCapture.dir/network/streammanager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/network/streammanager.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/streammanager.cpp > CMakeFiles/VideoCapture.dir/network/streammanager.cpp.i
 
-CMakeFiles/VideoCapture.dir/removevideodialog.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/removevideodialog.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/removevideodialog.cpp -o CMakeFiles/VideoCapture.dir/removevideodialog.cpp.s
+CMakeFiles/VideoCapture.dir/network/streammanager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/network/streammanager.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/streammanager.cpp -o CMakeFiles/VideoCapture.dir/network/streammanager.cpp.s
 
-CMakeFiles/VideoCapture.dir/videodecoder.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/videodecoder.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodecoder.cpp
-CMakeFiles/VideoCapture.dir/videodecoder.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/VideoCapture.dir/videodecoder.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/videodecoder.cpp.o -MF CMakeFiles/VideoCapture.dir/videodecoder.cpp.o.d -o CMakeFiles/VideoCapture.dir/videodecoder.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodecoder.cpp
+CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpclient.cpp
+CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o -MF CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o.d -o CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpclient.cpp
 
-CMakeFiles/VideoCapture.dir/videodecoder.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/videodecoder.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodecoder.cpp > CMakeFiles/VideoCapture.dir/videodecoder.cpp.i
+CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpclient.cpp > CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.i
 
-CMakeFiles/VideoCapture.dir/videodecoder.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/videodecoder.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/videodecoder.cpp -o CMakeFiles/VideoCapture.dir/videodecoder.cpp.s
+CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpclient.cpp -o CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.s
 
-CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkdisplaybuffer.cpp
-CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o -MF CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o.d -o CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkdisplaybuffer.cpp
+CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpmanager.cpp
+CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o -MF CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o.d -o CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpmanager.cpp
 
-CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkdisplaybuffer.cpp > CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.i
+CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpmanager.cpp > CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.i
 
-CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/networkdisplaybuffer.cpp -o CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.s
+CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/tcp/tcpmanager.cpp -o CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.s
 
-CMakeFiles/VideoCapture.dir/framebuffer.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/framebuffer.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/framebuffer.cpp
-CMakeFiles/VideoCapture.dir/framebuffer.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/VideoCapture.dir/framebuffer.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/framebuffer.cpp.o -MF CMakeFiles/VideoCapture.dir/framebuffer.cpp.o.d -o CMakeFiles/VideoCapture.dir/framebuffer.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/framebuffer.cpp
+CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/udpmanager.cpp
+CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o -MF CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o.d -o CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/udpmanager.cpp
 
-CMakeFiles/VideoCapture.dir/framebuffer.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/framebuffer.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/framebuffer.cpp > CMakeFiles/VideoCapture.dir/framebuffer.cpp.i
+CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/udpmanager.cpp > CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.i
 
-CMakeFiles/VideoCapture.dir/framebuffer.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/framebuffer.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/framebuffer.cpp -o CMakeFiles/VideoCapture.dir/framebuffer.cpp.s
+CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/udpmanager.cpp -o CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.s
 
-CMakeFiles/VideoCapture.dir/myfec.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
-CMakeFiles/VideoCapture.dir/myfec.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/myfec.cpp
-CMakeFiles/VideoCapture.dir/myfec.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/VideoCapture.dir/myfec.cpp.o"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/myfec.cpp.o -MF CMakeFiles/VideoCapture.dir/myfec.cpp.o.d -o CMakeFiles/VideoCapture.dir/myfec.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/myfec.cpp
+CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/myfec.cpp
+CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o -MF CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o.d -o CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/myfec.cpp
 
-CMakeFiles/VideoCapture.dir/myfec.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/myfec.cpp.i"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/myfec.cpp > CMakeFiles/VideoCapture.dir/myfec.cpp.i
+CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/myfec.cpp > CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.i
 
-CMakeFiles/VideoCapture.dir/myfec.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/myfec.cpp.s"
-	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/myfec.cpp -o CMakeFiles/VideoCapture.dir/myfec.cpp.s
+CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/network/udp/myfec.cpp -o CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/mainwindow.cpp
+CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/mainwindow.cpp
+
+CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/mainwindow.cpp > CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/mainwindow.cpp -o CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videoselectiondialog.cpp
+CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videoselectiondialog.cpp
+
+CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videoselectiondialog.cpp > CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videoselectiondialog.cpp -o CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/darktheme.cpp
+CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/darktheme.cpp
+
+CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/darktheme.cpp > CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/darktheme.cpp -o CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamcontrolpanel.cpp
+CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamcontrolpanel.cpp
+
+CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamcontrolpanel.cpp > CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamcontrolpanel.cpp -o CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamidinputwidget.cpp
+CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamidinputwidget.cpp
+
+CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamidinputwidget.cpp > CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamidinputwidget.cpp -o CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/deviceselectorwidget.cpp
+CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/deviceselectorwidget.cpp
+
+CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/deviceselectorwidget.cpp > CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/deviceselectorwidget.cpp -o CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencewindow.cpp
+CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building CXX object CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencewindow.cpp
+
+CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencewindow.cpp > CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencewindow.cpp -o CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamerwidget.cpp
+CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building CXX object CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamerwidget.cpp
+
+CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamerwidget.cpp > CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamerwidget.cpp -o CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/viewerwidget.cpp
+CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building CXX object CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/viewerwidget.cpp
+
+CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/viewerwidget.cpp > CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/viewerwidget.cpp -o CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videogridwidget.cpp
+CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building CXX object CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videogridwidget.cpp
+
+CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videogridwidget.cpp > CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/videogridwidget.cpp -o CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamselectorwidget.cpp
+CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building CXX object CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamselectorwidget.cpp
+
+CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamselectorwidget.cpp > CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/streamselectorwidget.cpp -o CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencecontrolpanel.cpp
+CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building CXX object CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencecontrolpanel.cpp
+
+CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencecontrolpanel.cpp > CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/conferencecontrolpanel.cpp -o CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.s
+
+CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o: CMakeFiles/VideoCapture.dir/flags.make
+CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o: /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/maincontrolpanel.cpp
+CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o: CMakeFiles/VideoCapture.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building CXX object CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o -MF CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o.d -o CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o -c /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/maincontrolpanel.cpp
+
+CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.i"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/maincontrolpanel.cpp > CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.i
+
+CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.s"
+	/usr/local/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aprihodko/t/GitHub/my_scripts/lab3/src/ui/maincontrolpanel.cpp -o CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.s
 
 # Object files for target VideoCapture
 VideoCapture_OBJECTS = \
 "CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o" \
 "CMakeFiles/VideoCapture.dir/main.cpp.o" \
-"CMakeFiles/VideoCapture.dir/mainwindow.cpp.o" \
-"CMakeFiles/VideoCapture.dir/videocapture.cpp.o" \
-"CMakeFiles/VideoCapture.dir/videodisplay.cpp.o" \
-"CMakeFiles/VideoCapture.dir/videoencoder.cpp.o" \
-"CMakeFiles/VideoCapture.dir/networkmanager.cpp.o" \
-"CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o" \
-"CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o" \
-"CMakeFiles/VideoCapture.dir/darktheme.cpp.o" \
-"CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o" \
-"CMakeFiles/VideoCapture.dir/videodecoder.cpp.o" \
-"CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o" \
-"CMakeFiles/VideoCapture.dir/framebuffer.cpp.o" \
-"CMakeFiles/VideoCapture.dir/myfec.cpp.o"
+"CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o" \
+"CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o" \
+"CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o" \
+"CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o" \
+"CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o" \
+"CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o" \
+"CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o" \
+"CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o" \
+"CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o" \
+"CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o" \
+"CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o" \
+"CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o" \
+"CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o" \
+"CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o"
 
 # External object files for target VideoCapture
 VideoCapture_EXTERNAL_OBJECTS =
 
 VideoCapture: CMakeFiles/VideoCapture.dir/VideoCapture_autogen/mocs_compilation.cpp.o
 VideoCapture: CMakeFiles/VideoCapture.dir/main.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/mainwindow.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/videocapture.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/videodisplay.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/videoencoder.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/networkmanager.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/videoselectiondialog.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/videolayoutcalculator.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/darktheme.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/removevideodialog.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/videodecoder.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/networkdisplaybuffer.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/framebuffer.cpp.o
-VideoCapture: CMakeFiles/VideoCapture.dir/myfec.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/logic/videocapture.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/logic/videodisplay.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/logic/videoencoder.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/logic/videodecoder.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/logic/framebuffer.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/network/udp/networkmanager.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/network/udp/networkdisplaybuffer.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/network/networkfacade.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/network/streammanager.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/network/tcp/tcpclient.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/network/tcp/tcpmanager.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/network/udp/udpmanager.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/network/udp/myfec.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/mainwindow.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/videoselectiondialog.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/darktheme.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/streamcontrolpanel.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/streamidinputwidget.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/deviceselectorwidget.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/conferencewindow.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/streamerwidget.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/viewerwidget.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/videogridwidget.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/streamselectorwidget.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/conferencecontrolpanel.cpp.o
+VideoCapture: CMakeFiles/VideoCapture.dir/ui/maincontrolpanel.cpp.o
 VideoCapture: CMakeFiles/VideoCapture.dir/build.make
-VideoCapture: /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src/../deps/Linux/fec/lib/libfeclib.a
+VideoCapture: /home/aprihodko/t/GitHub/my_scripts/lab3/src/../deps/Linux/fec/lib/libfeclib.a
 VideoCapture: /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.4.2
 VideoCapture: /usr/lib/x86_64-linux-gnu/libQt6Network.so.6.4.2
+VideoCapture: /usr/lib/x86_64-linux-gnu/libQt6Test.so.6.4.2
 VideoCapture: /usr/lib/x86_64-linux-gnu/libopencv_stitching.so.4.6.0
 VideoCapture: /usr/lib/x86_64-linux-gnu/libopencv_alphamat.so.4.6.0
 VideoCapture: /usr/lib/x86_64-linux-gnu/libopencv_aruco.so.4.6.0
@@ -379,7 +588,7 @@ VideoCapture: /usr/lib/x86_64-linux-gnu/libopencv_photo.so.4.6.0
 VideoCapture: /usr/lib/x86_64-linux-gnu/libopencv_imgproc.so.4.6.0
 VideoCapture: /usr/lib/x86_64-linux-gnu/libopencv_core.so.4.6.0
 VideoCapture: CMakeFiles/VideoCapture.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Linking CXX executable VideoCapture"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Linking CXX executable VideoCapture"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/VideoCapture.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -391,6 +600,6 @@ CMakeFiles/VideoCapture.dir/clean:
 .PHONY : CMakeFiles/VideoCapture.dir/clean
 
 CMakeFiles/VideoCapture.dir/depend:
-	cd /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src /home/aprihodko/t/GitHub/my_scripts/lab3_proto/src /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build /home/aprihodko/t/GitHub/my_scripts/lab3_proto/build/CMakeFiles/VideoCapture.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/aprihodko/t/GitHub/my_scripts/lab3/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/aprihodko/t/GitHub/my_scripts/lab3/src /home/aprihodko/t/GitHub/my_scripts/lab3/src /home/aprihodko/t/GitHub/my_scripts/lab3/build /home/aprihodko/t/GitHub/my_scripts/lab3/build /home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/VideoCapture.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/VideoCapture.dir/depend
 

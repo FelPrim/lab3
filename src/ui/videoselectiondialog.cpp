@@ -115,28 +115,24 @@ void VideoSelectionDialog::refreshDevices()
     m_listWidget->clear();
     m_selectedDevice = -1;
     
-    // Get real available devices using the static method
+    // Быстрое сканирование
     QList<int> availableDevices = VideoCapture::getAvailableDevices();
     
     if (availableDevices.isEmpty()) {
-        QListWidgetItem *noDevicesItem = new QListWidgetItem("No video devices found");
-        noDevicesItem->setFlags(Qt::NoItemFlags); // Make non-selectable
-        noDevicesItem->setForeground(Qt::gray);
-        m_listWidget->addItem(noDevicesItem);
-        qDebug() << "No video devices found during refresh";
+        QListWidgetItem *item = new QListWidgetItem("No video devices found");
+        item->setFlags(Qt::NoItemFlags);
+        m_listWidget->addItem(item);
         return;
     }
     
-    // Add devices to list
+    // Быстрое заполнение списка
     for (int deviceIndex : availableDevices) {
         QListWidgetItem *item = new QListWidgetItem(QString("Camera %1").arg(deviceIndex));
         item->setData(Qt::UserRole, deviceIndex);
         m_listWidget->addItem(item);
     }
     
-    qDebug() << "Refreshed device list, found" << availableDevices.size() << "devices";
-    
-    // Select first device
+    // Автовыбор первого устройства
     if (m_listWidget->count() > 0) {
         m_listWidget->setCurrentRow(0);
     }

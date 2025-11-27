@@ -13,6 +13,8 @@ public:
     explicit VideoCapture(int deviceIndex, QObject *parent = nullptr);
     ~VideoCapture() override;
 
+
+    static QList<int> getAvailableDevices();
     void startCapture();
     void stopCapture();
     int getDeviceIndex() const { return m_deviceIndex; }
@@ -34,5 +36,9 @@ private:
     float m_fps = DEFAULT_FPS;
 public:
     // Статический метод для получения списка доступных устройств
-    static QList<int> getAvailableDevices();
+public:
+    bool isStable() const { return m_stable; }
+    
+private:
+    std::atomic<bool> m_stable{false};
 };

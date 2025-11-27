@@ -5,9 +5,9 @@
 #include <QDebug>
 
 // Используем константы из video_defaults
-const int START_PAYLOAD = DATA_PAYLOAD_SIZE - 8;  // 1183 байта (1191 - frameNumber(4) - frameSize(4))
-const int CONTINUE_PAYLOAD = DATA_PAYLOAD_SIZE - 4; // 1187 байт (1191 - frameNumber(4))
-const int END_PAYLOAD = DATA_PAYLOAD_SIZE - 4;      // 1187 байт (1191 - frameNumber(4))
+const int START_PAYLOAD = DATA_PAYLOAD_SIZE - 8;  // 1179 байта (1191 - frameNumber(4) - frameSize(4))
+const int CONTINUE_PAYLOAD = DATA_PAYLOAD_SIZE - 4; // 1183 байт (1191 - frameNumber(4))
+const int END_PAYLOAD = DATA_PAYLOAD_SIZE - 4;      // 1183 байт (1191 - frameNumber(4))
 
 // FrameAssembler implementation
 FrameAssembler::FrameAssembler(QObject *parent) : QObject(parent) {}

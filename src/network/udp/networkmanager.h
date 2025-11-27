@@ -1,3 +1,4 @@
+// networkmanager.h
 #pragma once
 
 #include <QObject>
@@ -5,15 +6,19 @@
 #include <QElapsedTimer>
 #include <QSet>
 #include <QHostAddress>
-#include <QNetworkDatagram>
-#include "../../video_defaults.h"
 #include <QDateTime>
 #include <QVariant>
 #include <zlib.h>
+#include <QtEndian>
+#include <QMutex>
+#include <QQueue>
 #include "myfec.h"
 #include "network_packet.h"
+#include "../../video_defaults.h"
 
-// Forward declaration
+// Forward declarations вместо включения проблемных заголовков
+class FrameAssembler;
+class FrameSender;
 class UDPManager;
 
 class NetworkManager : public QObject
@@ -32,10 +37,14 @@ public:
     quint16 getServerPort() const { return m_serverPort; }
     int getStreamId() const { return m_streamId; }
 
-    // New method for packet processing from UDPManager
-    void processPacketFromNetwork(const QByteArray &data, const QHostAddress &sender, quint16 port);
+    // Call ID management
+    void setCallId(uint32_t callId) { m_callId = callId; }
+    uint32_t getCallId() const { return m_callId; }
 
-    // Методы для управления отправкой
+    // Method for processing packets from UDPManager
+    void processPacket(const QByteArray &data, const QHostAddress &sender, quint16 port);
+
+    // Methods for managing sending
     void setSendingEnabled(bool enabled) { m_sendingEnabled = enabled; }
     bool isSendingEnabled() const { return m_sendingEnabled; }
 
@@ -43,52 +52,61 @@ signals:
     void frameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
     void errorOccurred(const QString &message);
     void statisticsUpdated(const QString &stats);
+    void handshakeCompleted();
 
 public slots:
     void start();
     void stop();
+    void startHandshake(uint32_t connectionId);
+    void completeHandshake();
 
 private slots:
     void cleanupOldAssemblies();
     void printStatistics();
+    void sendHandshakePacket();
     void onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
 
 private:
-    // Изменяем сигнатуру: вместо QNetworkDatagram принимаем QByteArray
+    // Основные методы из старой реализации
     void processPacketNewProtocol(const QByteArray &data);
-    void sendPacketNewProtocol(const QByteArray &data, PacketType type);
-    void sendPacketNewProtocol(const QByteArray &data, PacketType type, int customSequence);
+    void sendPacketNewProtocol(const QByteArray &data, int packetType);
+    void sendPacketNewProtocol(const QByteArray &data, int packetType, int customSequence);
     
-    // FEC методы
+    // FEC методы из старой реализации
     void processXorPacket(const NetworkPacket& packet);
     void sendXorPackets();
     QByteArray calculateXorForGroup(int groupId);
     void tryRecoverLostPackets(int groupId);
     
-    // FEC буферы хранят данные для XOR (без RouteHeader)
-    QHash<int, QVector<QByteArray>> m_fecSendBuffers;    // groupId -> data_parts
-    QHash<int, QVector<QByteArray>> m_fecReceiveBuffers; // groupId -> data_parts
-    QHash<int, QVector<bool>> m_fecReceived;             // groupId -> received flags
-
     void updateSendStats(int packets, int bytes);
     void updateReceiveStats(int packets, int bytes);
     uint32_t calculateCRC32(const QByteArray &data);
 
 private:
-    UDPManager *m_udpManager = nullptr;  // Используем централизованный UDPManager
+    UDPManager *m_udpManager = nullptr;
     QHostAddress m_serverAddress;
     quint16 m_serverPort;
     
     QTimer *m_cleanupTimer = nullptr;
     QTimer *m_statsTimer = nullptr;
+    QTimer *m_handshakeTimer = nullptr;
     
-    FrameAssembler *m_frameAssembler;
-    FrameSender *m_frameSender;
+    // Компоненты из старой реализации
+    FrameAssembler *m_frameAssembler = nullptr;
+    FrameSender *m_frameSender = nullptr;
     
-    int m_streamId;  // ID видеопотока для идентификации
-    int m_currentFrameNumber = 0;
+    int m_streamId;
+    uint32_t m_callId = 0;
+    uint32_t m_connectionId = 0;
+    bool m_handshakeCompleted = false;
+    
     int m_packetSequence = 0;
    
+    // FEC буферы из старой реализации
+    QHash<int, QVector<QByteArray>> m_fecSendBuffers;
+    QHash<int, QVector<QByteArray>> m_fecReceiveBuffers;
+    QHash<int, QVector<bool>> m_fecReceived;
+
     struct Statistics {
         quint64 totalPacketsSent = 0;
         quint64 totalPacketsReceived = 0;
@@ -109,7 +127,5 @@ private:
     
     QElapsedTimer m_operationTimer;
     bool m_initialized = false;
-
-    // УДАЛЕНО ДУБЛИРОВАНИЕ: оставляем только одно объявление
     bool m_sendingEnabled = false;
 };

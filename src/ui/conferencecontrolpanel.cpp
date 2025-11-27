@@ -158,12 +158,15 @@ void ConferenceControlPanel::setupConnections()
     connect(m_leaveConferenceBtn, &QPushButton::clicked, 
             this, &ConferenceControlPanel::onLeaveConferenceClicked);
     
-    // Stream selector signals
-    connect(m_streamSelector, &StreamSelectorWidget::watchStreamRequested,
-            this, &ConferenceControlPanel::onWatchStreamClicked);
-    connect(m_streamSelector, &StreamSelectorWidget::stopWatchingRequested,
-            this, &ConferenceControlPanel::onStopWatchingClicked);
+    // Stream selector signals - ПРОВЕРЯЕМ, что m_streamSelector создан
+    if (m_streamSelector) {
+        connect(m_streamSelector, &StreamSelectorWidget::watchStreamRequested,
+                this, &ConferenceControlPanel::onWatchStreamClicked);
+        connect(m_streamSelector, &StreamSelectorWidget::stopWatchingRequested,
+                this, &ConferenceControlPanel::onStopWatchingClicked);
+    }
 }
+
 
 void ConferenceControlPanel::setConferenceInfo(uint32_t callId, const QString& displayId)
 {

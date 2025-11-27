@@ -12,9 +12,14 @@ const QString StreamerWidget::STATUS_HAS_VIEWERS = "● Viewers connected";
 const QString StreamerWidget::STATUS_STOPPED = "● Stream stopped";
 const QString StreamerWidget::PLACEHOLDER_TEXT = "Video device not connected";
 
+// В конструкторе ИНИЦИАЛИЗИРОВАТЬ m_streamManager:
 StreamerWidget::StreamerWidget(int deviceIndex, QWidget *parent)
     : QWidget(parent)
     , m_streamId(0)
+    , m_streamState(State_NoStream) // ОДНО определение
+    , m_encoderInitialized(false)
+    , m_sendingPackets(false)
+    , m_streamManager(nullptr) // ДОБАВИТЬ инициализацию
     , m_displayId("---")
     , m_deviceIndex(deviceIndex)
     , m_isStreaming(false)
@@ -28,6 +33,17 @@ StreamerWidget::StreamerWidget(int deviceIndex, QWidget *parent)
 {
     setupUI();
     setupConnections();
+    
+    if (m_controlPanel) {
+        m_controlPanel->setActive(true);
+        m_controlPanel->setStreamState(StreamControlPanel::StateNoStream);
+        m_controlPanel->setViewersStatus(false);
+    }
+}
+
+void StreamerWidget::setStreamManager(StreamManager* streamManager)
+{
+    m_streamManager = streamManager;
 }
 
 StreamerWidget::~StreamerWidget()
@@ -73,43 +89,9 @@ void StreamerWidget::setupUI()
     m_mainLayout->addWidget(m_controlPanel);
 }
 
-void StreamerWidget::setupConnections()
-{
-    // Control panel signals
-    connect(m_controlPanel, &StreamControlPanel::startStreamRequested,
-            this, &StreamerWidget::onStartStreamRequested);
-    connect(m_controlPanel, &StreamControlPanel::stopStreamRequested,
-            this, &StreamerWidget::onStopStreamRequested);
-    connect(m_controlPanel, &StreamControlPanel::disconnectRequested,
-            this, &StreamerWidget::onDisconnectRequested);
-}
 
-void StreamerWidget::initialize()
-{
-    qDebug() << "Initializing StreamerWidget for device:" << m_deviceIndex;
 
-    try {
-        initializeVideoCapture();
-        
-        // Запускаем захват для превью (но не отправляем данные пока нет streamId)
-        if (m_videoCapture) {
-            m_videoCapture->startCapture();
-        }
-        
-        // Encoder будет инициализирован когда получим реальный streamId
-        setStreamingEnabled(true);
-        updateStatus();
-        
-        qDebug() << "StreamerWidget initialized successfully for device:" << m_deviceIndex;
-        
-        // Уведомляем MainWindow что устройство готово к получению streamId
-        // emit deviceReadyForStream(m_deviceIndex);
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Failed to initialize StreamerWidget for device" << m_deviceIndex << ":" << e.what();
-        showError(QString("Failed to initialize video device: %1").arg(e.what()));
-    }
-}
+
 
 void StreamerWidget::cleanup()
 {
@@ -234,85 +216,22 @@ void StreamerWidget::initializeWithRealId(uint32_t streamId, const QString &disp
     initialize();
 }
 
-void StreamerWidget::startStream()
-{
-    if (m_isStreaming || !m_streamingEnabled) {
-        return;
-    }
 
-    if (!m_videoCapture) {
-        qWarning() << "Cannot start stream - video capture not initialized";
-        return;
-    }
 
-    if (m_streamId == 0) {
-        qWarning() << "Cannot start stream - no valid stream ID";
-        showError("Cannot start stream: No valid stream ID assigned");
-        return;
-    }
 
-    try {
-        // Start video capture
-        m_videoCapture->startCapture();
-        
-        m_isStreaming = true;
-        
-        if (m_controlPanel) {
-            m_controlPanel->setStreaming(true);
-        }
 
-        updateStatus();
-        
-        qDebug() << "Stream started successfully for device:" << m_deviceIndex << "Stream ID:" << m_displayId;
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Failed to start stream:" << e.what();
-        stopStream();
-        showError(QString("Failed to start stream: %1").arg(e.what()));
-    }
-}
 
-void StreamerWidget::stopStream()
-{
-    if (!m_isStreaming) {
-        return;
-    }
 
-    qDebug() << "Stopping stream for device:" << m_deviceIndex;
-
-    // Останавливаем видеозахват
-    if (m_videoCapture) {
-        m_videoCapture->stopCapture();
-        // Даем время на остановку
-        QThread::msleep(100);
-    }
-
-    m_isStreaming = false;
-    
-    // Обновляем UI
-    if (m_controlPanel) {
-        m_controlPanel->setStreaming(false);
-        m_controlPanel->setViewersCount(0);
-    }
-
-    updateStatus();
-    
-    // Испускаем сигнал об остановке стрима
-    if (m_streamId != 0) {
-        emit streamStopped(m_streamId);
-    }
-    
-    qDebug() << "Stream stopped for device:" << m_deviceIndex;
-}
-
+// В StreamerWidget::setStreamingEnabled убедимся, что правильно обновляем состояние:
 void StreamerWidget::setStreamingEnabled(bool enabled)
 {
     if (m_streamingEnabled == enabled) return;
 
     m_streamingEnabled = enabled;
     
+    // ВАЖНО: Всегда устанавливаем активное состояние для control panel
     if (m_controlPanel) {
-        m_controlPanel->setActive(enabled);
+        m_controlPanel->setActive(true); // Всегда активно, чтобы кнопка Disconnect работала
     }
 
     if (!enabled) {
@@ -387,44 +306,327 @@ void StreamerWidget::onVideoError(const QString &message)
     }
 }
 
+// В StreamerWidget::initialize() - упрощенная инициализация
+// В streamerwidget.cpp - исправленный initialize()
+void StreamerWidget::initialize()
+{
+    qDebug() << "Fast initializing StreamerWidget for device:" << m_deviceIndex;
+
+    try {
+        // 1. Сначала инициализируем видеозахват
+        initializeVideoCapture();
+        
+        // 2. Затем настраиваем соединения (чтобы подключиться к созданному VideoCapture)
+        setupConnections();
+        
+        // 3. Включаем стриминг и обновляем статус
+        setStreamingEnabled(true);
+        updateStatus();
+        
+        // 4. Немедленный запуск захвата для превью
+        if (m_videoCapture) {
+            m_videoCapture->startCapture();
+        }
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Failed to initialize StreamerWidget:" << e.what();
+        showError(QString("Failed to initialize: %1").arg(e.what()));
+    }
+}
+
+// В StreamerWidget::setupConnections() - прямые соединения для показа
+void StreamerWidget::setupConnections()
+{
+    // Control panel signals
+    connect(m_controlPanel, &StreamControlPanel::startStreamRequested,
+            this, &StreamerWidget::onStartStreamRequested);
+    connect(m_controlPanel, &StreamControlPanel::stopStreamRequested,
+            this, &StreamerWidget::onStopStreamRequested);
+    connect(m_controlPanel, &StreamControlPanel::disconnectRequested,
+            this, &StreamerWidget::onDisconnectRequested);
+
+    // ПРЯМОЕ соединение для локального показа - без кодировщика!
+    if (m_videoCapture) {
+        connect(m_videoCapture, &VideoCapture::rawFrameReady,
+                this, &StreamerWidget::onRawFrameReady);
+    }
+}
+
+// Упрощенный обработчик кадров для прямого показа
 void StreamerWidget::onRawFrameReady(const QImage &image)
 {
-    if (!m_isStreaming) {
-        return;
-    }
-
-    // Display the frame for local preview
-    if (m_videoDisplay) {
+    // Прямой показ в VideoDisplay без обработки кодировщиком
+    if (m_videoDisplay && m_streamingEnabled) {
         m_videoDisplay->displayFrame(image);
     }
 }
 
-void StreamerWidget::onFrameForEncoding(const cv::Mat &frame)
+void StreamerWidget::setStreamState(StreamState newState)
 {
-    if (!m_isStreaming || !m_videoEncoder || frame.empty()) {
-        return;
-    }
-
-    try {
-        m_videoEncoder->encodeFrame(frame);
-    } catch (const std::exception& e) {
-        qCritical() << "Failed to encode frame:" << e.what();
+    if (m_streamState == newState) return;
+    
+    StreamState oldState = m_streamState;
+    m_streamState = newState;
+    
+    qDebug() << "Stream state changed for device" << m_deviceIndex 
+             << ":" << oldState << "->" << newState;
+    
+    updateStatus();
+    
+    // Обработка переходов между состояниями
+    switch (newState) {
+    case State_NoStream:
+        stopStream();
+        break;
+    case State_StreamCreated:
+        initializeVideoEncoder();
+        break;
+    case State_StreamActive:
+        m_sendingPackets = true;
+        setViewersStatus(true);
+        break;
+    case State_StreamError:
+        m_sendingPackets = false;
+        setViewersStatus(false);
+        showError("Stream error occurred");
+        break;
     }
 }
 
-void StreamerWidget::onFrameEncoded(int streamId, int frameNumber, const QByteArray &packet)
+void StreamerWidget::startStream()
 {
-    if (streamId != static_cast<int>(m_streamId) || !m_isStreaming) {
+    if (m_streamState != State_NoStream) {
+        qWarning() << "Cannot start stream - wrong state:" << m_streamState;
         return;
     }
 
-    // Emit the encoded packet for network transmission
-    emit encodedPacketReady(m_streamId, frameNumber, packet);
+    if (!m_videoCapture) {
+        qWarning() << "Cannot start stream - video capture not initialized";
+        return;
+    }
+
+    // Запускаем видеозахват для превью (если еще не запущен)
+    if (m_videoCapture && !m_videoCapture->isRunning()) {
+        m_videoCapture->startCapture();
+    }
     
-    // Debug logging (can be disabled in production)
-    if (frameNumber % 30 == 0) { // Log every ~1 second at 30fps
-        qDebug() << "Encoded frame" << frameNumber << "for stream" << m_displayId 
-                 << "size:" << packet.size() << "bytes";
+    // Переходим в состояние "трансляция создана"
+    setStreamState(State_StreamCreated);
+    
+    // ОТПРАВЛЯЕМ запрос на создание стрима через StreamManager
+    if (m_streamManager) {
+        m_streamManager->createStream(m_deviceIndex);
+        qDebug() << "Stream creation requested for device:" << m_deviceIndex;
+    } else {
+        qWarning() << "StreamManager not available for device:" << m_deviceIndex;
+        // Без StreamManager переходим сразу в активное состояние (для тестирования)
+        setStreamState(State_StreamActive);
+    }
+    
+    qDebug() << "Stream setup completed for device:" << m_deviceIndex;
+}
+
+
+void StreamerWidget::setStreamState(StreamState newState)
+{
+    if (m_streamState == newState) return;
+    
+    StreamState oldState = m_streamState;
+    m_streamState = newState;
+    
+    qDebug() << "Stream state changed for device" << m_deviceIndex 
+             << ":" << oldState << "->" << newState;
+    
+    // Обновляем ControlPanel
+    if (m_controlPanel) {
+        m_controlPanel->setStreamState(static_cast<StreamControlPanel::StreamState>(newState));
+        m_controlPanel->setViewersStatus(m_hasViewers);
+    }
+    
+    updateStatus();
+    
+    // Обработка переходов между состояниями - УБИРАЕМ вызов stopStream()
+    switch (newState) {
+    case State_NoStream:
+        // Только сбрасываем флаги, не вызываем stopStream (чтобы избежать рекурсии)
+        m_encoderInitialized = false;
+        m_sendingPackets = false;
+        m_isStreaming = false;
+        break;
+        
+    case State_StreamCreated:
+        if (!m_encoderInitialized) {
+            initializeVideoEncoder();
+            m_encoderInitialized = true;
+        }
+        m_sendingPackets = false;
+        setViewersStatus(false);
+        break;
+        
+    case State_StreamActive:
+        m_sendingPackets = true;
+        setViewersStatus(true);
+        break;
+        
+    case State_StreamError:
+        m_sendingPackets = false;
+        setViewersStatus(false);
+        showError("Stream error occurred");
+        break;
+    }
+}
+
+void StreamerWidget::stopStream()
+{
+    if (m_streamState == State_NoStream) {
+        return;
+    }
+
+    qDebug() << "Stopping stream for device:" << m_deviceIndex;
+
+    // ЕСЛИ есть streamId, отправляем запрос на удаление стрима
+    if (m_streamId != 0 && m_streamManager) {
+        m_streamManager->deleteStream(m_streamId);
+        qDebug() << "Stream deletion requested for:" << m_streamId;
+    }
+
+    // Останавливаем видеозахват
+    if (m_videoCapture) {
+        m_videoCapture->stopCapture();
+    }
+
+    // Останавливаем кодировщик
+    cleanupVideoEncoder();
+    
+    // Сбрасываем флаги напрямую
+    m_isStreaming = false;
+    m_sendingPackets = false;
+    m_encoderInitialized = false;
+    m_streamState = State_NoStream;
+    
+    // Обновляем UI
+    if (m_controlPanel) {
+        m_controlPanel->setStreamState(StreamControlPanel::StateNoStream);
+        m_controlPanel->setViewersStatus(false);
+    }
+    
+    updateStatus();
+    
+    qDebug() << "Stream stopped for device:" << m_deviceIndex;
+}
+
+// Обработчики серверных событий
+void StreamerWidget::onServerStreamCreated(uint32_t streamId, const QString& displayId)
+{
+    if (m_streamState != State_StreamCreated) {
+        qWarning() << "Unexpected stream creation in state:" << m_streamState;
+        return;
+    }
+    
+    setStreamId(streamId, displayId);
+    qDebug() << "Stream officially created - ID:" << streamId << "Display:" << displayId;
+}
+
+void StreamerWidget::onServerStreamStart(uint32_t streamId)
+{
+    if (streamId != m_streamId) {
+        qWarning() << "Stream start for wrong stream ID:" << streamId << "expected:" << m_streamId;
+        return;
+    }
+    
+    if (m_streamState == State_StreamCreated) {
+        setStreamState(State_StreamActive);
+        qDebug() << "Stream started - now sending packets for:" << m_displayId;
+    } else {
+        qWarning() << "Cannot start stream - wrong state:" << m_streamState;
+    }
+}
+
+void StreamerWidget::onServerStreamEnd(uint32_t streamId)
+{
+    if (streamId != m_streamId) {
+        qWarning() << "Stream end for wrong stream ID:" << streamId << "expected:" << m_streamId;
+        return;
+    }
+    
+    if (m_streamState == State_StreamActive) {
+        setStreamState(State_StreamCreated); // Возвращаемся в состояние без отправки пакетов
+        qDebug() << "Stream ended - stopped sending packets for:" << m_displayId;
+    }
+}
+
+// Модифицируем обработчик кадров для кодирования
+void StreamerWidget::onFrameForEncoding(const cv::Mat &frame)
+{
+    // Кодируем кадры только если трансляция создана или активна
+    if (m_streamState == State_StreamCreated || m_streamState == State_StreamActive) {
+        if (m_videoEncoder && m_encoderInitialized) {
+            try {
+                m_videoEncoder->encodeFrame(frame);
+            } catch (const std::exception& e) {
+                qCritical() << "Failed to encode frame:" << e.what();
+                setStreamState(State_StreamError);
+            }
+        }
+    }
+}
+
+// Модифицируем обработчик закодированных пакетов
+void StreamerWidget::onFrameEncoded(int streamId, int frameNumber, const QByteArray &packet)
+{
+    if (streamId != static_cast<int>(m_streamId)) return;
+
+    // Используем существующий FEC-пайплайн через StreamManager
+    if (m_streamManager && m_streamState == State_StreamActive && m_sendingPackets) {
+        m_streamManager->sendVideoFrame(m_streamId, frameNumber, packet);
+        
+        if (frameNumber % 30 == 0) {
+            qDebug() << "StreamerWidget: Sent frame" << frameNumber << "for stream" << m_displayId;
+        }
+    }
+}
+
+
+// Новые методы для обработки серверных событий
+void StreamerWidget::onStreamCreated(uint32_t streamId, const QString &displayId)
+{
+    if (m_streamState != State_StreamCreated) {
+        qWarning() << "Unexpected stream creation in state:" << m_streamState;
+        return;
+    }
+    
+    setStreamId(streamId, displayId);
+    m_encoderInitialized = true;
+    
+    qDebug() << "Stream officially created - ID:" << streamId << "Display:" << displayId;
+}
+
+void StreamerWidget::onStreamStart(uint32_t streamId)
+{
+    if (streamId != m_streamId) {
+        qWarning() << "Stream start for wrong stream ID:" << streamId << "expected:" << m_streamId;
+        return;
+    }
+    
+    if (m_streamState == State_StreamCreated) {
+        setStreamState(State_StreamActive);
+        qDebug() << "Stream started - now sending packets for:" << m_displayId;
+    } else {
+        qWarning() << "Cannot start stream - wrong state:" << m_streamState;
+    }
+}
+
+void StreamerWidget::onStreamEnd(uint32_t streamId)
+{
+    if (streamId != m_streamId) {
+        qWarning() << "Stream end for wrong stream ID:" << streamId << "expected:" << m_streamId;
+        return;
+    }
+    
+    if (m_streamState == State_StreamActive) {
+        setStreamState(State_StreamCreated); // Возвращаемся в состояние без отправки пакетов
+        setViewersStatus(false);
+        qDebug() << "Stream ended - stopped sending packets for:" << m_displayId;
     }
 }
 
@@ -482,4 +684,25 @@ void StreamerWidget::forceDisconnect()
     
     cleanup();
     emit disconnectRequested(m_deviceIndex);
+}
+
+// В streamerwidget.cpp - добавляем реализацию
+void StreamerWidget::setViewersStatus(bool hasViewers)
+{
+    if (m_hasViewers == hasViewers) return;
+
+    m_hasViewers = hasViewers;
+    
+    if (m_controlPanel) {
+        m_controlPanel->setViewersStatus(hasViewers);
+    }
+
+    updateStatus();
+}
+
+void StreamerWidget::onNetworkError(const QString& error)
+{
+    qCritical() << "Network error for stream" << m_streamId << ":" << error;
+    setStreamState(State_StreamError);
+    showError(QString("Network error: %1").arg(error));
 }

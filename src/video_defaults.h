@@ -38,9 +38,9 @@ inline constexpr int MAX_PACKET_SIZE = 1200;
 inline constexpr int DEFAULT_BUFFERSZ = 128;
 inline constexpr int MARGIN = 5;
 
-inline constexpr int PACKET_HEADER_SIZE = 8;  
-inline constexpr int XOR_PACKET_DATA_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE; // 1192
-inline constexpr int DATA_PAYLOAD_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE - 1; // 1191
+inline constexpr int PACKET_HEADER_SIZE = 12;  
+inline constexpr int XOR_PACKET_DATA_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE; // 1188
+inline constexpr int DATA_PAYLOAD_SIZE = MAX_PACKET_SIZE - PACKET_HEADER_SIZE - 1; // 1187
 
 inline constexpr int FEC_GROUP_SIZE = 5; 
 inline constexpr int FEC_DATA_PACKETS = 4;

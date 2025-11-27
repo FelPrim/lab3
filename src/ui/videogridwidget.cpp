@@ -349,14 +349,14 @@ void VideoGridWidget::connectStreamerWidget(StreamerWidget* widget)
             this, &VideoGridWidget::onStreamerDisconnectRequested);
     connect(widget, &StreamerWidget::encodedPacketReady,
             this, &VideoGridWidget::encodedPacketReady);
-   // connect(widget, &StreamerWidget::streamingStateChanged,
-   //         this, [this, widget](uint32_t streamId, bool enabled) {
-   //             if (enabled) {
-   //                 emit streamStartRequested(widget->getDeviceIndex());
-   //             } else {
-   //                 emit streamStopRequested(streamId);
-   //             }
-   //         });
+    connect(widget, &StreamerWidget::streamingStateChanged,
+            this, [this, widget](uint32_t streamId, bool enabled) {
+                if (enabled) {
+                    emit streamStartRequested(widget->getDeviceIndex());
+                } else {
+                    emit streamStopRequested(streamId);
+                }
+            });
 }
 
 void VideoGridWidget::disconnectStreamerWidget(StreamerWidget* widget)

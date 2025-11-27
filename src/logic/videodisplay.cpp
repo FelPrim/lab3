@@ -1,4 +1,6 @@
 #include "videodisplay.h"
+#include <QPainter>
+#include <QResizeEvent>
 #include <QDebug>
 #include <QResizeEvent>
 
@@ -10,6 +12,8 @@ VideoDisplay::VideoDisplay(QWidget *parent)
     // Убираем фиксированный минимальный размер или делаем его очень маленьким
     setMinimumSize(1, 1);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    setPlaceholderText("Initializing...");
 }
 
 void VideoDisplay::displayFrame(const QImage &frame)
@@ -47,4 +51,18 @@ void VideoDisplay::updateDisplay()
     
     // Принудительно обновляем виджет
     update();
+}
+
+
+void VideoDisplay::setPlaceholderText(const QString& text)
+{
+    // Создаем простой плейсхолдер без сложной отрисовки
+    QPixmap placeholder(size());
+    placeholder.fill(Qt::black);
+    
+    QPainter painter(&placeholder);
+    painter.setPen(Qt::white);
+    painter.drawText(placeholder.rect(), Qt::AlignCenter, text);
+    
+    setPixmap(placeholder);
 }

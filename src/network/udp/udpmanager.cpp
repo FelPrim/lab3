@@ -107,7 +107,7 @@ void UDPManager::sendPacket(const QByteArray &data, const QHostAddress &host, qu
 void UDPManager::onPacketReceived()
 {
     if (!m_udpSocket) return;
-    printf("+");
+    
     while (m_udpSocket->hasPendingDatagrams()) {
         QByteArray datagram;
         datagram.resize(m_udpSocket->pendingDatagramSize());
@@ -126,25 +126,35 @@ void UDPManager::onPacketReceived()
 
 void UDPManager::routePacket(const QByteArray &data, const QHostAddress &sender, quint16 port)
 {
-    if (data.size() < sizeof(RouteHeader)) {
-        qDebug() << "UDPManager: Packet too small for routing:" << data.size();
+    if (data.size() < 12) {
+        qDebug() << "UDPManager: Packet too small for routing:" << data.size() << "bytes";
         return;
     }
 
-    // Извлекаем streamId из RouteHeader (первые 4 байта)
-    RouteHeader routeHeader;
-    memcpy(&routeHeader, data.constData(), sizeof(RouteHeader));
-
-    int streamId = static_cast<int>(qFromBigEndian(routeHeader.streamId)); 
+    // Быстрое извлечение streamId из заголовка NetworkPacket (байты 4-7)
+    uint32_t streamId;
+    memcpy(&streamId, data.constData() + 4, 4);
+    streamId = qFromBigEndian(streamId);
+    
     QMutexLocker locker(&m_managersMutex);
     
-    if (m_networkManagers.contains(streamId)) {
-        NetworkManager *manager = m_networkManagers[streamId];
-        // Вызываем метод обработки пакета в соответствующем NetworkManager
-        QMetaObject::invokeMethod(manager, "onPacketReceived", 
+    if (m_networkManagers.contains(static_cast<int>(streamId))) {
+        NetworkManager *manager = m_networkManagers[static_cast<int>(streamId)];
+        
+        // Правильный вызов существующего метода
+        QMetaObject::invokeMethod(manager, "processPacket", 
                           Qt::QueuedConnection,
-                          Q_ARG(QByteArray, data));
+                          Q_ARG(QByteArray, data),
+                          Q_ARG(QHostAddress, sender),
+                          Q_ARG(quint16, port));
+        
+        if (qEnvironmentVariableIsSet("DEBUG_UDP")) {
+            qDebug() << "UDPManager: Routed packet - stream:" << streamId 
+                     << "size:" << data.size() << "from:" << sender.toString() << ":" << port;
+        }
     } else {
-        qDebug() << "UDPManager: No NetworkManager registered for stream" << streamId;
+        if (qEnvironmentVariableIsSet("DEBUG_UDP")) {
+            qDebug() << "UDPManager: No NetworkManager registered for stream" << streamId;
+        }
     }
 }

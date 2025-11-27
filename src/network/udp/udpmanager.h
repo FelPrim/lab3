@@ -8,7 +8,6 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QHostAddress>
-#include "network_packet.h"
 
 class NetworkManager;
 
@@ -47,4 +46,19 @@ private:
     // Маршрутизация: streamId -> NetworkManager
     QMap<int, NetworkManager*> m_networkManagers;
     QMutex m_managersMutex;
+
+    // Структуры для нового протокола
+#pragma pack(push, 1)
+    struct UDPHandshakePacket {
+        uint64_t zero;           // 8 нулевых байт
+        uint32_t connection_id;  // ID соединения
+    };
+
+    struct UDPStreamPacket {
+        uint32_t call_id;        // ID звонка
+        uint32_t stream_id;      // ID стрима  
+        uint32_t packet_number;  // Номер пакета
+        uint8_t data[1188];      // Данные (1200 - 12 байт заголовка)
+    };
+#pragma pack(pop)
 };

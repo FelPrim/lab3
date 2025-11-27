@@ -76,115 +76,268 @@ void TCPManager::processBuffer()
         qDebug() << "TCPManager: Processing message, type:" << QString::number(type, 16) 
                  << "buffer size:" << m_buffer.size();
 
-        if (type >= 0x80) {
-            const int need = 1 + 4;
-            if (m_buffer.size() < need) {
-                qDebug() << "TCPManager: Not enough data for server message, need:" << need << "have:" << m_buffer.size();
-                return;
+        // Обработка сообщений от сервера
+        switch (type) {
+            // Общие сообщения
+            case SERVER_HANDSHAKE_START: {
+                if (m_buffer.size() < 5) return; // 1 + 4 bytes
+                uint32_t connectionId = qFromBigEndian<quint32>(
+                    reinterpret_cast<const uchar*>(m_buffer.constData() + 1));
+                m_buffer.remove(0, 5);
+                emit serverHandshakeStart(connectionId);
+                break;
             }
             
-            uint8_t t = static_cast<uint8_t>(m_buffer.at(0));
-            const uchar *p = reinterpret_cast<const uchar*>(m_buffer.constData()+1);
-            uint32_t id = qFromBigEndian<quint32>(p);
-
-            m_buffer.remove(0, need);
-
-            qDebug() << "TCPManager: Server message - type:" << QString::number(t, 16) << "id:" << id;
-
-            switch (t) {
-                case 0x81:
-                    qDebug() << "TCPManager: >>> SERVER_STREAM_CREATED id=" << id;
-                    emit serverStreamCreated(id);
-                    break;
-                case 0x82:
-                    qDebug() << "TCPManager: >>> SERVER_STREAM_DELETED id=" << id;
-                    emit serverStreamDeleted(id);
-                    break;
-                case 0x83:
-                    qDebug() << "TCPManager: >>> SERVER_STREAM_JOINED id=" << id;
-                    emit serverStreamJoined(id);
-                    break;
-                case 0x84:
-                    qDebug() << "TCPManager: >>> SERVER_STREAM_START id=" << id;
-                    emit serverStreamStart(id);
-                    break;
-                case 0x85:
-                    qDebug() << "TCPManager: >>> SERVER_STREAM_END id=" << id;
-                    emit serverStreamEnd(id);
-                    break;
-                default:
-                    qWarning() << "TCPManager: Unknown server message type:" << t;
-                    break;
+            case SERVER_HANDSHAKE_END: {
+                if (m_buffer.size() < 5) return; // 1 + 4 bytes
+                uint32_t connectionId = qFromBigEndian<quint32>(
+                    reinterpret_cast<const uchar*>(m_buffer.constData() + 1));
+                m_buffer.remove(0, 5);
+                emit serverHandshakeEnd(connectionId);
+                break;
             }
-            continue;
-        } else {
-            qWarning() << "TCPManager: unexpected message type from server:" << type << " — dropping byte";
-            m_buffer.remove(0,1);
+            
+            case SERVER_ERROR:
+            case SERVER_SUCCESS: {
+                if (m_buffer.size() < 2) return; // 1 + 1 bytes (минимум)
+                uint8_t originalMessageType = static_cast<uint8_t>(m_buffer.at(1));
+                uint8_t messageLength = static_cast<uint8_t>(m_buffer.at(2));
+                
+                if (m_buffer.size() < 3 + messageLength) return;
+                
+                QString message = QString::fromUtf8(m_buffer.constData() + 3, messageLength);
+                m_buffer.remove(0, 3 + messageLength);
+                
+                if (type == SERVER_ERROR) {
+                    emit serverErrorReceived(originalMessageType, message);
+                } else {
+                    emit serverSuccessReceived(originalMessageType, message);
+                }
+                break;
+            }
+            
+            // Простые сообщения с 4-байтным ID
+            case SERVER_STREAM_CREATED:
+            case SERVER_STREAM_DELETED:
+            case SERVER_STREAM_CONN_JOINED:
+            case SERVER_STREAM_START:
+            case SERVER_STREAM_END:
+            case SERVER_CALL_CREATED: {
+                if (m_buffer.size() < 5) return; // 1 + 4 bytes
+                uint32_t id = qFromBigEndian<quint32>(
+                    reinterpret_cast<const uchar*>(m_buffer.constData() + 1));
+                m_buffer.remove(0, 5);
+                
+                switch (type) {
+                    case SERVER_STREAM_CREATED: emit serverStreamCreated(id); break;
+                    case SERVER_STREAM_DELETED: emit serverStreamDeleted(id); break;
+                    case SERVER_STREAM_CONN_JOINED: emit serverStreamJoined(id); break;
+                    case SERVER_STREAM_START: emit serverStreamStart(id); break;
+                    case SERVER_STREAM_END: emit serverStreamEnd(id); break;
+                    case SERVER_CALL_CREATED: emit serverCallCreated(id); break;
+                }
+                break;
+            }
+            
+            // SERVER_CALL_CONN_JOINED - переменной длины
+            case SERVER_CALL_CONN_JOINED: {
+                const int min_size = 1 + 4 + 1 + 1; // type + call_id + participant_count + stream_count
+                if (m_buffer.size() < min_size) return;
+                
+                const uchar *data = reinterpret_cast<const uchar*>(m_buffer.constData());
+                uint32_t call_id = qFromBigEndian<quint32>(data + 1);
+                uint8_t participant_count = data[5];
+                uint8_t stream_count = data[6];
+                
+                int total_size = min_size + (participant_count * 4) + (stream_count * 4);
+                if (m_buffer.size() < total_size) return;
+                
+                QVector<uint32_t> participants;
+                QVector<uint32_t> streams;
+                
+                int offset = 7;
+                for (int i = 0; i < participant_count; ++i) {
+                    uint32_t participant_id = qFromBigEndian<quint32>(data + offset);
+                    participants.append(participant_id);
+                    offset += 4;
+                }
+                
+                for (int i = 0; i < stream_count; ++i) {
+                    uint32_t stream_id = qFromBigEndian<quint32>(data + offset);
+                    streams.append(stream_id);
+                    offset += 4;
+                }
+                
+                m_buffer.remove(0, total_size);
+                emit serverCallConnJoined(call_id, participants, streams);
+                break;
+            }
+            
+            // Сообщения с call_id + connection_id/stream_id
+            case SERVER_CALL_CONN_NEW:
+            case SERVER_CALL_CONN_LEFT:
+            case SERVER_CALL_STREAM_NEW:  
+            case SERVER_CALL_STREAM_DELETED: {
+                if (m_buffer.size() < 9) return; // 1 + 4 + 4 bytes
+                const uchar *data = reinterpret_cast<const uchar*>(m_buffer.constData());
+                uint32_t call_id = qFromBigEndian<quint32>(data + 1);
+                uint32_t id = qFromBigEndian<quint32>(data + 5);
+                
+                m_buffer.remove(0, 9);
+                
+                switch (type) {
+                    case SERVER_CALL_CONN_NEW: emit serverCallConnNew(call_id, id); break;
+                    case SERVER_CALL_CONN_LEFT: emit serverCallConnLeft(call_id, id); break;
+                    case SERVER_CALL_STREAM_NEW: emit serverCallStreamNew(call_id, id); break;
+                    case SERVER_CALL_STREAM_DELETED: emit serverCallStreamDeleted(call_id, id); break;
+                }
+                break;
+            }
+            
+            default:
+                qWarning() << "TCPManager: Unknown message type:" << type;
+                m_buffer.remove(0, 1);
+                break;
         }
     }
 }
-// -------------- outgoing --------------
 
-void TCPManager::sendClientUdpAddr(const QByteArray &sockaddr_in_bytes)
+// ================ МЕТОДЫ ОТПРАВКИ ================
+
+// Общие сообщения
+void TCPManager::sendClientError(uint8_t originalMessageType, const QString &errorMessage)
 {
-    if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) {
-        qWarning() << "TCPManager: not connected, cannot send CLIENT_UDP_ADDR";
-        return;
+    if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
+    
+    QByteArray messageData = errorMessage.toUtf8();
+    if (messageData.size() > 255) {
+        messageData = messageData.left(255);
     }
-    if (sockaddr_in_bytes.size() != 16) {
-        qWarning() << "TCPManager: CLIENT_UDP_ADDR expects 16 bytes (sockaddr_in)";
-        return;
-    }
+    
     QByteArray out;
-    out.append(static_cast<char>(0x01)); // CLIENT_UDP_ADDR
-    out.append(sockaddr_in_bytes);
+    out.append(static_cast<char>(CLIENT_ERROR));
+    out.append(static_cast<char>(originalMessageType));
+    out.append(static_cast<char>(messageData.size()));
+    out.append(messageData);
+    
     m_socket->write(out);
     m_socket->flush();
-    qDebug() << "TCPManager: sent CLIENT_UDP_ADDR bytes:" << out.size();
+    qDebug() << "TCPManager: sent CLIENT_ERROR for message type" << originalMessageType;
 }
 
-void TCPManager::sendClientDisconnect()
+void TCPManager::sendClientSuccess(uint8_t originalMessageType, const QString &successMessage)
 {
     if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
-    QByteArray out; out.append(static_cast<char>(0x02));
-    m_socket->write(out); m_socket->flush();
-    qDebug() << "TCPManager: sent CLIENT_DISCONNECT";
+    
+    QByteArray messageData = successMessage.toUtf8();
+    if (messageData.size() > 255) {
+        messageData = messageData.left(255);
+    }
+    
+    QByteArray out;
+    out.append(static_cast<char>(CLIENT_SUCCESS));
+    out.append(static_cast<char>(originalMessageType));
+    out.append(static_cast<char>(messageData.size()));
+    out.append(messageData);
+    
+    m_socket->write(out);
+    m_socket->flush();
+    qDebug() << "TCPManager: sent CLIENT_SUCCESS for message type" << originalMessageType;
 }
 
-void TCPManager::sendClientStreamCreate()
+// Сообщения стримов
+void TCPManager::sendClientStreamCreate(uint32_t callId)
 {
     if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
-    QByteArray out; out.append(static_cast<char>(0x03));
-    m_socket->write(out); m_socket->flush();
-    qDebug() << "TCPManager: sent CLIENT_STREAM_CREATE";
+    
+    QByteArray out;
+    out.append(static_cast<char>(CLIENT_STREAM_CREATE));
+    quint32 be_callId = qToBigEndian<quint32>(callId);
+    out.append(reinterpret_cast<const char*>(&be_callId), 4);
+    
+    m_socket->write(out);
+    m_socket->flush();
+    qDebug() << "TCPManager: sent CLIENT_STREAM_CREATE callId=" << callId;
 }
 
 void TCPManager::sendClientStreamDelete(uint32_t streamId)
 {
     if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
-    QByteArray out; out.append(static_cast<char>(0x04));
-    quint32 be = qToBigEndian<quint32>(streamId);
-    out.append(reinterpret_cast<const char*>(&be), 4);
-    m_socket->write(out); m_socket->flush();
-    qDebug() << "TCPManager: sent CLIENT_STREAM_DELETE id=" << streamId;
+    
+    QByteArray out;
+    out.append(static_cast<char>(CLIENT_STREAM_DELETE));
+    quint32 be_streamId = qToBigEndian<quint32>(streamId);
+    out.append(reinterpret_cast<const char*>(&be_streamId), 4);
+    
+    m_socket->write(out);
+    m_socket->flush();
+    qDebug() << "TCPManager: sent CLIENT_STREAM_DELETE streamId=" << streamId;
 }
 
 void TCPManager::sendClientStreamJoin(uint32_t streamId)
 {
     if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
-    QByteArray out; out.append(static_cast<char>(0x05));
-    quint32 be = qToBigEndian<quint32>(streamId);
-    out.append(reinterpret_cast<const char*>(&be), 4);
-    m_socket->write(out); m_socket->flush();
-    qDebug() << "TCPManager: sent CLIENT_STREAM_JOIN id=" << streamId;
+    
+    QByteArray out;
+    out.append(static_cast<char>(CLIENT_STREAM_CONN_JOIN));
+    quint32 be_streamId = qToBigEndian<quint32>(streamId);
+    out.append(reinterpret_cast<const char*>(&be_streamId), 4);
+    
+    m_socket->write(out);
+    m_socket->flush();
+    qDebug() << "TCPManager: sent CLIENT_STREAM_JOIN streamId=" << streamId;
 }
 
 void TCPManager::sendClientStreamLeave(uint32_t streamId)
 {
     if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
-    QByteArray out; out.append(static_cast<char>(0x06));
-    quint32 be = qToBigEndian<quint32>(streamId);
-    out.append(reinterpret_cast<const char*>(&be), 4);
-    m_socket->write(out); m_socket->flush();
-    qDebug() << "TCPManager: sent CLIENT_STREAM_LEAVE id=" << streamId;
+    
+    QByteArray out;
+    out.append(static_cast<char>(CLIENT_STREAM_CONN_LEAVE));
+    quint32 be_streamId = qToBigEndian<quint32>(streamId);
+    out.append(reinterpret_cast<const char*>(&be_streamId), 4);
+    
+    m_socket->write(out);
+    m_socket->flush();
+    qDebug() << "TCPManager: sent CLIENT_STREAM_LEAVE streamId=" << streamId;
+}
+
+// Сообщения звонков
+void TCPManager::sendClientCallCreate()
+{
+    if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
+    
+    QByteArray out;
+    out.append(static_cast<char>(CLIENT_CALL_CREATE));
+    m_socket->write(out);
+    m_socket->flush();
+    qDebug() << "TCPManager: sent CLIENT_CALL_CREATE";
+}
+
+void TCPManager::sendClientCallJoin(uint32_t callId)
+{
+    if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
+    
+    QByteArray out;
+    out.append(static_cast<char>(CLIENT_CALL_CONN_JOIN));
+    quint32 be_callId = qToBigEndian<quint32>(callId);
+    out.append(reinterpret_cast<const char*>(&be_callId), 4);
+    
+    m_socket->write(out);
+    m_socket->flush();
+    qDebug() << "TCPManager: sent CLIENT_CALL_JOIN callId=" << callId;
+}
+
+void TCPManager::sendClientCallLeave(uint32_t callId)
+{
+    if (!m_socket || m_socket->state() != QAbstractSocket::ConnectedState) return;
+    
+    QByteArray out;
+    out.append(static_cast<char>(CLIENT_CALL_CONN_LEAVE));
+    quint32 be_callId = qToBigEndian<quint32>(callId);
+    out.append(reinterpret_cast<const char*>(&be_callId), 4);
+    
+    m_socket->write(out);
+    m_socket->flush();
+    qDebug() << "TCPManager: sent CLIENT_CALL_LEAVE callId=" << callId;
 }

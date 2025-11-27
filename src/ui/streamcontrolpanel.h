@@ -59,5 +59,24 @@ private:
     bool m_active;
     bool m_streaming;
     int m_viewersCount;
-    
+
+    // В streamcontrolpanel.h - добавляем enum состояний
+public:
+    enum StreamState {
+        StateNoStream,        // Только превью, трансляция не создана
+        StateStreamCreated,   // Трансляция создана, кодировщик работает, пакеты не отправляются
+        StateStreamActive,    // Трансляция активна, пакеты отправляются (есть зрители)
+        StateStreamError      // Ошибка трансляции
+    };
+
+    void setStreamState(StreamState state);
+    void setViewersConnected(bool connected);
+
+private:
+    StreamState m_streamState;
+    bool m_viewersConnected;
+
+public:
+    void setViewersStatus(bool hasViewers);
+
 };

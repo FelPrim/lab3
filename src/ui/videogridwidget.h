@@ -107,8 +107,13 @@ void resizeEvent(QResizeEvent* event) {
 }
 */
 
+    QVector<ViewerWidget*> getViewerWidgets() const { return m_viewerWidgets; }
+
 // ОСТАВИТЬ только объявления:
 void disconnectStreamerWidget(StreamerWidget* widget);
 void disconnectViewerWidget(ViewerWidget* widget);
 void resizeEvent(QResizeEvent* event);
+public:
+    QVector<StreamerWidget*> getStreamerWidgets() const { return m_streamerWidgets; }
+
 };

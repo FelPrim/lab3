@@ -4,6 +4,7 @@
 #define __UINT_LEAST16_MAX__ 0xffff
 #define __FLT16_HAS_QUIET_NAN__ 1
 #define __ATOMIC_ACQUIRE 2
+#define QT_TESTCASE_BUILDDIR "/home/aprihodko/t/GitHub/my_scripts/lab3/build"
 #define __FLT128_MAX_10_EXP__ 4932
 #define __FLT_MIN__ 1.17549435082228750796873653722224568e-38F
 #define __GCC_IEC_559_COMPLEX 2
@@ -64,6 +65,7 @@
 #define __LDBL_IS_IEC_60559__ 1
 #define QT_NO_DEBUG 1
 #define __FLT64X_HAS_QUIET_NAN__ 1
+#define QT_TESTLIB_LIB 1
 #define __UINT_LEAST8_MAX__ 0xff
 #define __GCC_ATOMIC_BOOL_LOCK_FREE 2
 #define __FLT128_DENORM_MIN__ 6.47517511943802511092443895822764655e-4966F128
@@ -181,6 +183,7 @@
 #define __SIZEOF_WINT_T__ 4
 #define __FLT32X_DIG__ 15
 #define __LONG_LONG_WIDTH__ 64
+#define QT_TESTCASE_SOURCEDIR "/home/aprihodko/t/GitHub/my_scripts/lab3/src"
 #define __cpp_initializer_lists 200806L
 #define __FLT32_MAX_EXP__ 128
 #define ABI_ID "ELF"

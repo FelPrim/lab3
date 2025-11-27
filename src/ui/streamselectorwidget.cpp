@@ -14,11 +14,17 @@ StreamSelectorWidget::StreamSelectorWidget(QWidget *parent)
     setupUI();
 }
 
+// В streamselectorwidget.cpp - добавляем базовую функциональность
 void StreamSelectorWidget::setupUI()
 {
     auto layout = new QVBoxLayout(this);
     layout->setSpacing(8);
     layout->setContentsMargins(0, 0, 0, 0);
+
+    // Заголовок
+    auto header = new QLabel("Available Streams:", this);
+    header->setStyleSheet("color: #ffffff; font-weight: bold;");
+    layout->addWidget(header);
 
     m_streamsList = new QListWidget(this);
     m_streamsList->setStyleSheet(R"(
@@ -41,7 +47,41 @@ void StreamSelectorWidget::setupUI()
         }
     )");
 
+    // Подключаем двойной клик для просмотра стрима
+    connect(m_streamsList, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
+        if (item) {
+            uint32_t streamId = item->data(Qt::UserRole).toUInt();
+            emit watchStreamRequested(streamId);
+        }
+    });
+
     layout->addWidget(m_streamsList);
+
+    // Кнопка "Stop Watching" для текущего выбранного стрима
+    auto stopButton = new QPushButton("Stop Watching Selected Stream", this);
+    stopButton->setStyleSheet(R"(
+        QPushButton {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        QPushButton:hover {
+            background-color: #c62828;
+        }
+    )");
+    
+    connect(stopButton, &QPushButton::clicked, this, [this]() {
+        QListWidgetItem* currentItem = m_streamsList->currentItem();
+        if (currentItem) {
+            uint32_t streamId = currentItem->data(Qt::UserRole).toUInt();
+            emit stopWatchingRequested(streamId);
+        }
+    });
+
+    layout->addWidget(stopButton);
 }
 
 void StreamSelectorWidget::addStream(uint32_t streamId, const QString& displayId)
