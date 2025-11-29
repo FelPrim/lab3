@@ -97,7 +97,7 @@ void VideoCapture::run()
         // Критически важно: создаем копию, так как данные rgbFrame временные
         emit rawFrameReady(image.copy());
         
-        emit frameForEncodingReady(frame.clone()); 
+        emit frameForEncodingReady(frame); 
         // Периодический лог FPS (каждые 100 кадров)
         if (frameCount % 100 == 0) {
             double elapsed = fpsTimer.restart() / 1000.0;

@@ -586,7 +586,6 @@ void StreamerWidget::onFrameForEncoding(const cv::Mat &frame)
     if (m_streamState == State_StreamCreated || m_streamState == State_StreamActive) {
         if (m_videoEncoder && m_encoderInitialized) {
             try {
-                qDebug() << "StreamerWidget: Sending frame to encoder";
                 m_videoEncoder->encodeFrame(frame);
             } catch (const std::exception& e) {
                 qCritical() << "Failed to encode frame:" << e.what();
