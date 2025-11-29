@@ -3,15 +3,34 @@
 #include <QObject>
 #include <QHostAddress>
 #include <QMap>
-#include <QTimer>
+#include <QSet>
+#include <QVector>
 #include "udp/udpmanager.h"
 #include "tcp/tcpmanager.h"
+#include "handshake.h"
 #include "../video_defaults.h"
 
 class NetworkManager;
 
+// Структура для отслеживания состояния стрима
+struct StreamState {
+    uint32_t streamId;
+    uint32_t callId;
+    bool isOwner; // true если мы владелец (стример), false если зритель
+    bool isActive; // true если стрим активен (для стримера)
+    QString status; // дополнительный статус
+};
+
+// Структура для отслеживания состояния звонка
+struct CallState {
+    uint32_t callId;
+    QSet<uint32_t> streams; // стримы в этом звонке
+    QSet<uint32_t> participants; // участники звонка
+};
+
 class NetworkFacade : public QObject {
     Q_OBJECT
+
 public:
     explicit NetworkFacade(QObject *parent = nullptr);
     ~NetworkFacade() override;
@@ -28,26 +47,32 @@ public:
     void removeNetworkManager(int streamId);
     NetworkManager* getNetworkManager(int streamId);
 
-    // UI -> TCP commands - Streams
-    void sendStreamCreate(uint32_t callId = 0); // callId = 0 для публичного стрима
+    // UI -> TCP commands - Стримы
+    void sendStreamCreate(uint32_t callId = 0);
     void sendStreamDelete(uint32_t streamId);
     void sendStreamJoin(uint32_t streamId);
     void sendStreamLeave(uint32_t streamId);
 
-    // UI -> TCP commands - Calls
+    // ✅ ДОБАВЛЕНО: UI -> TCP commands - Звонки
     void sendCallCreate();
     void sendCallJoin(uint32_t callId);
     void sendCallLeave(uint32_t callId);
 
-    // Error/Success handling
-    void sendClientError(uint8_t originalMessageType, const QString &errorMessage);
-    void sendClientSuccess(uint8_t originalMessageType, const QString &successMessage);
+    // Call management
+    void setCallIdForStream(int streamId, uint32_t callId);
+
+    // ✅ ДОБАВЛЕНО: Client state tracking
+    void printClientState() const;
+    QVector<uint32_t> getCallIds() const;
+    QVector<uint32_t> getStreamIds() const;
+    StreamState getStreamState(uint32_t streamId) const;
+    CallState getCallState(uint32_t callId) const;
 
     // Getters
     UDPManager* getUdpManager() const { return m_udpManager; }
     quint16 getLocalUdpPort() const { return m_localUdpPort; }
-    uint32_t getConnectionId() const { return m_connectionId; }
-    bool isHandshakeCompleted() const { return m_handshakeCompleted; }
+    uint32_t getConnectionId() const { return m_handshakeService->getConnectionId(); }
+    bool isHandshakeCompleted() const { return m_handshakeService->isHandshakeCompleted(); }
 
 signals:
     // Connection status
@@ -59,24 +84,22 @@ signals:
     void handshakeStarted(uint32_t connectionId);
     void handshakeCompleted(uint32_t connectionId);
 
-    // Error/Success signals
-    void serverErrorReceived(uint8_t originalMessageType, const QString &errorMessage);
-    void serverSuccessReceived(uint8_t originalMessageType, const QString &successMessage);
-
-    // Server messages - Streams
+    // Server messages - Стримы
     void serverStreamCreated(uint32_t id);
     void serverStreamDeleted(uint32_t id);
     void serverStreamJoined(uint32_t id);
     void serverStreamStart(uint32_t id);
     void serverStreamEnd(uint32_t id);
 
-    // Server messages - Calls
+    // ✅ ДОБАВЛЕНО: Server messages - Звонки
     void serverCallCreated(uint32_t callId);
     void serverCallConnJoined(uint32_t callId, const QVector<uint32_t>& participants, const QVector<uint32_t>& streams);
     void serverCallConnNew(uint32_t callId, uint32_t participantId);
     void serverCallConnLeft(uint32_t callId, uint32_t participantId);
     void serverCallStreamNew(uint32_t callId, uint32_t streamId);
     void serverCallStreamDeleted(uint32_t callId, uint32_t streamId);
+    void serverErrorReceived(uint8_t originalMessageType, const QString &errorMessage);
+    void serverSuccessReceived(uint8_t originalMessageType, const QString &successMessage);
 
     // NetworkManager signals (forwarded)
     void frameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
@@ -87,23 +110,21 @@ private slots:
     void onTcpDisconnected();
     void onTcpError(const QString &err);
     
-    // Handshake handling
+    // Handshake events
+    void onHandshakeStarted(uint32_t connectionId);
+    void onHandshakeCompleted(uint32_t connectionId);
+    void onHandshakeFailed(const QString &error);
+    
+    // Server message handlers
     void onServerHandshakeStart(uint32_t connectionId);
     void onServerHandshakeEnd(uint32_t connectionId);
-    void onUdpHandshakeTimeout();
-    
-    // Error/Success handling
-    void onServerErrorReceived(uint8_t originalMessageType, const QString &errorMessage);
-    void onServerSuccessReceived(uint8_t originalMessageType, const QString &successMessage);
-    
-    // Stream message handlers
     void onServerStreamCreated(uint32_t id);
     void onServerStreamDeleted(uint32_t id);
     void onServerStreamJoined(uint32_t id);
     void onServerStreamStart(uint32_t id);
     void onServerStreamEnd(uint32_t id);
 
-    // Call message handlers
+    // ✅ ДОБАВЛЕНО: Server message handlers - Звонки
     void onServerCallCreated(uint32_t callId);
     void onServerCallConnJoined(uint32_t callId, const QVector<uint32_t>& participants, const QVector<uint32_t>& streams);
     void onServerCallConnNew(uint32_t callId, uint32_t participantId);
@@ -112,11 +133,9 @@ private slots:
     void onServerCallStreamDeleted(uint32_t callId, uint32_t streamId);
 
 private:
-    void sendUdpHandshakePacket();
-    void stopUdpHandshake();
-
     TCPManager *m_tcp;
     UDPManager *m_udpManager;
+    HandshakeService *m_handshakeService;
     
     QString m_serverHost;
     quint16 m_serverTcpPort = DEFAULT_ECHO_SERVER_PORT;
@@ -125,16 +144,15 @@ private:
     QHostAddress m_localUdpIp = QHostAddress::AnyIPv4;
     quint16 m_localUdpPort = 0;
 
-    // Handshake state
-    uint32_t m_connectionId = 0;
-    bool m_handshakeCompleted = false;
-    QTimer *m_handshakeTimer = nullptr;
-    int m_handshakeAttempts = 0;
-    static const int MAX_HANDSHAKE_ATTEMPTS = 50; // 5 seconds at 10 packets/second
+    QMap<int, NetworkManager*> m_networkManagers;
+    QMap<int, uint32_t> m_streamCallIds;
 
-    QMap<int, NetworkManager*> m_networkManagers; // streamId -> NetworkManager
-                                                  // 
+    // ✅ ДОБАВЛЕНО: Client state tracking
+    QMap<uint32_t, StreamState> m_streamStates;
+    QMap<uint32_t, CallState> m_callStates;
+    QSet<uint32_t> m_ownedStreams; // стримы, которые мы создали
+    QSet<uint32_t> m_joinedStreams; // стримы, к которым присоединились как зритель
+    QSet<uint32_t> m_activeStreams; // активные стримы (для которых включена отправка)
+    QSet<uint32_t> m_joinedCalls; // звонки, в которых мы участвуем
 
-void onHandshakeStart(uint32_t connectionId);
-void onHandshakeEnd(uint32_t connectionId);
 };

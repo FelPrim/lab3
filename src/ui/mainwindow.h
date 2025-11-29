@@ -10,6 +10,7 @@
 #include "videoselectiondialog.h"
 #include "../network/streammanager.h"
 #include "id_utils.h"
+#include "conferencewindow.h"
 
 class MainWindow : public QMainWindow
 {

@@ -6,6 +6,9 @@
         "qhboxlayout": "cpp",
         "qpushbutton": "cpp",
         "qmainwindow": "cpp",
-        "qscrollarea": "cpp"
+        "qscrollarea": "cpp",
+        "syncstream": "cpp",
+        "new": "cpp",
+        "algorithm": "cpp"
     }
 }

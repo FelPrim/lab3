@@ -25,7 +25,6 @@ public:
     
     // Специфичные для StreamerMode
     void setStreaming(bool streaming);
-    void setViewersCount(int count);
     
     // Специфичные для ViewerMode
     void setConnectionStatus(bool connected);

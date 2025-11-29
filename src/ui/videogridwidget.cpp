@@ -131,6 +131,11 @@ void VideoGridWidget::removeViewerWidget(uint32_t streamId)
     qWarning() << "Viewer widget for stream" << streamId << "not found";
 }
 
+void VideoGridWidget::onServerStreamDeleted(uint32_t streamId)
+{
+    removeViewerWidget(streamId);
+}
+
 StreamerWidget* VideoGridWidget::findStreamerWidget(int deviceIndex) const
 {
     for (StreamerWidget *widget : m_streamerWidgets) {
@@ -157,7 +162,7 @@ void VideoGridWidget::updateLayout()
 
     int totalWidgets = getTotalWidgetCount();
     if (totalWidgets == 0) {
-        m_container->setMinimumSize(0, 0);
+        m_container->setMinimumSize(1, 1);
         return;
     }
 
@@ -347,16 +352,7 @@ void VideoGridWidget::connectStreamerWidget(StreamerWidget* widget)
 
     connect(widget, &StreamerWidget::disconnectRequested,
             this, &VideoGridWidget::onStreamerDisconnectRequested);
-    connect(widget, &StreamerWidget::encodedPacketReady,
-            this, &VideoGridWidget::encodedPacketReady);
-    connect(widget, &StreamerWidget::streamingStateChanged,
-            this, [this, widget](uint32_t streamId, bool enabled) {
-                if (enabled) {
-                    emit streamStartRequested(widget->getDeviceIndex());
-                } else {
-                    emit streamStopRequested(streamId);
-                }
-            });
+
 }
 
 void VideoGridWidget::disconnectStreamerWidget(StreamerWidget* widget)

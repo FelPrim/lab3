@@ -55,7 +55,9 @@ void FrameAssembler::processPacket(int streamId, PacketType type, const QByteArr
 
 void FrameAssembler::processStartFrame(int streamId, const QByteArray &data)
 {
-    if (data.size() < PACKET_HEADER_SIZE) {
+
+    const int START_FRAME_PAYLOAD_HEADER = 8; // frameNumber(4) + frameSize(4)
+    if (data.size() < START_FRAME_PAYLOAD_HEADER) { 
         qDebug() << "START_FRAME too small:" << data.size();
         return;
     }
@@ -71,7 +73,7 @@ void FrameAssembler::processStartFrame(int streamId, const QByteArray &data)
         return;
     }
 
-    QByteArray frameData = data.mid(PACKET_HEADER_SIZE);
+    QByteArray frameData = data.mid(START_FRAME_PAYLOAD_HEADER); 
 
     // В START_FRAME тоже может быть дополнение, берем только нужное количество
     int bytesToTake = qMin(frameData.size(), frameSize);

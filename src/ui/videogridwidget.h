@@ -1,3 +1,4 @@
+// videogridwidget.h
 #pragma once
 
 #include <QWidget>
@@ -45,21 +46,15 @@ public:
     // Обновление компоновки
     void updateLayout();
 
-   // void disconnectStreamerWidget(StreamerWidget* widget);
-   // void disconnectViewerWidget(ViewerWidget* widget);
-   // void resizeEvent(QResizeEvent* event);
-
 public slots:
     void onStreamerDisconnectRequested(int deviceIndex);
     void onViewerLeaveRequested(uint32_t streamId);
+   void onServerStreamDeleted(uint32_t streamId);
 
 signals:
     // Проброс сигналов от внутренних виджетов
     void streamerDisconnectRequested(int deviceIndex);
     void viewerLeaveRequested(uint32_t streamId);
-    void streamStartRequested(int deviceIndex);
-    void streamStopRequested(uint32_t streamId);
-    void encodedPacketReady(uint32_t streamId, int frameNumber, const QByteArray& packet);
 
 private:
     // Методы из VideoLayoutCalculator
@@ -92,28 +87,9 @@ private:
     static const int PREFERRED_ASPECT_DENOMINATOR = 9;
 
 public:
-// УДАЛИТЬ эти реализации из videogridwidget.h:
-/*
-void disconnectStreamerWidget(StreamerWidget* widget) {
-    if (widget) widget->disconnect();
-}
-
-void disconnectViewerWidget(ViewerWidget* widget) {
-    if (widget) widget->disconnect();
-}
-
-void resizeEvent(QResizeEvent* event) {
-    QWidget::resizeEvent(event);
-}
-*/
-
     QVector<ViewerWidget*> getViewerWidgets() const { return m_viewerWidgets; }
-
-// ОСТАВИТЬ только объявления:
-void disconnectStreamerWidget(StreamerWidget* widget);
-void disconnectViewerWidget(ViewerWidget* widget);
-void resizeEvent(QResizeEvent* event);
-public:
+    void disconnectStreamerWidget(StreamerWidget* widget);
+    void disconnectViewerWidget(ViewerWidget* widget);
+    void resizeEvent(QResizeEvent* event);
     QVector<StreamerWidget*> getStreamerWidgets() const { return m_streamerWidgets; }
-
 };

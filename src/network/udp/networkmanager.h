@@ -1,4 +1,3 @@
-// networkmanager.h
 #pragma once
 
 #include <QObject>
@@ -16,9 +15,6 @@
 #include "network_packet.h"
 #include "../../video_defaults.h"
 
-// Forward declarations вместо включения проблемных заголовков
-class FrameAssembler;
-class FrameSender;
 class UDPManager;
 
 class NetworkManager : public QObject
@@ -52,25 +48,21 @@ signals:
     void frameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
     void errorOccurred(const QString &message);
     void statisticsUpdated(const QString &stats);
-    void handshakeCompleted();
 
 public slots:
     void start();
     void stop();
-    void startHandshake(uint32_t connectionId);
-    void completeHandshake();
 
 private slots:
     void cleanupOldAssemblies();
     void printStatistics();
-    void sendHandshakePacket();
     void onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
 
 private:
     // Основные методы из старой реализации
     void processPacketNewProtocol(const QByteArray &data);
-    void sendPacketNewProtocol(const QByteArray &data, int packetType);
-    void sendPacketNewProtocol(const QByteArray &data, int packetType, int customSequence);
+    void sendPacketNewProtocol(const QByteArray &data, PacketType type);
+    void sendPacketNewProtocol(const QByteArray &data, PacketType type, int customSequence);
     
     // FEC методы из старой реализации
     void processXorPacket(const NetworkPacket& packet);
@@ -89,7 +81,6 @@ private:
     
     QTimer *m_cleanupTimer = nullptr;
     QTimer *m_statsTimer = nullptr;
-    QTimer *m_handshakeTimer = nullptr;
     
     // Компоненты из старой реализации
     FrameAssembler *m_frameAssembler = nullptr;
@@ -97,9 +88,6 @@ private:
     
     int m_streamId;
     uint32_t m_callId = 0;
-    uint32_t m_connectionId = 0;
-    bool m_handshakeCompleted = false;
-    
     int m_packetSequence = 0;
    
     // FEC буферы из старой реализации

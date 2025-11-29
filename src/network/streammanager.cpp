@@ -1,4 +1,3 @@
-// streammanager.cpp
 #include "streammanager.h"
 #include <QDebug>
 #include "../ui/id_utils.h"
@@ -58,6 +57,12 @@ void StreamManager::initialize()
                 this, &StreamManager::onServerCallStreamNew);
         connect(m_networkFacade, &NetworkFacade::serverCallStreamDeleted, 
                 this, &StreamManager::onServerCallStreamDeleted);
+
+        // Сигналы ошибок и успехов
+        connect(m_networkFacade, &NetworkFacade::serverErrorReceived, 
+                this, &StreamManager::onServerErrorReceived);
+        connect(m_networkFacade, &NetworkFacade::serverSuccessReceived, 
+                this, &StreamManager::onServerSuccessReceived);
     }
 }
 
@@ -76,7 +81,7 @@ void StreamManager::setServerAddress(const QString &address, quint16 port)
 {
     qDebug() << "StreamManager: setServerAddress" << address << port;
     if (m_networkFacade) {
-        m_networkFacade->setServer(address, port, port - 1); // UDP порт = TCP - 1
+        m_networkFacade->setServer(address, port, port + 1); 
     }
 }
 
@@ -233,6 +238,26 @@ void StreamManager::onHandshakeCompleted(uint32_t connectionId)
 void StreamManager::onServerStreamCreated(uint32_t id)
 {
     qDebug() << "StreamManager: server stream created - ID:" << id;
+    
+    // Создаем NetworkManager для исходящего стрима
+    if (m_networkFacade) {
+        NetworkManager* manager = m_networkFacade->createNetworkManager(static_cast<int>(id));
+        if (manager) {
+            qDebug() << "NetworkManager created for outgoing stream:" << id;
+            // Для исходящих стримов включаем возможность отправки
+            manager->setSendingEnabled(true);
+            
+            // Обновляем mapping: находим устройство, которое создавало стрим
+            for (auto it = m_deviceToStreamMap.begin(); it != m_deviceToStreamMap.end(); ++it) {
+                if (it.value() == 0) { // Находим устройства, ожидающие streamId
+                    m_deviceToStreamMap[it.key()] = id;
+                    qDebug() << "Mapped device" << it.key() << "to stream" << id;
+                    break;
+                }
+            }
+        }
+    }
+    
     emit serverStreamCreated(id);
 }
 
@@ -245,9 +270,19 @@ void StreamManager::onServerStreamDeleted(uint32_t id)
 void StreamManager::onServerStreamJoined(uint32_t id)
 {
     qDebug() << "StreamManager: server stream joined - ID:" << id;
+    
+    // Создаем NetworkManager для входящего стрима
+    if (m_networkFacade) {
+        NetworkManager* manager = m_networkFacade->createNetworkManager(static_cast<int>(id));
+        if (manager) {
+            qDebug() << "NetworkManager created for incoming stream:" << id;
+            // Для входящих стримов отправка не нужна, только прием
+            manager->setSendingEnabled(false);
+        }
+    }
+    
     emit serverStreamJoined(id);
 }
-
 
 void StreamManager::onServerStreamStart(uint32_t id)
 {
@@ -315,6 +350,36 @@ void StreamManager::onServerCallStreamDeleted(uint32_t callId, uint32_t streamId
     emit serverCallStreamDeleted(callId, streamId);
 }
 
+// Обработчики ошибок и успехов
+void StreamManager::onServerErrorReceived(uint8_t originalMessageType, const QString &errorMessage)
+{
+    qWarning() << "StreamManager: Server error for message type" << originalMessageType 
+               << ":" << errorMessage;
+    
+    // Определяем тип операции по originalMessageType
+    QString operation;
+    switch (originalMessageType) {
+        case CLIENT_STREAM_CREATE: operation = "create stream"; break;
+        case CLIENT_STREAM_DELETE: operation = "delete stream"; break;
+        case CLIENT_STREAM_CONN_JOIN: operation = "join stream"; break;
+        case CLIENT_STREAM_CONN_LEAVE: operation = "leave stream"; break;
+        case CLIENT_CALL_CREATE: operation = "create call"; break;
+        case CLIENT_CALL_CONN_JOIN: operation = "join call"; break;
+        case CLIENT_CALL_CONN_LEAVE: operation = "leave call"; break;
+        default: operation = QString("operation (type %1)").arg(originalMessageType);
+    }
+    
+    emit errorOccurred(QString("Failed to %1: %2").arg(operation).arg(errorMessage));
+    emit serverErrorReceived(originalMessageType, errorMessage);
+}
+
+void StreamManager::onServerSuccessReceived(uint8_t originalMessageType, const QString &successMessage)
+{
+    qDebug() << "StreamManager: Server success for message type" << originalMessageType 
+             << ":" << successMessage;
+    emit serverSuccessReceived(originalMessageType, successMessage);
+}
+
 // Старые методы для обратной совместимости
 void StreamManager::handleViewerJoined(uint32_t streamId, ViewerWidget* viewer)
 {
@@ -369,24 +434,17 @@ NetworkManager* StreamManager::getNetworkManagerForStream(uint32_t streamId)
     return nullptr;
 }
 
-void StreamManager::sendVideoPacket(uint32_t streamId, const QByteArray& packet, int frameNumber)
-{
-    NetworkManager* netManager = getNetworkManagerForStream(streamId);
-    if (netManager) {
-        netManager->sendVideoPacket(packet, frameNumber);
-    } else {
-        qWarning() << "No NetworkManager for stream:" << streamId;
-    }
-}
-
-
 void StreamManager::sendVideoFrame(uint32_t streamId, int frameNumber, const QByteArray &frameData)
 {
     NetworkManager* netManager = getNetworkManagerForStream(streamId);
-    if (netManager) {
+    if (netManager && netManager->isSendingEnabled()) {
         netManager->sendVideoFrame(frameNumber, frameData);
         qDebug() << "StreamManager: Sent video frame" << frameNumber << "for stream" << streamId;
     } else {
-        qWarning() << "No NetworkManager for stream:" << streamId;
+        if (!netManager) {
+            qWarning() << "No NetworkManager for stream:" << streamId;
+        } else {
+            qDebug() << "StreamManager: Sending disabled for stream:" << streamId;
+        }
     }
 }

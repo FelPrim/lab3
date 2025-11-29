@@ -101,12 +101,7 @@ void MainWindow::setupConnections()
             this, &MainWindow::onStreamerDisconnectRequested);
     connect(m_videoGrid, &VideoGridWidget::viewerLeaveRequested,
             this, &MainWindow::onViewerLeaveRequested);
-    connect(m_videoGrid, &VideoGridWidget::streamStartRequested,
-            this, &MainWindow::onStreamStartRequested);
-    connect(m_videoGrid, &VideoGridWidget::streamStopRequested,
-            this, &MainWindow::onStreamStopRequested);
-    connect(m_videoGrid, &VideoGridWidget::encodedPacketReady,
-            this, &MainWindow::onEncodedPacketReady);
+
 
     // VideoSelectionDialog signal
     connect(m_videoSelectionDialog, &VideoSelectionDialog::deviceSelected,
@@ -135,7 +130,6 @@ void MainWindow::initialize()
     m_streamManager->initialize();
     
     m_streamManager->setServerAddress(DEFAULT_ECHO_SERVER_ADDRESS, DEFAULT_ECHO_SERVER_PORT);
-    m_streamManager->connectToServer();
     // ПОДКЛЮЧАЕМ ВСЕ необходимые сигналы
     connect(m_streamManager, &StreamManager::connectionStatusChanged,
             this, &MainWindow::onConnectionStatusChanged);
@@ -196,7 +190,7 @@ void MainWindow::onServerStreamCreated(uint32_t streamId)
             char displayId[7] = {0};
             id_to_string(streamId, displayId);
             QString streamDisplayId = QString::fromLatin1(displayId, 6);
-            widget->onServerStreamCreated(streamId, streamDisplayId);
+            widget->onServerStreamCreated(streamId);
             break;
         }
     }
@@ -327,8 +321,7 @@ void MainWindow::onConferenceJoined(uint32_t callId, const QString& displayId)
 
 
 
-void MainWindow::onJoinPublicStreamRequested(const QString& streamId)
-{
+void MainWindow::onJoinPublicStreamRequested(const QString& streamId) {
     qDebug() << "Join public stream requested:" << streamId;
 
     if (streamId.length() != 6) {
@@ -341,67 +334,49 @@ void MainWindow::onJoinPublicStreamRequested(const QString& streamId)
 
     qDebug() << "Joining stream, server ID:" << streamIdNum;
 
-    // Создаем ViewerWidget
+    // Создаем ViewerWidget, но НЕ инициализируем сразу
     m_videoGrid->addViewerWidget(streamIdNum, streamId);
     
-    // НАСТРАИВАЕМ NetworkManager для ViewerWidget
-    ViewerWidget* viewer = m_videoGrid->findViewerWidget(streamIdNum);
-    if (viewer && m_streamManager) {
-        // Получаем NetworkManager из StreamManager/NetworkFacade
-        NetworkManager* networkManager = m_streamManager->getNetworkManagerForStream(streamIdNum);
-        if (networkManager) {
-            viewer->setNetworkManager(networkManager);
-            viewer->initialize(); // Инициализируем после установки NetworkManager
-        } else {
-            qWarning() << "NetworkManager not available for stream:" << streamIdNum;
-        }
-    }
-
     // Уведомляем StreamManager о присоединении
     if (m_streamManager) {
         m_streamManager->joinStream(streamId);
     } else {
         qWarning() << "StreamManager not available for joining stream";
+        // Если StreamManager недоступен, удаляем виджет
+        m_videoGrid->removeViewerWidget(streamIdNum);
+        showError("Cannot join stream - not connected to server");
     }
 }
 
-void MainWindow::onServerStreamJoined(uint32_t streamId)
-{
+void MainWindow::onServerStreamJoined(uint32_t streamId) {
     qDebug() << "MainWindow: server stream joined - ID:" << streamId;
     
-    // Находим ViewerWidget и активируем его
+    // Находим или создаем ViewerWidget
     ViewerWidget* viewer = m_videoGrid->findViewerWidget(streamId);
-    if (viewer) {
-        // УБЕЖДАЕМСЯ, что NetworkManager установлен
-        if (m_streamManager) {
-            NetworkManager* networkManager = m_streamManager->getNetworkManagerForStream(streamId);
-            if (networkManager) {
-                viewer->setNetworkManager(networkManager);
-            }
-        }
-        viewer->onStreamJoined(streamId);
-        qDebug() << "ViewerWidget activated for stream:" << streamId;
-    } else {
-        qWarning() << "ViewerWidget not found for joined stream:" << streamId;
-        // Если виджета нет, создаем его
+    if (!viewer) {
+        // Создаем, если не существует
         char displayId[7] = {0};
         id_to_string(streamId, displayId);
         QString streamDisplayId = QString::fromLatin1(displayId, 6);
         m_videoGrid->addViewerWidget(streamId, streamDisplayId);
-        
         viewer = m_videoGrid->findViewerWidget(streamId);
-        if (viewer) {
-            // Настраиваем NetworkManager для нового виджета
-            if (m_streamManager) {
-                NetworkManager* networkManager = m_streamManager->getNetworkManagerForStream(streamId);
-                if (networkManager) {
-                    viewer->setNetworkManager(networkManager);
-                }
+    }
+    
+    if (viewer) {
+        // Устанавливаем NetworkManager и инициализируем
+        if (m_streamManager) {
+            NetworkManager* networkManager = m_streamManager->getNetworkManagerForStream(streamId);
+            if (networkManager) {
+                viewer->setNetworkManager(networkManager);
+                viewer->initialize();
+                viewer->onStreamJoined(streamId);
+                qDebug() << "ViewerWidget activated for stream:" << streamId;
+            } else {
+                qWarning() << "NetworkManager not available for stream:" << streamId;
             }
-            viewer->initialize();
-            viewer->onStreamJoined(streamId);
-            qDebug() << "ViewerWidget created and activated for stream:" << streamId;
         }
+    } else {
+        qWarning() << "Failed to create ViewerWidget for stream:" << streamId;
     }
 }
 
@@ -421,19 +396,7 @@ void MainWindow::onViewerLeaveRequested(uint32_t streamId)
     }
 }
 
-// Добавим метод для обработки входящих видео кадров
-void MainWindow::onVideoFrameReceived(uint32_t streamId, const QImage &frame)
-{
-    // Find the corresponding viewer widget and display the frame
-    ViewerWidget* viewer = m_videoGrid->findViewerWidget(streamId);
-    if (viewer && viewer->isActive()) {
-        viewer->displayFrame(frame);
-    }
-}
-
-// В методе onDeviceSelected ДОБАВИТЬ установку StreamManager:
-void MainWindow::onDeviceSelected(int deviceIndex)
-{
+void MainWindow::onDeviceSelected(int deviceIndex) {
     qDebug() << "Quick adding device:" << deviceIndex;
 
     if (m_usedDevices.contains(deviceIndex)) {
@@ -441,44 +404,32 @@ void MainWindow::onDeviceSelected(int deviceIndex)
         return;
     }
 
-    // Быстрое добавление в список используемых
+    // Добавляем в список используемых
     m_usedDevices.append(deviceIndex);
     
-    // Быстрое добавление виджета
+    // Добавляем виджет
     m_videoGrid->addStreamerWidget(deviceIndex);
     
-    // Немедленная инициализация
+    // Немедленная настройка
     StreamerWidget* widget = m_videoGrid->findStreamerWidget(deviceIndex);
     if (widget) {
-        // УСТАНАВЛИВАЕМ StreamManager перед инициализацией
+        // УСТАНАВЛИВАЕМ StreamManager ПЕРЕД инициализацией
         widget->setStreamManager(m_streamManager);
-        widget->initialize(); // Быстрая инициализация
+        widget->initialize(); // Быстрая инициализация для превью
     }
-    
-    // Отложенная инициализация стрима (можно сделать асинхронно)
-    QTimer::singleShot(100, this, [this, deviceIndex]() {
-        // Этот таймер больше не нужен, так как StreamerWidget сам вызовет createStream
-        // при нажатии кнопки Start Stream
-        qDebug() << "Device" << deviceIndex << "ready for streaming";
-    });
     
     qDebug() << "Device" << deviceIndex << "added successfully";
 }
 
-// В методе onStreamStartRequested ИСПРАВИТЬ логику:
-void MainWindow::onStreamStartRequested(int deviceIndex)
-{
+void MainWindow::onStreamStartRequested(int deviceIndex) {
     qDebug() << "Stream start requested for device:" << deviceIndex;
 
-    // Этот слот вызывается когда пользователь нажимает "Start Stream"
-    // StreamerWidget уже должен иметь StreamManager и сам вызовет createStream
-    // Поэтому здесь можно просто логировать
-    
     StreamerWidget* widget = m_videoGrid->findStreamerWidget(deviceIndex);
-    if (widget && widget->getStreamId() == 0) {
-        qDebug() << "StreamerWidget will handle stream creation for device:" << deviceIndex;
+    if (widget) {
+        widget->setStreamManager(m_streamManager);
+        widget->startStream();
     } else {
-        qWarning() << "Cannot start stream - widget not found or already has stream ID";
+        qWarning() << "StreamerWidget not found for device:" << deviceIndex;
     }
 }
 

@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <thread>
 #include <algorithm>
+#include <QDebug>
 
 extern "C" {
 #include <libavutil/imgutils.h>
@@ -33,6 +34,11 @@ void VideoEncoder::initialize(int width, int height, int fps)
     qDebug() << "VideoEncoder::initialize() for stream" << m_streamId 
              << "in thread" << QThread::currentThread()
              << "dimensions:" << width << "x" << height << "fps:" << fps;
+
+    if (m_initialized) {
+        qDebug() << "VideoEncoder: Already initialized, skipping reinitialization";
+        return;
+    }
     
     m_width = width;
     m_height = height;
@@ -60,6 +66,7 @@ void VideoEncoder::cleanup()
 
 void VideoEncoder::initFFmpeg(int width, int height, int fps)
 {
+    qDebug() << "initFFMpeg";
     if (width <= 0 || height <= 0) {
         emit errorOccurred(QString("VideoEncoder stream %1: invalid dimensions %2x%3")
                           .arg(m_streamId).arg(width).arg(height));
@@ -196,6 +203,12 @@ void VideoEncoder::cleanupFFmpeg()
 
 void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
 {
+    static bool first_time = true;
+    if (first_time){
+        qDebug() << "VideoEncoder::encodeFrame was called for the first time\n";
+        first_time = false;
+    }
+
      if (!m_encoderActive) {
         return; // Кодировщик неактивен
     }

@@ -3,6 +3,10 @@
 #include <QDebug>
 #include <QNetworkInterface>
 
+
+// IS IT THREADSAFE???
+
+
 UDPManager::UDPManager(QObject *parent)
     : QObject(parent)
 {
@@ -126,22 +130,27 @@ void UDPManager::onPacketReceived()
 
 void UDPManager::routePacket(const QByteArray &data, const QHostAddress &sender, quint16 port)
 {
-    if (data.size() < 12) {
+    if (data.size() < sizeof(NetworkPacket)) {
         qDebug() << "UDPManager: Packet too small for routing:" << data.size() << "bytes";
         return;
     }
 
-    // Быстрое извлечение streamId из заголовка NetworkPacket (байты 4-7)
-    uint32_t streamId;
-    memcpy(&streamId, data.constData() + 4, 4);
-    streamId = qFromBigEndian(streamId);
+    // Используем PacketProcessor для разбора пакета
+    NetworkPacket packet = PacketProcessor::fromByteArray(data);
+    
+    // Конвертируем из network byte order
+    PacketHeader header;
+    memcpy(&header, &packet.route, sizeof(PacketHeader));
+    cast_from_nbe(header);
+    
+    int streamId = static_cast<int>(header.header.streamId);
     
     QMutexLocker locker(&m_managersMutex);
     
-    if (m_networkManagers.contains(static_cast<int>(streamId))) {
-        NetworkManager *manager = m_networkManagers[static_cast<int>(streamId)];
+    if (m_networkManagers.contains(streamId)) {
+        NetworkManager *manager = m_networkManagers[streamId];
         
-        // Правильный вызов существующего метода
+        // Вызываем метод обработки пакета в соответствующем NetworkManager
         QMetaObject::invokeMethod(manager, "processPacket", 
                           Qt::QueuedConnection,
                           Q_ARG(QByteArray, data),

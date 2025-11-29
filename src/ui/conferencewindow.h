@@ -100,9 +100,7 @@ public slots:
     }
     
 protected:
-    void closeEvent(QCloseEvent* event) override {
-        QMainWindow::closeEvent(event); // Заглушка
-    }
+    void closeEvent(QCloseEvent* event) override;
 signals:
     void conferenceClosed(uint32_t callId);
     void conferenceJoined(uint32_t callId, const QString& displayId);

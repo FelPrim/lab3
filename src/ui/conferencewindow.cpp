@@ -102,12 +102,12 @@ void ConferenceWindow::setupConnections()
             this, &ConferenceWindow::onStreamerDisconnectRequested);
     connect(m_videoGrid, &VideoGridWidget::viewerLeaveRequested,
             this, &ConferenceWindow::onViewerLeaveRequested);
-    connect(m_videoGrid, &VideoGridWidget::streamStartRequested,
-            this, &ConferenceWindow::onStreamStartRequested);
-    connect(m_videoGrid, &VideoGridWidget::streamStopRequested,
-            this, &ConferenceWindow::onStreamStopRequested);
-    connect(m_videoGrid, &VideoGridWidget::encodedPacketReady,
-            this, &ConferenceWindow::onEncodedPacketReady);
+    //connect(m_videoGrid, &VideoGridWidget::streamStartRequested,
+    //        this, &ConferenceWindow::onStreamStartRequested);
+    //connect(m_videoGrid, &VideoGridWidget::streamStopRequested,
+    //        this, &ConferenceWindow::onStreamStopRequested);
+    //connect(m_videoGrid, &VideoGridWidget::encodedPacketReady,
+    //        this, &ConferenceWindow::onEncodedPacketReady);
 
     // VideoSelectionDialog signal
     connect(m_videoSelectionDialog, &VideoSelectionDialog::deviceSelected,

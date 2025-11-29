@@ -37,6 +37,7 @@ set(SOURCES
     network/udp/networkdisplaybuffer.cpp
     network/networkfacade.cpp
     network/streammanager.cpp
+    network/handshake.cpp
     #  network/tcp/tcpclient.cpp
     network/tcp/tcpmanager.cpp
     network/udp/udpmanager.cpp
@@ -76,6 +77,7 @@ set(HEADERS
     network/udp/networkdisplaybuffer.h
     network/networkfacade.h
     network/streammanager.h
+    network/handshake.h
     #    network/tcp/tcpclient.h
     network/tcp/tcpmanager.h
     network/udp/udpmanager.h

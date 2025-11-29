@@ -44,6 +44,10 @@ public:
     void handleViewerJoined(uint32_t streamId, ViewerWidget* viewer);
     void handleViewerLeft(uint32_t streamId);
 
+    // Вспомогательные методы
+    NetworkManager* getNetworkManagerForStream(uint32_t streamId);
+    void sendVideoFrame(uint32_t streamId, int frameNumber, const QByteArray &frameData);
+
 signals:
     // Старые сигналы для обратной совместимости
     void connectionStatusChanged(bool connected);
@@ -66,6 +70,10 @@ signals:
     void serverCallConnLeft(uint32_t callId, uint32_t participantId);
     void serverCallStreamNew(uint32_t callId, uint32_t streamId);
     void serverCallStreamDeleted(uint32_t callId, uint32_t streamId);
+
+    // Сигналы ошибок и успехов
+    void serverErrorReceived(uint8_t originalMessageType, const QString &errorMessage);
+    void serverSuccessReceived(uint8_t originalMessageType, const QString &successMessage);
 
 public slots:
     // Обработчики серверных событий
@@ -97,7 +105,46 @@ private slots:
     void onServerCallStreamNew(uint32_t callId, uint32_t streamId);
     void onServerCallStreamDeleted(uint32_t callId, uint32_t streamId);
 
+    // Обработчики ошибок и успехов
+    void onServerErrorReceived(uint8_t originalMessageType, const QString &errorMessage);
+    void onServerSuccessReceived(uint8_t originalMessageType, const QString &successMessage);
+
 private:
+    // Константы типов сообщений (должны совпадать с TCPManager)
+    enum MessageType {
+        // Общие сообщения
+        CLIENT_ERROR              = 0x01,
+        SERVER_ERROR              = 0x02,
+        CLIENT_SUCCESS            = 0x03,
+        SERVER_SUCCESS            = 0x04,
+        SERVER_HANDSHAKE_START    = 0x05,
+        SERVER_HANDSHAKE_END      = 0x06,
+        
+        // Сообщения стримов
+        CLIENT_STREAM_CREATE      = 0x10,
+        CLIENT_STREAM_DELETE      = 0x11,
+        CLIENT_STREAM_CONN_JOIN   = 0x12,
+        CLIENT_STREAM_CONN_LEAVE  = 0x13,
+        
+        SERVER_STREAM_CREATED     = 0x90,
+        SERVER_STREAM_DELETED     = 0x91,
+        SERVER_STREAM_CONN_JOINED = 0x92,
+        SERVER_STREAM_START       = 0x93,
+        SERVER_STREAM_END         = 0x94,
+        
+        // Сообщения звонков
+        CLIENT_CALL_CREATE        = 0x20,
+        CLIENT_CALL_CONN_JOIN     = 0x21,
+        CLIENT_CALL_CONN_LEAVE    = 0x22,
+        
+        SERVER_CALL_CREATED       = 0xA0,
+        SERVER_CALL_CONN_JOINED   = 0xA1,
+        SERVER_CALL_CONN_NEW      = 0xA2,
+        SERVER_CALL_CONN_LEFT     = 0xA3,
+        SERVER_CALL_STREAM_NEW    = 0xA4,
+        SERVER_CALL_STREAM_DELETED = 0xA5
+    };
+
     NetworkFacade* m_networkFacade;
     bool m_connectedToServer;
     
@@ -108,9 +155,4 @@ private:
     // Очередь запросов до handshake
     QList<int> m_pendingStreamCreates;
     QList<QString> m_pendingStreamJoins;
-public:
-    NetworkManager* getNetworkManagerForStream(uint32_t streamId);
-    void sendVideoPacket(uint32_t streamId, const QByteArray& packet, int frameNumber);
-
-    void sendVideoFrame(uint32_t streamId, int frameNumber, const QByteArray &frameData);
 };

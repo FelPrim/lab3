@@ -3,7 +3,6 @@
 #include <QDebug>
 #include <QtEndian>
 #include <QNetworkInterface>
-#include "../ui/id_utils.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -15,43 +14,46 @@ NetworkFacade::NetworkFacade(QObject *parent)
     : QObject(parent)
     , m_tcp(new TCPManager(this))
     , m_udpManager(new UDPManager(this))
-    , m_handshakeTimer(new QTimer(this))
+    , m_handshakeService(new HandshakeService(m_udpManager, this))
 {
     // TCP connections
     connect(m_tcp, &TCPManager::connected, this, &NetworkFacade::onTcpConnected);
     connect(m_tcp, &TCPManager::disconnected, this, &NetworkFacade::onTcpDisconnected);
     connect(m_tcp, &TCPManager::errorOccurred, this, &NetworkFacade::onTcpError);
 
-    // Handshake messages
+    // Handshake messages from server
     connect(m_tcp, &TCPManager::serverHandshakeStart, this, &NetworkFacade::onServerHandshakeStart);
     connect(m_tcp, &TCPManager::serverHandshakeEnd, this, &NetworkFacade::onServerHandshakeEnd);
 
-    // Error/Success messages
-    connect(m_tcp, &TCPManager::serverErrorReceived, this, &NetworkFacade::onServerErrorReceived);
-    connect(m_tcp, &TCPManager::serverSuccessReceived, this, &NetworkFacade::onServerSuccessReceived);
+    // Handshake service signals
+    connect(m_handshakeService, &HandshakeService::handshakeStarted, this, &NetworkFacade::onHandshakeStarted);
+    connect(m_handshakeService, &HandshakeService::handshakeCompleted, this, &NetworkFacade::onHandshakeCompleted);
+    connect(m_handshakeService, &HandshakeService::handshakeFailed, this, &NetworkFacade::onHandshakeFailed);
 
-    // Server message handlers - Streams
+    // Server message handlers
     connect(m_tcp, &TCPManager::serverStreamCreated, this, &NetworkFacade::onServerStreamCreated);
     connect(m_tcp, &TCPManager::serverStreamDeleted, this, &NetworkFacade::onServerStreamDeleted);
     connect(m_tcp, &TCPManager::serverStreamJoined, this, &NetworkFacade::onServerStreamJoined);
     connect(m_tcp, &TCPManager::serverStreamStart, this, &NetworkFacade::onServerStreamStart);
     connect(m_tcp, &TCPManager::serverStreamEnd, this, &NetworkFacade::onServerStreamEnd);
 
-    // Server message handlers - Calls
     connect(m_tcp, &TCPManager::serverCallCreated, this, &NetworkFacade::onServerCallCreated);
     connect(m_tcp, &TCPManager::serverCallConnJoined, this, &NetworkFacade::onServerCallConnJoined);
     connect(m_tcp, &TCPManager::serverCallConnNew, this, &NetworkFacade::onServerCallConnNew);
     connect(m_tcp, &TCPManager::serverCallConnLeft, this, &NetworkFacade::onServerCallConnLeft);
     connect(m_tcp, &TCPManager::serverCallStreamNew, this, &NetworkFacade::onServerCallStreamNew);
     connect(m_tcp, &TCPManager::serverCallStreamDeleted, this, &NetworkFacade::onServerCallStreamDeleted);
-
-    // UDP handshake timer
-    connect(m_handshakeTimer, &QTimer::timeout, this, &NetworkFacade::onUdpHandshakeTimeout);
-    m_handshakeTimer->setInterval(100); // 10 packets per second
+    connect(m_tcp, &TCPManager::serverErrorReceived, this, &NetworkFacade::serverErrorReceived);
+    connect(m_tcp, &TCPManager::serverSuccessReceived, this, &NetworkFacade::serverSuccessReceived);
 
     // Initialize UDP manager
     m_udpManager->initialize();
     m_localUdpPort = m_udpManager->getLocalPort();
+
+    // ✅ ДОБАВЛЕНО: Инициализация call 0 (публичные стримы)
+    CallState publicCall;
+    publicCall.callId = 0;
+    m_callStates[0] = publicCall;
 }
 
 NetworkFacade::~NetworkFacade()
@@ -81,37 +83,42 @@ void NetworkFacade::setLocalUdpInfo(const QHostAddress &localIp, quint16 localUd
 
 bool NetworkFacade::initialize()
 {
-    // UDP manager is already initialized in constructor
     return true;
 }
 
 void NetworkFacade::connectToServer()
 {
     if (!m_tcp) return;
-    
-    // Reset handshake state
-    m_connectionId = 0;
-    m_handshakeCompleted = false;
-    m_handshakeAttempts = 0;
-    
     m_tcp->connectToServer();
 }
 
 void NetworkFacade::disconnect()
 {
-    // Stop handshake timer
-    stopUdpHandshake();
+    m_handshakeService->stopHandshake();
     
     if (m_tcp) {
         m_tcp->disconnectFromServer();
     }
     
-    // Clean up all NetworkManagers on disconnect
+    // Clean up all NetworkManagers
     for (auto it = m_networkManagers.begin(); it != m_networkManagers.end(); ++it) {
         it.value()->cleanup();
         it.value()->deleteLater();
     }
     m_networkManagers.clear();
+
+    // ✅ ДОБАВЛЕНО: Очистка состояния
+    m_streamStates.clear();
+    m_callStates.clear();
+    m_ownedStreams.clear();
+    m_joinedStreams.clear();
+    m_activeStreams.clear();
+    m_joinedCalls.clear();
+
+    // Восстанавливаем только call 0
+    CallState publicCall;
+    publicCall.callId = 0;
+    m_callStates[0] = publicCall;
 }
 
 NetworkManager* NetworkFacade::createNetworkManager(int streamId)
@@ -129,6 +136,11 @@ NetworkManager* NetworkFacade::createNetworkManager(int streamId)
     NetworkManager *manager = new NetworkManager(streamId, this);
     if (manager->initialize(m_udpManager)) {
         manager->setServerAddress(m_serverHost, m_serverUdpPort);
+        
+        // Set callId if it was previously set for this stream
+        if (m_streamCallIds.contains(streamId)) {
+            manager->setCallId(m_streamCallIds[streamId]);
+        }
         
         connect(manager, &NetworkManager::frameAssembled, 
                 this, &NetworkFacade::frameAssembled);
@@ -160,54 +172,52 @@ NetworkManager* NetworkFacade::getNetworkManager(int streamId)
     return m_networkManagers.value(streamId, nullptr);
 }
 
-// Stream methods
-void NetworkFacade::sendStreamCreate(uint32_t callId) { 
-    if (m_tcp) m_tcp->sendClientStreamCreate(callId); 
+void NetworkFacade::sendStreamCreate(uint32_t callId)
+{
+    if (m_tcp) m_tcp->sendClientStreamCreate(callId);
 }
 
-void NetworkFacade::sendStreamDelete(uint32_t id) { 
-    if (m_tcp) m_tcp->sendClientStreamDelete(id); 
+void NetworkFacade::sendStreamDelete(uint32_t streamId)
+{
+    if (m_tcp) m_tcp->sendClientStreamDelete(streamId);
 }
 
-void NetworkFacade::sendStreamJoin(uint32_t id) { 
-    if (m_tcp) m_tcp->sendClientStreamJoin(id); 
+void NetworkFacade::sendStreamJoin(uint32_t streamId)
+{
+    if (m_tcp) m_tcp->sendClientStreamJoin(streamId);
 }
 
-void NetworkFacade::sendStreamLeave(uint32_t id) { 
-    if (m_tcp) m_tcp->sendClientStreamLeave(id); 
+void NetworkFacade::sendStreamLeave(uint32_t streamId)
+{
+    if (m_tcp) m_tcp->sendClientStreamLeave(streamId);
 }
 
-// Call methods
-void NetworkFacade::sendCallCreate() {
-    if (m_tcp) m_tcp->sendClientCallCreate();
-}
+void NetworkFacade::setCallIdForStream(int streamId, uint32_t callId)
+{
+    m_streamCallIds[streamId] = callId;
+    
+    // Update existing NetworkManager if it exists
+    if (m_networkManagers.contains(streamId)) {
+        m_networkManagers[streamId]->setCallId(callId);
+    }
 
-void NetworkFacade::sendCallJoin(uint32_t callId) {
-    if (m_tcp) m_tcp->sendClientCallJoin(callId);
-}
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (m_streamStates.contains(streamId)) {
+        m_streamStates[streamId].callId = callId;
+    }
 
-void NetworkFacade::sendCallLeave(uint32_t callId) {
-    if (m_tcp) m_tcp->sendClientCallLeave(callId);
-}
-
-// Error/Success methods
-void NetworkFacade::sendClientError(uint8_t originalMessageType, const QString &errorMessage) {
-    if (m_tcp) m_tcp->sendClientError(originalMessageType, errorMessage);
-}
-
-void NetworkFacade::sendClientSuccess(uint8_t originalMessageType, const QString &successMessage) {
-    if (m_tcp) m_tcp->sendClientSuccess(originalMessageType, successMessage);
+    // Обновляем call state
+    if (m_callStates.contains(callId)) {
+        m_callStates[callId].streams.insert(streamId);
+    }
 }
 
 void NetworkFacade::onTcpConnected()
 {
-    qDebug() << "NetworkFacade::onTcpConnected — serverHost:" << m_serverHost
-         << "tcpPort:" << m_serverTcpPort
-         << "localUdpIp:" << m_localUdpIp << "localUdpPort:" << m_localUdpPort;
-
+    qDebug() << "NetworkFacade: TCP connected to" << m_serverHost << ":" << m_serverTcpPort;
+    
     // Wait for SERVER_HANDSHAKE_START from server
-    // Server will send us our connection ID and then we start UDP handshake
-    qDebug() << "TCP connected, waiting for SERVER_HANDSHAKE_START...";
+    qDebug() << "Waiting for handshake start from server...";
     
     emit connected();
 }
@@ -216,15 +226,27 @@ void NetworkFacade::onTcpDisconnected()
 {
     qDebug() << "NetworkFacade: TCP disconnected";
     
-    // Stop handshake process
-    stopUdpHandshake();
+    m_handshakeService->stopHandshake();
     
-    // Clean up all NetworkManagers on TCP disconnect
+    // Clean up all NetworkManagers
     for (auto it = m_networkManagers.begin(); it != m_networkManagers.end(); ++it) {
         it.value()->cleanup();
         it.value()->deleteLater();
     }
     m_networkManagers.clear();
+    
+    // ✅ ДОБАВЛЕНО: Очистка состояния
+    m_streamStates.clear();
+    m_callStates.clear();
+    m_ownedStreams.clear();
+    m_joinedStreams.clear();
+    m_activeStreams.clear();
+    m_joinedCalls.clear();
+
+    // Восстанавливаем только call 0
+    CallState publicCall;
+    publicCall.callId = 0;
+    m_callStates[0] = publicCall;
     
     emit disconnected();
 }
@@ -235,219 +257,376 @@ void NetworkFacade::onTcpError(const QString &err)
     emit errorOccurred(err);
 }
 
-// Handshake handling
 void NetworkFacade::onServerHandshakeStart(uint32_t connectionId)
 {
-    qDebug() << "NetworkFacade: SERVER_HANDSHAKE_START received, connectionId:" << connectionId;
+    qDebug() << "NetworkFacade: Server handshake start, connectionId:" << connectionId;
     
-    m_connectionId = connectionId;
-    m_handshakeAttempts = 0;
-    
-    emit handshakeStarted(connectionId);
-    
-    // Start sending UDP handshake packets
-    m_handshakeTimer->start();
-    qDebug() << "Started UDP handshake process, sending packets to server...";
+    // Start UDP handshake process
+    m_handshakeService->startHandshake(connectionId, QHostAddress(m_serverHost), m_serverUdpPort);
 }
 
 void NetworkFacade::onServerHandshakeEnd(uint32_t connectionId)
 {
-    if (connectionId != m_connectionId) {
-        qWarning() << "NetworkFacade: Handshake end for wrong connectionId, expected:" 
-                   << m_connectionId << "got:" << connectionId;
-        return;
-    }
+    qDebug() << "NetworkFacade: Server handshake end, connectionId:" << connectionId;
     
-    qDebug() << "NetworkFacade: SERVER_HANDSHAKE_END received, handshake completed!";
-    
-    stopUdpHandshake();
-    m_handshakeCompleted = true;
-    
+    // Notify handshake service that handshake is confirmed
+    m_handshakeService->onHandshakeConfirmed();
+}
+
+void NetworkFacade::onHandshakeStarted(uint32_t connectionId)
+{
+    qDebug() << "NetworkFacade: Handshake started for connection" << connectionId;
+    emit handshakeStarted(connectionId);
+}
+
+void NetworkFacade::onHandshakeCompleted(uint32_t connectionId)
+{
+    qDebug() << "NetworkFacade: Handshake completed for connection" << connectionId;
     emit handshakeCompleted(connectionId);
 }
 
-void NetworkFacade::onUdpHandshakeTimeout()
+void NetworkFacade::onHandshakeFailed(const QString &error)
 {
-    if (m_handshakeCompleted) {
-        m_handshakeTimer->stop();
-        return;
-    }
-    
-    m_handshakeAttempts++;
-    if (m_handshakeAttempts > MAX_HANDSHAKE_ATTEMPTS) {
-        qWarning() << "NetworkFacade: UDP handshake timeout after" << MAX_HANDSHAKE_ATTEMPTS << "attempts";
-        stopUdpHandshake();
-        emit errorOccurred("UDP handshake timeout - cannot establish connection with server");
-        return;
-    }
-    
-    sendUdpHandshakePacket();
+    qWarning() << "NetworkFacade: Handshake failed:" << error;
+    emit errorOccurred(error);
 }
 
-void NetworkFacade::sendUdpHandshakePacket()
-{
-    if (!m_udpManager || m_connectionId == 0) {
-        return;
-    }
-    
-    // Create UDP handshake packet: 8 zero bytes + 4 bytes connectionId
-    QByteArray handshakePacket;
-    handshakePacket.resize(12); // 8 zeros + 4 bytes connectionId
-    
-    // Fill with zeros for first 8 bytes
-    handshakePacket.fill(0, 8);
-    
-    // Add connectionId in network byte order
-    quint32 connectionIdBe = qToBigEndian<quint32>(m_connectionId);
-    memcpy(handshakePacket.data() + 8, &connectionIdBe, 4);
-    
-    // Send to server UDP port
-    m_udpManager->sendPacket(handshakePacket, QHostAddress(m_serverHost), m_serverUdpPort);
-    
-    if (m_handshakeAttempts % 10 == 0) { // Log every 10 attempts
-        qDebug() << "NetworkFacade: Sent UDP handshake packet, attempt:" << m_handshakeAttempts;
-    }
-}
-
-void NetworkFacade::stopUdpHandshake()
-{
-    if (m_handshakeTimer->isActive()) {
-        m_handshakeTimer->stop();
-        qDebug() << "Stopped UDP handshake process";
-    }
-}
-
-// Error/Success handling
-void NetworkFacade::onServerErrorReceived(uint8_t originalMessageType, const QString &errorMessage)
-{
-    qWarning() << "NetworkFacade: SERVER_ERROR for message type" << originalMessageType 
-               << "message:" << errorMessage;
-    emit serverErrorReceived(originalMessageType, errorMessage);
-}
-
-void NetworkFacade::onServerSuccessReceived(uint8_t originalMessageType, const QString &successMessage)
-{
-    qDebug() << "NetworkFacade: SERVER_SUCCESS for message type" << originalMessageType 
-             << "message:" << successMessage;
-    emit serverSuccessReceived(originalMessageType, successMessage);
-}
-
-// Existing stream message handlers
 void NetworkFacade::onServerStreamCreated(uint32_t id)
 {
-    qDebug() << "NetworkFacade: >>> SERVER_STREAM_CREATED received id=" << id;
+    qDebug() << "NetworkFacade: Server stream created, id:" << id;
     
     // Create NetworkManager for this stream
     NetworkManager *manager = createNetworkManager(static_cast<int>(id));
     if (manager) {
         qDebug() << "NetworkFacade: NetworkManager created for stream" << id;
-    } else {
-        qWarning() << "NetworkFacade: Failed to create NetworkManager for stream" << id;
     }
     
-    qDebug() << "NetworkFacade: Emitting serverStreamCreated signal for id=" << id;
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    StreamState state;
+    state.streamId = id;
+    state.callId = 0; // по умолчанию публичный
+    state.isOwner = true;
+    state.isActive = false;
+    state.status = "Created, waiting for start";
+    m_streamStates[id] = state;
+    m_ownedStreams.insert(id);
+
+    // Печатаем обновленное состояние
+    printClientState();
+    
     emit serverStreamCreated(id);
 }
 
 void NetworkFacade::onServerStreamDeleted(uint32_t id)
 {
-    qDebug() << "NetworkFacade: SERVER_STREAM_DELETED id=" << id;
-    
-    // Remove NetworkManager for this stream
+    qDebug() << "NetworkFacade: Server stream deleted, id:" << id;
     removeNetworkManager(static_cast<int>(id));
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (m_streamStates.contains(id)) {
+        uint32_t callId = m_streamStates[id].callId;
+        m_streamStates.remove(id);
+        m_ownedStreams.remove(id);
+        m_joinedStreams.remove(id);
+        m_activeStreams.remove(id);
+
+        // Удаляем из call state
+        if (m_callStates.contains(callId)) {
+            m_callStates[callId].streams.remove(id);
+        }
+    }
+
+    // Печатаем обновленное состояние
+    printClientState();
     
     emit serverStreamDeleted(id);
 }
 
 void NetworkFacade::onServerStreamJoined(uint32_t id)
 {
-    qDebug() << "NetworkFacade: SERVER_STREAM_JOINED id=" << id;
+    qDebug() << "NetworkFacade: Server stream joined, id:" << id;
     
-    // Create NetworkManager for receiving this stream
     NetworkManager *manager = createNetworkManager(static_cast<int>(id));
     if (manager) {
-        // NetworkManager is ready to receive video for this stream
         qDebug() << "NetworkFacade: NetworkManager ready to receive stream" << id;
     }
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (!m_streamStates.contains(id)) {
+        StreamState state;
+        state.streamId = id;
+        state.callId = 0; // по умолчанию публичный
+        state.isOwner = false;
+        state.isActive = false;
+        state.status = "Joined as viewer";
+        m_streamStates[id] = state;
+        m_joinedStreams.insert(id);
+    }
+
+    // Печатаем обновленное состояние
+    printClientState();
     
     emit serverStreamJoined(id);
 }
 
 void NetworkFacade::onServerStreamStart(uint32_t id)
 {
-    qDebug() << "NetworkFacade: SERVER_STREAM_START id=" << id;
+    qDebug() << "NetworkFacade: Server stream start, id:" << id;
     
-    // Find the NetworkManager and ensure it's ready to send
     NetworkManager *manager = getNetworkManager(static_cast<int>(id));
     if (manager) {
-        qDebug() << "NetworkFacade: Stream" << id << "can start sending video";
+        manager->setSendingEnabled(true);
+        manager->start();
+        qDebug() << "NetworkFacade: Stream" << id << "started sending";
     }
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (m_streamStates.contains(id)) {
+        m_streamStates[id].isActive = true;
+        m_streamStates[id].status = "Active streaming";
+        m_activeStreams.insert(id);
+    }
+
+    // Печатаем обновленное состояние
+    printClientState();
     
     emit serverStreamStart(id);
 }
 
 void NetworkFacade::onServerStreamEnd(uint32_t id)
 {
-    qDebug() << "NetworkFacade: SERVER_STREAM_END id=" << id;
+    qDebug() << "NetworkFacade: Server stream end, id:" << id;
     
-    // Note: We don't remove the NetworkManager here, just stop sending
-    // The manager will be removed on SERVER_STREAM_DELETED or CLIENT_STREAM_LEAVE
+    NetworkManager *manager = getNetworkManager(static_cast<int>(id));
+    if (manager) {
+        manager->setSendingEnabled(false);
+        manager->stop();
+    }
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (m_streamStates.contains(id)) {
+        m_streamStates[id].isActive = false;
+        m_streamStates[id].status = "Streaming stopped";
+        m_activeStreams.remove(id);
+    }
+
+    // Печатаем обновленное состояние
+    printClientState();
     
     emit serverStreamEnd(id);
 }
 
-// Call message handlers
+void NetworkFacade::sendCallCreate()
+{
+    if (m_tcp) m_tcp->sendClientCallCreate();
+}
+
+void NetworkFacade::sendCallJoin(uint32_t callId)
+{
+    if (m_tcp) m_tcp->sendClientCallJoin(callId);
+}
+
+void NetworkFacade::sendCallLeave(uint32_t callId)
+{
+    if (m_tcp) m_tcp->sendClientCallLeave(callId);
+}
+
+// ✅ ДОБАВЛЕНО: Обработчики сообщений о звонках
 void NetworkFacade::onServerCallCreated(uint32_t callId)
 {
-    qDebug() << "NetworkFacade: >>> SERVER_CALL_CREATED received callId=" << callId;
+    qDebug() << "NetworkFacade: Server call created, id:" << callId;
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (!m_callStates.contains(callId)) {
+        CallState state;
+        state.callId = callId;
+        m_callStates[callId] = state;
+    }
+    m_joinedCalls.insert(callId);
+
+    // Печатаем обновленное состояние
+    printClientState();
+    
     emit serverCallCreated(callId);
 }
 
 void NetworkFacade::onServerCallConnJoined(uint32_t callId, const QVector<uint32_t>& participants, const QVector<uint32_t>& streams)
 {
-    qDebug() << "NetworkFacade: >>> SERVER_CALL_CONN_JOINED callId=" << callId
+    qDebug() << "NetworkFacade: Server call conn joined, callId:" << callId 
              << "participants:" << participants.size() << "streams:" << streams.size();
+    
+    // Установить callId для всех стримов в этом звонке
+    for (uint32_t streamId : streams) {
+        m_streamCallIds[static_cast<int>(streamId)] = callId;
+        
+        // Обновить существующий NetworkManager
+        NetworkManager* manager = getNetworkManager(static_cast<int>(streamId));
+        if (manager) {
+            manager->setCallId(callId);
+        }
+
+        // ✅ ДОБАВЛЕНО: Обновление состояния
+        if (m_streamStates.contains(streamId)) {
+            m_streamStates[streamId].callId = callId;
+        }
+    }
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния call
+    if (!m_callStates.contains(callId)) {
+        CallState state;
+        state.callId = callId;
+        m_callStates[callId] = state;
+    }
+    
+    m_callStates[callId].participants = QSet<uint32_t>(participants.begin(), participants.end());
+    m_callStates[callId].streams = QSet<uint32_t>(streams.begin(), streams.end());
+    m_joinedCalls.insert(callId);
+
+    // Печатаем обновленное состояние
+    printClientState();
+    
     emit serverCallConnJoined(callId, participants, streams);
 }
 
 void NetworkFacade::onServerCallConnNew(uint32_t callId, uint32_t participantId)
 {
-    qDebug() << "NetworkFacade: >>> SERVER_CALL_CONN_NEW callId=" << callId << "participantId=" << participantId;
+    qDebug() << "NetworkFacade: Server call conn new, callId:" << callId << "participantId:" << participantId;
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (m_callStates.contains(callId)) {
+        m_callStates[callId].participants.insert(participantId);
+    }
+
+    // Печатаем обновленное состояние
+    printClientState();
+    
     emit serverCallConnNew(callId, participantId);
 }
 
 void NetworkFacade::onServerCallConnLeft(uint32_t callId, uint32_t participantId)
 {
-    qDebug() << "NetworkFacade: >>> SERVER_CALL_CONN_LEFT callId=" << callId << "participantId=" << participantId;
+    qDebug() << "NetworkFacade: Server call conn left, callId:" << callId << "participantId:" << participantId;
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (m_callStates.contains(callId)) {
+        m_callStates[callId].participants.remove(participantId);
+    }
+
+    // Печатаем обновленное состояние
+    printClientState();
+    
     emit serverCallConnLeft(callId, participantId);
 }
 
 void NetworkFacade::onServerCallStreamNew(uint32_t callId, uint32_t streamId)
 {
-    qDebug() << "NetworkFacade: >>> SERVER_CALL_STREAM_NEW callId=" << callId << "streamId=" << streamId;
+    qDebug() << "NetworkFacade: Server call stream new, callId:" << callId << "streamId:" << streamId;
+    
+    // Установить callId для этого стрима
+    m_streamCallIds[static_cast<int>(streamId)] = callId;
+    
+    // Обновить существующий NetworkManager
+    NetworkManager* manager = getNetworkManager(static_cast<int>(streamId));
+    if (manager) {
+        manager->setCallId(callId);
+    }
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (m_streamStates.contains(streamId)) {
+        m_streamStates[streamId].callId = callId;
+    }
+
+    if (m_callStates.contains(callId)) {
+        m_callStates[callId].streams.insert(streamId);
+    }
+
+    // Печатаем обновленное состояние
+    printClientState();
+    
     emit serverCallStreamNew(callId, streamId);
 }
 
 void NetworkFacade::onServerCallStreamDeleted(uint32_t callId, uint32_t streamId)
 {
-    qDebug() << "NetworkFacade: >>> SERVER_CALL_STREAM_DELETED callId=" << callId << "streamId=" << streamId;
+    qDebug() << "NetworkFacade: Server call stream deleted, callId:" << callId << "streamId:" << streamId;
+    
+    // Удалить callId для этого стрима
+    m_streamCallIds.remove(static_cast<int>(streamId));
+    
+    // ✅ ДОБАВЛЕНО: Обновление состояния
+    if (m_streamStates.contains(streamId)) {
+        m_streamStates[streamId].callId = 0; // возвращаем в публичные
+    }
+
+    if (m_callStates.contains(callId)) {
+        m_callStates[callId].streams.remove(streamId);
+    }
+
+    // Печатаем обновленное состояние
+    printClientState();
+    
     emit serverCallStreamDeleted(callId, streamId);
 }
 
-void NetworkFacade::onHandshakeStart(uint32_t connectionId)
+// ✅ ДОБАВЛЕНО: Функции для отслеживания состояния клиента
+void NetworkFacade::printClientState() const
 {
-    m_connectionId = connectionId;
-    for (auto &manager : m_networkManagers) {
-        manager->startHandshake(connectionId);
+    qDebug() << "=== Client Network State ===";
+    qDebug() << "Connection ID:" << getConnectionId();
+    
+    // Calls
+    QList<uint32_t> callList = m_callStates.keys();
+    std::sort(callList.begin(), callList.end());
+    qDebug() << "Calls:" << callList;
+    
+    // Streams
+    QList<uint32_t> streamList = m_streamStates.keys();
+    std::sort(streamList.begin(), streamList.end());
+    qDebug() << "Streams:" << streamList;
+    
+    // Detailed call information
+    qDebug() << "=== Call Details ===";
+    for (uint32_t callId : callList) {
+        const CallState& call = m_callStates[callId];
+        QList<uint32_t> streamsList = call.streams.values();
+        std::sort(streamsList.begin(), streamsList.end());
+        qDebug() << "Call" << callId << "-> Streams:" << streamsList;
     }
+    
+    // Detailed stream information
+    qDebug() << "=== Stream Details ===";
+    for (uint32_t streamId : streamList) {
+        const StreamState& stream = m_streamStates[streamId];
+        QString role = stream.isOwner ? "Streamer" : "Viewer";
+        QString active = stream.isActive ? "Active" : "Inactive";
+        qDebug() << "Stream" << streamId << "-> Call:" << stream.callId 
+                 << ", Role:" << role << ", Status:" << active << "-" << stream.status;
+    }
+    
+    qDebug() << "=== Summary ===";
+    qDebug() << "Owned Streams:" << m_ownedStreams.size() << "-" << m_ownedStreams.values();
+    qDebug() << "Joined Streams:" << m_joinedStreams.size() << "-" << m_joinedStreams.values();
+    qDebug() << "Active Streams:" << m_activeStreams.size() << "-" << m_activeStreams.values();
+    qDebug() << "Joined Calls:" << m_joinedCalls.size() << "-" << m_joinedCalls.values();
+    qDebug() << "=====================";
 }
 
-// При получении SERVER_HANDSHAKE_END:
-void NetworkFacade::onHandshakeEnd(uint32_t connectionId)
+QVector<uint32_t> NetworkFacade::getCallIds() const
 {
-    if (connectionId == m_connectionId) {
-        for (auto &manager : m_networkManagers) {
-            manager->completeHandshake();
-        }
-    }
+    return QVector<uint32_t>(m_callStates.keys().begin(), m_callStates.keys().end());
+}
+
+QVector<uint32_t> NetworkFacade::getStreamIds() const
+{
+    return QVector<uint32_t>(m_streamStates.keys().begin(), m_streamStates.keys().end());
+}
+
+StreamState NetworkFacade::getStreamState(uint32_t streamId) const
+{
+    return m_streamStates.value(streamId, StreamState{0, 0, false, false, "Not found"});
+}
+
+CallState NetworkFacade::getCallState(uint32_t callId) const
+{
+    return m_callStates.value(callId, CallState{0, QSet<uint32_t>(), QSet<uint32_t>()});
 }

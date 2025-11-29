@@ -90,6 +90,7 @@ private:
     static const QString STATUS_STOPPED;
     static const QString PLACEHOLDER_TEXT;
 public:
+    void setStreamManager(StreamManager* streamManager);
     void forceDisconnect();
 private:
     bool m_disconnecting = false;
@@ -106,17 +107,16 @@ private:
     bool m_sendingPackets;
 
 public slots:
-    void onServerStreamCreated(uint32_t streamId, const QString& displayId);
+    void onServerStreamCreated(uint32_t streamId);
     void onServerStreamStart(uint32_t streamId);
     void onServerStreamEnd(uint32_t streamId);
-    void onServerStreamError(uint32_t streamId);
-
+    void onServerStreamDeleted(uint32_t streamId);
+  //  void onServerStreamError(uint32_t streamId);
 private:
     void setStreamState(StreamState newState);
     StreamManager* m_streamManager; 
 
 public:
-    void setViewersStatus(bool hasViewers);
     void onNetworkError(const QString& error);
 
 };
