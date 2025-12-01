@@ -103,8 +103,6 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
     m_enc_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
     
     // ОПТИМИЗАЦИИ ДЛЯ НИЗКОЙ ЗАДЕРЖКИ
-    m_enc_ctx->rc_buffer_size = 0;
-    m_enc_ctx->rc_initial_buffer_occupancy = 0;
     
     // УМЕНЬШАЕМ количество потоков для стабильности
     m_enc_ctx->thread_count = 1;
@@ -231,7 +229,7 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     struct BusyGuard {
         std::atomic<bool>& busy;
         BusyGuard(std::atomic<bool>& b) : busy(b) {}
-        ~BusyGuard() { busy = false; }  // Простое присваивание, не store()
+        ~BusyGuard() { busy.store( false, std::memory_order_release); }
     } guard(m_busy);
 
     // Теперь проверяем входной кадр
@@ -259,8 +257,8 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
         bgr = resized; // Не std::move, а обычное присваивание
     }
 
-    if (frame.cols < 16 || frame.rows < 16) {
-        qDebug() << "Frame too small:" << frame.cols << "x" << frame.rows;
+    if (bgr.cols < 16 || bgr.rows < 16) {
+        qDebug() << "Bgr too small:" << bgr.cols << "x" << bgr.rows;
         return;
     }
 
@@ -269,6 +267,12 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     int src_linesize[4] = { 0 };
     src_data[0] = bgr.data;
     src_linesize[0] = static_cast<int>(bgr.step);
+    uint64_t sumBefore = 0;
+    for (int y = 0; y < bgr.rows; ++y) {
+        const uchar* row = bgr.ptr<uchar>(y);
+        for (int x = 0; x < bgr.cols*3; ++x) sumBefore += row[x];
+    }
+    qDebug() << "Frame checksum (BGR sum):" << sumBefore;
     int got = sws_scale(m_sws_enc, src_data, src_linesize, 0, m_height, 
                        m_enc_frame->data, m_enc_frame->linesize);
     if (got <= 0) {
@@ -277,12 +281,13 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     }
 
     m_enc_frame->pts = m_pts++;
-
-    int ret = avcodec_send_frame(m_enc_ctx, m_enc_frame);
+    AVFrame *sendFrame = av_frame_clone(m_enc_frame);
+    int ret = avcodec_send_frame(m_enc_ctx, sendFrame);
     if (ret < 0) {
         qDebug() << "VideoEncoder stream" << m_streamId << "avcodec_send_frame failed:" << ffmpegErrStr(ret);
         return;
     }
+    av_frame_free(&sendFrame);
 
     while (ret >= 0) {
         ret = avcodec_receive_packet(m_enc_ctx, m_pkt);
