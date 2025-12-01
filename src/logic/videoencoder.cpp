@@ -229,8 +229,8 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     // Guard ДОЛЖЕН быть объявлен сразу после захвата флага
     struct BusyGuard {
         std::atomic<bool>& busy;
-        explicit BusyGuard(std::atomic<bool>& b) : busy(b) {}
-        ~BusyGuard() { busy.store(false); }
+        BusyGuard(std::atomic<bool>& b) : busy(b) {}
+        ~BusyGuard() { busy = false; }  // Простое присваивание, не store()
     } guard(m_busy);
 
     // Теперь проверяем входной кадр
@@ -257,7 +257,7 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
         cv::resize(bgr, resized, cv::Size(m_width, m_height), 0, 0, cv::INTER_LINEAR);
         bgr = resized; // Не std::move, а обычное присваивание
     }
-    
+
     if (frame.cols < 16 || frame.rows < 16) {
         qDebug() << "Frame too small:" << frame.cols << "x" << frame.rows;
         return;
@@ -286,15 +286,12 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     while (ret >= 0) {
         ret = avcodec_receive_packet(m_enc_ctx, m_pkt);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
-        if (ret < 0) {
-            qDebug() << "VideoEncoder stream" << m_streamId << "avcodec_receive_packet failed:" << ffmpegErrStr(ret);
-            break;
-        }
+        if (ret < 0) break;
 
+        // Всегда отправляем пакет, независимо от размера
         QByteArray encodedData(reinterpret_cast<const char*>(m_pkt->data), m_pkt->size);
-        
         emit encodedPacketReady(m_streamId, m_currentFrameNumber, encodedData);
-        m_currentFrameNumber++;  // Увеличиваем счетчик кадров
+        m_currentFrameNumber++;
         
         av_packet_unref(m_pkt);
     }
