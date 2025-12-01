@@ -342,9 +342,10 @@ void StreamerWidget::initialize()
         
 #ifdef TEST_DECODER
     if (!m_testDecoder) {
-        m_testDecoder = new VideoDecoder(this);
+        m_testDecoder = new VideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, this);
+        m_testDecoder->initialize();
         connect(m_testDecoder, &VideoDecoder::frameDecoded,
-                this, [this](const QImage& img){
+                this, [this](const QImage& img, int){
                     if (m_videoDisplay) m_videoDisplay->displayFrame(img);
                 });
     }

@@ -1,6 +1,8 @@
 #pragma once
 #define TEST_DECODER
-
+#ifdef TEST_DECODER
+#include "../logic/videodecoder.h"
+#endif
 #include "../logic/videocapture.h"
 #include "../logic/videoencoder.h"
 #include "../network/udp/networkmanager.h" 
