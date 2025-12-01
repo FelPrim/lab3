@@ -2,6 +2,7 @@
 #define TEST_DECODER
 #ifdef TEST_DECODER
 #include "../logic/videodecoder.h"
+#include "../logic/framebuffer.h"
 #endif
 #include "../logic/videocapture.h"
 #include "../logic/videoencoder.h"
@@ -124,6 +125,7 @@ public:
 
 #ifdef TEST_DECODER
     class VideoDecoder* m_testDecoder = nullptr;
+    FrameBuffer* m_frameBuffer = nullptr;
 #endif
 
 };
