@@ -617,7 +617,13 @@ void StreamerWidget::onFrameEncoded(int streamId, int frameNumber, const QByteAr
 #ifdef TEST_DECODER
     // В ТЕСТОВОМ режиме декодируем локально, не отправляем в сеть
     if (m_testDecoder) {
-        m_testDecoder->decodePacket(packet);
+        connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
+                m_testDecoder, &VideoDecoder::decodeFrame);
+
+        connect(m_testDecoder, &VideoDecoder::frameDecoded,
+                this, [this](const QImage &image, int /*frameNumber*/){
+                    if (m_videoDisplay) m_videoDisplay->displayFrame(image);
+                });
     }
     return;
 #endif
