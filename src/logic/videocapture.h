@@ -1,5 +1,6 @@
 #pragma once
 
+#define TEST_DECODER
 #include <QThread>
 #include <QImage>
 #include <opencv2/opencv.hpp>

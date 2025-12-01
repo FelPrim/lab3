@@ -150,17 +150,12 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
         }
 
         // Выделяем память с защитой
-        pkt->data = (uint8_t*)av_malloc(frameData.size() + AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!pkt->data) {
+        if (av_new_packet(pkt, frameData.size()) < 0) {
             av_packet_free(&pkt);
-            emit errorOccurred("av_malloc failed for packet");
+            emit errorOccurred("av_new_packet failed");
             return;
         }
-        
-        // Копируем данные и заполняем padding нулями
         memcpy(pkt->data, frameData.constData(), frameData.size());
-        memset(pkt->data + frameData.size(), 0, AV_INPUT_BUFFER_PADDING_SIZE);
-        pkt->size = frameData.size();
 
         int ret = avcodec_send_packet(m_dec_ctx, pkt);
         if (ret < 0) {

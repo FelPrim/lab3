@@ -1,6 +1,7 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
+#define TEST_DECODER
 #include <QVector>
 #include <QMutex>
 #include <QByteArray>

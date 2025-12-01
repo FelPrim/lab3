@@ -112,7 +112,9 @@ void VideoCapture::run()
                     frame.step, QImage::Format_BGR888);
         
         // Критически важно: создаем копию, так как данные rgbFrame временные
+#ifndef TEST_DECODER
         emit rawFrameReady(image.copy());
+#endif
         
         emit frameForEncodingReady(frame.clone()); 
         // Периодический лог FPS (каждые 100 кадров)
