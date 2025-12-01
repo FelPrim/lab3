@@ -27,7 +27,7 @@ VideoEncoder::~VideoEncoder()
 {
     cleanupFFmpeg();
     qDebug() << "VideoEncoder destroyed for stream:" << m_streamId;
-приватный}
+}
 
 void VideoEncoder::initialize(int width, int height, int fps)
 {
