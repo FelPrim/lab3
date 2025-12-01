@@ -336,6 +336,7 @@ void StreamerWidget::initialize()
 
     try {
         // 1. Сначала инициализируем видеозахват
+         QThread::msleep(50);
         initializeVideoCapture();
         
         // 2. Затем настраиваем соединения (чтобы подключиться к созданному VideoCapture)
@@ -379,7 +380,6 @@ void StreamerWidget::setupConnections()
 // Упрощенный обработчик кадров для прямого показа
 void StreamerWidget::onRawFrameReady(const QImage &image)
 {
-    // Прямой показ в VideoDisplay без обработки кодировщиком
     if (m_videoDisplay && m_streamingEnabled) {
         m_videoDisplay->displayFrame(image);
     }

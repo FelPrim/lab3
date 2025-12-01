@@ -52,5 +52,5 @@ private:
     int64_t m_pts = 0;
     bool m_initialized = false;
 private:
-    bool m_encoderActive;
+    bool m_encoderActive = false;
 };

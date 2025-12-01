@@ -132,9 +132,14 @@ void VideoSelectionDialog::refreshDevices()
         m_listWidget->addItem(item);
     }
     
-    // Автовыбор первого устройства
+    // Автовыбор первого устройства И УСТАНОВКА m_selectedDevice
     if (m_listWidget->count() > 0) {
         m_listWidget->setCurrentRow(0);
+        // ДОБАВИТЬ: установить m_selectedDevice при автовыборе
+        QListWidgetItem* item = m_listWidget->item(0);
+        if (item && item->data(Qt::UserRole).isValid()) {
+            m_selectedDevice = item->data(Qt::UserRole).toInt();
+        }
     }
 }
 

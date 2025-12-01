@@ -183,12 +183,12 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
 		 /*
                 m_sws_dec = sws_getContext(m_dec_frame->width, m_dec_frame->height,
                                         (AVPixelFormat)m_dec_frame->format,
-                                        m_targetWidth, m_targetHeight, AV_PIX_FMT_RGB24,
+                                        m_targetWidth, m_targetHeight, AV_PIX_FMT_BGR24,
                                         SWS_BILINEAR, nullptr, nullptr, nullptr);
 		*/
-		m_sws_dec = sws_getContext(m_dec_frame->width, m_dec_frame->height,
+		    m_sws_dec = sws_getContext(m_dec_frame->width, m_dec_frame->height,
                             (AVPixelFormat)m_dec_frame->format,
-                            m_dec_frame->width, m_dec_frame->height, AV_PIX_FMT_RGB24,  
+                            m_dec_frame->width, m_dec_frame->height, AV_PIX_FMT_BGR24,  
                             SWS_BILINEAR, nullptr, nullptr, nullptr);
                 if (!m_sws_dec) {
                     emit errorOccurred("sws_getContext(dec) failed");
@@ -199,7 +199,7 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
 
             uint8_t *dst_data[4] = { nullptr };
             int dst_linesize[4] = { 0 };
-            int bufsize = av_image_alloc(dst_data, dst_linesize, m_targetWidth, m_targetHeight, AV_PIX_FMT_RGB24, 1);
+            int bufsize = av_image_alloc(dst_data, dst_linesize, m_targetWidth, m_targetHeight, AV_PIX_FMT_BGR24, 1);
             if (bufsize < 0) {
                 qDebug() << "av_image_alloc failed";
                 av_frame_unref(m_dec_frame);
@@ -209,15 +209,15 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
             int got = sws_scale(m_sws_dec, m_dec_frame->data, m_dec_frame->linesize, 0,
                                 m_dec_frame->height, dst_data, dst_linesize);
             if (got <= 0) {
-                qDebug() << "sws_scale decode->rgb failed";
+                qDebug() << "sws_scale decode->bgr failed";
                 av_freep(&dst_data[0]);
                 av_frame_unref(m_dec_frame);
                 continue;
             }
 
             // Создаем QImage и эмитируем сигнал
-            // QImage img(dst_data[0], m_targetWidth, m_targetHeight, dst_linesize[0], QImage::Format_RGB888);
-            QImage img(dst_data[0], m_dec_frame->width, m_dec_frame->height, dst_linesize[0], QImage::Format_RGB888);
+            // QImage img(dst_data[0], m_targetWidth, m_targetHeight, dst_linesize[0], QImage::Format_BGR888);
+            QImage img(dst_data[0], m_dec_frame->width, m_dec_frame->height, dst_linesize[0], QImage::Format_BGR888);
 	    if (!img.isNull()) {
                 emit frameDecoded(img.copy(), frameNumber);
             } else {

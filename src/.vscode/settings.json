@@ -9,6 +9,8 @@
         "qscrollarea": "cpp",
         "syncstream": "cpp",
         "new": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "fstream": "cpp",
+        "qthread": "cpp"
     }
 }

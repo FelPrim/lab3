@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QtEndian>
 #include <QNetworkInterface>
+#include <QThread>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -185,6 +186,14 @@ void NetworkFacade::sendStreamDelete(uint32_t streamId)
 void NetworkFacade::sendStreamJoin(uint32_t streamId)
 {
     if (m_tcp) m_tcp->sendClientStreamJoin(streamId);
+    
+    // ✅ ДОБАВЛЕНО: Отправляем UDP-пакеты для проброса NAT
+    if (isHandshakeCompleted()) {
+        uint32_t connectionId = getConnectionId();
+        sendNatTraversalPackets(connectionId);
+    } else {
+        qWarning() << "NetworkFacade: Cannot send NAT traversal packets - handshake not completed";
+    }
 }
 
 void NetworkFacade::sendStreamLeave(uint32_t streamId)
@@ -629,4 +638,32 @@ StreamState NetworkFacade::getStreamState(uint32_t streamId) const
 CallState NetworkFacade::getCallState(uint32_t callId) const
 {
     return m_callStates.value(callId, CallState{0, QSet<uint32_t>(), QSet<uint32_t>()});
+}
+
+void NetworkFacade::sendNatTraversalPackets(uint32_t connectionId)
+{
+    if (!m_udpManager) {
+        qWarning() << "NetworkFacade: UDP manager not available for NAT traversal";
+        return;
+    }
+    
+    // Создаем пакет такой же, как в HandshakeService
+    QByteArray packet;
+    packet.resize(12);
+    memset(packet.data(), 0, 8);
+    quint32 connectionIdBe = qToBigEndian<quint32>(connectionId);
+    memcpy(packet.data() + 8, &connectionIdBe, 4);
+    
+    // Отправляем несколько пакетов (например, 5-10) для надежности
+    const int NUM_PACKETS = 10;
+    qDebug() << "NetworkFacade: Sending" << NUM_PACKETS << "NAT traversal packets for connection" << connectionId;
+    
+    for (int i = 0; i < NUM_PACKETS; ++i) {
+        m_udpManager->sendPacket(packet, QHostAddress(m_serverHost), m_serverUdpPort);
+        
+        // Небольшая задержка между пакетами (например, 20 мс)
+        if (i < NUM_PACKETS - 1) {
+            QThread::msleep(20);
+        }
+    }
 }

@@ -439,7 +439,7 @@ void StreamManager::sendVideoFrame(uint32_t streamId, int frameNumber, const QBy
     NetworkManager* netManager = getNetworkManagerForStream(streamId);
     if (netManager && netManager->isSendingEnabled()) {
         netManager->sendVideoFrame(frameNumber, frameData);
-        qDebug() << "StreamManager: Sent video frame" << frameNumber << "for stream" << streamId;
+     //   qDebug() << "StreamManager: Sent video frame" << frameNumber << "for stream" << streamId;
     } else {
         if (!netManager) {
             qWarning() << "No NetworkManager for stream:" << streamId;

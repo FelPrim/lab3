@@ -154,5 +154,6 @@ private:
     QSet<uint32_t> m_joinedStreams; // стримы, к которым присоединились как зритель
     QSet<uint32_t> m_activeStreams; // активные стримы (для которых включена отправка)
     QSet<uint32_t> m_joinedCalls; // звонки, в которых мы участвуем
+    void sendNatTraversalPackets(uint32_t connectionId);
 
 };

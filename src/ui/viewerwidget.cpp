@@ -9,7 +9,7 @@ const QString ViewerWidget::PLACEHOLDER_TEXT = "Waiting for video stream...";
 const QString ViewerWidget::STATUS_ACTIVE = "● Connected";
 const QString ViewerWidget::STATUS_INACTIVE = "● Disconnected";
 
-ViewerWidget::ViewerWidget(uint32_t streamId, const QString &displayId, QWidget *parent)
+ViewerWidget::ViewerWidget(uint32_t streamId, const QString &displayId, uint32_t callId, QWidget *parent)
     : QWidget(parent)
     , m_videoDisplay(nullptr)
     , m_controlPanel(nullptr)
@@ -19,6 +19,7 @@ ViewerWidget::ViewerWidget(uint32_t streamId, const QString &displayId, QWidget 
     , m_networkManager(nullptr)
     , m_streamId(streamId)
     , m_displayId(displayId)
+    , m_callId(callId)
     , m_active(false)
 {
     setupUI();
@@ -81,7 +82,7 @@ void ViewerWidget::initialize()
         m_videoDisplay->setPlaceholderText("Waiting for network connection...");
         return;
     }
-
+    m_networkManager->setCallId(m_callId);
     // Create video decoder
     m_videoDecoder = new VideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, this);
     connect(m_videoDecoder, &VideoDecoder::frameDecoded,

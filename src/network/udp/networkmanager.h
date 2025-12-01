@@ -37,9 +37,6 @@ public:
     void setCallId(uint32_t callId) { m_callId = callId; }
     uint32_t getCallId() const { return m_callId; }
 
-    // Method for processing packets from UDPManager
-    void processPacket(const QByteArray &data, const QHostAddress &sender, quint16 port);
-
     // Methods for managing sending
     void setSendingEnabled(bool enabled) { m_sendingEnabled = enabled; }
     bool isSendingEnabled() const { return m_sendingEnabled; }
@@ -52,6 +49,7 @@ signals:
 public slots:
     void start();
     void stop();
+    void processPacket(const QByteArray &data, const QHostAddress &sender, quint16 port);
 
 private slots:
     void cleanupOldAssemblies();
@@ -66,8 +64,6 @@ private:
     
     // FEC методы из старой реализации
     void processXorPacket(const NetworkPacket& packet);
-    void sendXorPackets();
-    QByteArray calculateXorForGroup(int groupId);
     void tryRecoverLostPackets(int groupId);
     
     void updateSendStats(int packets, int bytes);
@@ -91,9 +87,12 @@ private:
     int m_packetSequence = 0;
    
     // FEC буферы из старой реализации
-    QHash<int, QVector<QByteArray>> m_fecSendBuffers;
+
     QHash<int, QVector<QByteArray>> m_fecReceiveBuffers;
     QHash<int, QVector<bool>> m_fecReceived;
+
+    uint8_t m_fecBuffer[4][1188];
+    int m_fecBufferCount;
 
     struct Statistics {
         quint64 totalPacketsSent = 0;
@@ -116,4 +115,11 @@ private:
     QElapsedTimer m_operationTimer;
     bool m_initialized = false;
     bool m_sendingEnabled = false;
+private:
+    static const int MAX_FEC_GROUPS = 50;
+    QHash<int, qint64> m_fecGroupTimestamps; 
+private:
+    static const int MAX_FEC_BUFFER_SIZE = 128;
+
+
 };

@@ -6,6 +6,7 @@
 #include <QVariant>
 #include "network_packet.h"
 #include "../../video_defaults.h"
+#include <cstdint>
 
 NetworkManager::NetworkManager(int streamId, QObject *parent)
     : QObject(parent)
@@ -14,7 +15,9 @@ NetworkManager::NetworkManager(int streamId, QObject *parent)
     , m_serverPort(DEFAULT_ECHO_SERVER_PORT)
     , m_frameAssembler(new FrameAssembler(this))
     , m_frameSender(new FrameSender(this))
+    , m_fecBufferCount(0)
 {
+    memset(m_fecBuffer, 0, sizeof(m_fecBuffer));
     qDebug() << "NetworkManager created for stream:" << streamId;
     
     connect(m_frameAssembler, &FrameAssembler::frameAssembled,
@@ -24,8 +27,6 @@ NetworkManager::NetworkManager(int streamId, QObject *parent)
 NetworkManager::~NetworkManager()
 {
     cleanup();
-    delete m_frameAssembler;
-    delete m_frameSender;
     qDebug() << "NetworkManager: Destructor for stream" << m_streamId;
 }
 
@@ -70,14 +71,10 @@ void NetworkManager::cleanup()
     
     if (m_cleanupTimer) {
         m_cleanupTimer->stop();
-        delete m_cleanupTimer;
-        m_cleanupTimer = nullptr;
     }
     
     if (m_statsTimer) {
         m_statsTimer->stop();
-        delete m_statsTimer;
-        m_statsTimer = nullptr;
     }
     
     m_initialized = false;
@@ -101,6 +98,25 @@ void NetworkManager::stop()
 {
     if (m_cleanupTimer) m_cleanupTimer->stop();
     if (m_statsTimer) m_statsTimer->stop();
+
+    // Очищаем ВСЕ FEC буферы
+    m_fecReceiveBuffers.clear();
+    m_fecReceived.clear();
+    m_fecGroupTimestamps.clear();
+    
+    // Очищаем буфер отправки
+    m_fecBufferCount = 0;
+    memset(m_fecBuffer, 0, sizeof(m_fecBuffer));
+    
+    // Очищаем отправитель и сборщик
+    if (m_frameSender) {
+        m_frameSender->clear();
+    }
+    
+    if (m_frameAssembler) {
+        // Удаляем ВСЕ сборки (0 - удалить все, независимо от возраста)
+        m_frameAssembler->cleanupOldAssemblies(0);
+    }
     
     qDebug() << "NetworkManager: Stopped for stream" << m_streamId;
 }
@@ -130,23 +146,20 @@ void NetworkManager::onFrameAssembled(int streamId, int frameNumber, const QByte
 
 void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray &frameData)
 {
-    if (!m_initialized || !m_udpManager || !m_sendingEnabled) {
-        return;
-    }
+    if (!m_initialized || !m_udpManager || !m_sendingEnabled) return;
     
     try {
+        qDebug() << "jhbfvgsjlkhbgfd";
         m_frameSender->addFrame(m_streamId, frameNumber, frameData);
         
-        // Отправляем все готовые пакеты сразу
         while (m_frameSender->hasPacketsToSend()) {
             auto packets = m_frameSender->takePacketsToSend();
             for (const auto &packet : packets) {
-                sendPacketNewProtocol(packet.second, packet.first);
+                sendPacketNewProtocol(packet.second, packet.first, m_packetSequence);
             }
         }
         
         m_stats.framesSent++;
-        m_stats.expectedFrames.insert(qMakePair(m_streamId, frameNumber));
         
     } catch (const std::exception &e) {
         qDebug() << "Send video frame failed:" << e.what();
@@ -154,48 +167,55 @@ void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray &frameData
     }
 }
 
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType type)
-{
-    sendPacketNewProtocol(data, type, m_packetSequence++);
-}
-
 void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType type, int customSequence)
 {
-    if (!m_udpManager) {
-        qDebug() << "NetworkManager: UDPManager not available";
-        return;
-    }
+    if (!m_udpManager) return;
 
-    // ИСПРАВЛЕНИЕ: Используем callId при создании пакета
-    NetworkPacket packet = PacketProcessor::createDataPacket(m_callId, m_streamId, customSequence, 
-                                                           static_cast<uint8_t>(type), data);
-    
+    // ИСПРАВЛЕНО: используем правильный вызов
+    NetworkPacket packet = PacketProcessor::createDataPacket(m_callId, m_streamId, 
+                                                           customSequence, static_cast<uint8_t>(type), data);
     QByteArray datagram = PacketProcessor::toByteArray(packet);
-    
-    // Отправляем через UDPManager
     m_udpManager->sendPacket(datagram, m_serverAddress, m_serverPort);
-    
-    // Обновляем статистику
+    m_packetSequence++;
+
     m_stats.totalPacketsSent++;
     m_stats.totalBytesSent += data.size();
+
+    // FEC логика: ВСЕГДА сохраняем пакет в буфер
+    // ИСПРАВЛЕНО: используем правильный размер заголовка
+    QByteArray dataPart = datagram.mid(PacketProcessor::ROUTE_HEADER_SIZE);
     
-    // FEC логика
-    int groupId = customSequence / FEC_GROUP_SIZE;
-    int positionInGroup = customSequence % FEC_GROUP_SIZE;
-    
-    if (positionInGroup < FEC_DATA_PACKETS) {
-        if (!m_fecSendBuffers.contains(groupId)) {
-            m_fecSendBuffers[groupId] = QVector<QByteArray>(FEC_TOTAL_PACKETS);
+    if (m_fecBufferCount < 4) {
+        memcpy(m_fecBuffer[m_fecBufferCount], dataPart.constData(), 1188);
+        m_fecBufferCount++;
+    }
+
+    // ВСЕГДА отправляем XOR когда набралось 4 пакета
+    if (m_fecBufferCount == 4) {
+        uint8_t xorData[1188] = {0};
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 1188; j++) {
+                xorData[j] ^= m_fecBuffer[i][j];
+            }
         }
+        xorData[0] |= 0x80;
+
+        int xorSequence = m_packetSequence++; // Используем текущий sequence
         
-        // Сохраняем часть пакета после RouteHeader для XOR
-        QByteArray dataPart = datagram.mid(PACKET_HEADER_SIZE);
-        m_fecSendBuffers[groupId][positionInGroup] = dataPart;
-        
-        // Если накопилось 4 пакета, отправляем XOR пакет
-        if (positionInGroup == FEC_DATA_PACKETS - 1) {
-            sendXorPackets();
-        }
+        QByteArray xorDataArray(reinterpret_cast<const char*>(xorData), 1188);
+        NetworkPacket xorPacket = PacketProcessor::createXorPacket(m_callId, m_streamId, xorSequence, xorDataArray);
+        QByteArray xorDatagram = PacketProcessor::toByteArray(xorPacket);
+        m_udpManager->sendPacket(xorDatagram, m_serverAddress, m_serverPort);
+
+        m_stats.totalPacketsSent++;
+        m_stats.totalBytesSent += 1188;
+        m_stats.fecGroupsSent++;
+
+        qDebug() << "Sent XOR packet for group, sequence:" << xorSequence;
+
+        // Сбрасываем буфер ПОСЛЕ отправки XOR
+        m_fecBufferCount = 0;
+        memset(m_fecBuffer, 0, sizeof(m_fecBuffer));
     }
 }
 
@@ -216,6 +236,11 @@ void NetworkManager::processPacketNewProtocol(const QByteArray& data) {
     uint32_t packetCallId = header.header.callId;
     uint32_t packetStreamId = header.header.streamId;
     
+    qDebug() << "=== PACKET RECEIVED ===";
+    qDebug() << "Expected callId:" << m_callId << "streamId:" << m_streamId;
+    qDebug() << "Received callId:" << packetCallId << "streamId:" << packetStreamId;
+    qDebug() << "Packet size:" << data.size();
+
     // Проверяем соответствие callId и streamId
     if (packetCallId != m_callId || packetStreamId != static_cast<uint32_t>(m_streamId)) {
         qDebug() << "NetworkManager: Packet callId/streamId mismatch. Expected:"
@@ -258,48 +283,14 @@ void NetworkManager::processPacketNewProtocol(const QByteArray& data) {
             
             // Пытаемся восстановить потерянные пакеты
             tryRecoverLostPackets(groupId);
-        }
-    }
-}
-
-void NetworkManager::sendXorPackets()
-{
-    auto it = m_fecSendBuffers.begin();
-    while (it != m_fecSendBuffers.end()) {
-        int groupId = it.key();
-        QVector<QByteArray>& packets = it.value();
-        
-        // Проверяем, что у нас есть все 4 пакета данных
-        bool hasAllDataPackets = true;
-        for (int i = 0; i < FEC_DATA_PACKETS; ++i) {
-            if (packets[i].isEmpty()) {
-                hasAllDataPackets = false;
-                break;
+            if (m_fecReceiveBuffers.size() > MAX_FEC_BUFFER_SIZE) {
+                // Удаляем самую старую группу
+                int oldestGroup = m_fecGroupTimestamps.key(*std::min_element(
+                    m_fecGroupTimestamps.begin(), m_fecGroupTimestamps.end()));
+                m_fecReceiveBuffers.remove(oldestGroup);
+                m_fecReceived.remove(oldestGroup);
+                m_fecGroupTimestamps.remove(oldestGroup);
             }
-        }
-        
-        if (hasAllDataPackets) {
-            // Вычисляем XOR
-            QByteArray xorData = calculateXorForGroup(groupId);
-            
-            // ИСПРАВЛЕНИЕ: Используем callId при создании XOR пакета
-            int xorSequence = groupId * FEC_GROUP_SIZE + FEC_DATA_PACKETS;
-            NetworkPacket xorPacket = PacketProcessor::createXorPacket(m_callId, m_streamId, xorSequence, xorData);
-            
-            QByteArray datagram = PacketProcessor::toByteArray(xorPacket);
-            
-            // Отправляем через UDPManager
-            if (m_udpManager) {
-                m_udpManager->sendPacket(datagram, m_serverAddress, m_serverPort);
-                m_stats.totalPacketsSent++;
-                m_stats.totalBytesSent += xorData.size();
-                m_stats.fecGroupsSent++;
-                qDebug() << "Sent XOR packet for group:" << groupId;
-            }
-            
-            it = m_fecSendBuffers.erase(it);
-        } else {
-            ++it;
         }
     }
 }
@@ -326,48 +317,18 @@ void NetworkManager::processXorPacket(const NetworkPacket& packet) {
     tryRecoverLostPackets(groupId);
 }
 
-QByteArray NetworkManager::calculateXorForGroup(int groupId)
-{
-    if (!m_fecSendBuffers.contains(groupId)) {
-        return QByteArray();
-    }
-    
-    QVector<QByteArray>& packets = m_fecSendBuffers[groupId];
-    
-    // Используем фиксированный размер 1192 байта
-    const int PACKET_SIZE = 1192;
-    QByteArray result(PACKET_SIZE, 0);
-    
-    for (int i = 0; i < FEC_DATA_PACKETS; ++i) {
-        if (packets[i].isEmpty() || packets[i].size() != PACKET_SIZE) {
-            qWarning() << "Invalid packet size in FEC group" << groupId << "position" << i;
-            continue;
-        }
-        
-        const QByteArray& packetData = packets[i];
-        for (int j = 0; j < PACKET_SIZE; ++j) {
-            result[j] = result[j] ^ packetData[j];
-        }
-    }
-    
-    // Устанавливаем FEC_FLAG = 1 в первом байте
-    if (!result.isEmpty()) {
-        result[0] = (result[0] & 0x7F) | 0x80;
-    }
-    
-    return result;
-}
-
 void NetworkManager::tryRecoverLostPackets(int groupId)
 {
-    if (!m_fecReceiveBuffers.contains(groupId) || !m_fecReceived.contains(groupId)) {
-        return;
-    }
-
+    if (!m_fecReceiveBuffers.contains(groupId)) return;
+    
     QVector<QByteArray>& packets = m_fecReceiveBuffers[groupId];
     QVector<bool>& received = m_fecReceived[groupId];
-
-    // Проверяем, сколько пакетов данных потеряно
+    
+    // Используем pre-allocated буферы для избежания лишних аллокаций
+    static thread_local QByteArray recoveredBuffer;
+    recoveredBuffer.resize(1188); // Предварительное выделение
+    
+    // Проверяем потери
     int lostCount = 0;
     int lostIndex = -1;
     
@@ -460,7 +421,7 @@ void NetworkManager::tryRecoverLostPackets(int groupId)
 void NetworkManager::cleanupOldAssemblies()
 {
     // 1. Очищаем старые сборки фреймов
-    m_frameAssembler->cleanupOldAssemblies(10000); // 10 секунд
+    m_frameAssembler->cleanupOldAssemblies(1000); // 1 секунда
     
     // 2. Очищаем старые FEC группы
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
@@ -541,7 +502,13 @@ void NetworkManager::printStatistics()
      .arg(m_stats.fecGroupsRecovered)
      .arg(m_stats.packetsRecoveredByFEC);
 
-    qDebug().noquote() << stats;
+     QString memoryInfo = QString(
+        "Memory: FEC send=%1, recv=%2 groups | FrameQueue: %3 frames"
+    )
+     .arg(m_fecReceiveBuffers.size())
+     .arg(0); // Можно добавить размер очереди FrameSender если доступно
+    
+    qDebug().noquote() << stats << "\n" << memoryInfo;
     emit statisticsUpdated(stats);
 }
 

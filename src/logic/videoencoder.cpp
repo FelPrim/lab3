@@ -3,7 +3,6 @@
 #include <QDebug>
 #include <thread>
 #include <algorithm>
-#include <QDebug>
 
 extern "C" {
 #include <libavutil/imgutils.h>
@@ -204,31 +203,42 @@ void VideoEncoder::cleanupFFmpeg()
 void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
 {
     static bool first_time = true;
-    if (first_time){
+    if (first_time) {
         qDebug() << "VideoEncoder::encodeFrame was called for the first time\n";
         first_time = false;
     }
 
-     if (!m_encoderActive) {
-        return; // Кодировщик неактивен
-    }
-    if (!m_initialized || !m_enc_ctx || !m_enc_frame || !m_pkt || !m_sws_enc) {
+    // Сначала проверяем активность
+    if (!m_encoderActive) {
         return;
     }
 
+    // Затем проверяем инициализацию
+    if (!m_initialized || !m_enc_ctx || !m_enc_frame || !m_pkt || !m_sws_enc) {
+        qDebug() << "VideoEncoder: Not properly initialized";
+        return;
+    }
+
+    // Затем захватываем busy flag
     bool expected = false;
     if (!m_busy.compare_exchange_strong(expected, true)) {
+        // Уже кодируется другой кадр, пропускаем
         return;
     }
 
+    // Guard ДОЛЖЕН быть объявлен сразу после захвата флага
     struct BusyGuard {
         std::atomic<bool>& busy;
-        BusyGuard(std::atomic<bool>& b) : busy(b) {}
-        ~BusyGuard() { busy = false; }
+        explicit BusyGuard(std::atomic<bool>& b) : busy(b) {}
+        ~BusyGuard() { busy.store(false); }
     } guard(m_busy);
 
+    // Теперь проверяем входной кадр
     cv::Mat frame = frame_in;
-    if (frame.empty()) return;
+    if (frame.empty()) {
+        qDebug() << "VideoEncoder: Empty frame received";
+        return; // Guard освободит m_busy в деструкторе
+    }
 
     cv::Mat bgr;
     if (frame.channels() == 3) {
@@ -244,8 +254,13 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     // Ресайз если необходимо
     if (bgr.cols != m_width || bgr.rows != m_height) {
         cv::Mat resized;
-        cv::resize(bgr, resized, cv::Size(m_width, m_height));
-        bgr = std::move(resized);
+        cv::resize(bgr, resized, cv::Size(m_width, m_height), 0, 0, cv::INTER_LINEAR);
+        bgr = resized; // Не std::move, а обычное присваивание
+    }
+    
+    if (frame.cols < 16 || frame.rows < 16) {
+        qDebug() << "Frame too small:" << frame.cols << "x" << frame.rows;
+        return;
     }
 
     // Подготавливаем исходные указатели

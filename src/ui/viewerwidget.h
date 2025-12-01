@@ -14,7 +14,7 @@ class ViewerWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit ViewerWidget(uint32_t streamId, const QString &displayId, QWidget *parent = nullptr);
+    explicit ViewerWidget(uint32_t streamId, const QString &displayId, uint32_t callId = 0, QWidget *parent = nullptr);
     ~ViewerWidget();
 
     void initialize();
@@ -56,6 +56,7 @@ private:
     VideoDecoder *m_videoDecoder;
     NetworkManager *m_networkManager;
     
+    uint32_t m_callId;     
     uint32_t m_streamId;
     QString m_displayId;
     bool m_active;

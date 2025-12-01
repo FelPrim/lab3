@@ -30,7 +30,7 @@ public:
 
     // Управление подокнами
     void addStreamerWidget(int deviceIndex);
-    void addViewerWidget(uint32_t streamId, const QString& displayId);
+    void addViewerWidget(uint32_t streamId, const QString& displayId, uint32_t callId = 0);
     void removeStreamerWidget(int deviceIndex);
     void removeViewerWidget(uint32_t streamId);
     
@@ -81,8 +81,8 @@ private:
     // Константы из VideoLayoutCalculator
     static const int MARGIN = 5;
     static const int TOTAL_MARGIN = 10;
-    static const int MIN_VIDEO_WIDTH = 160;
-    static const int MIN_VIDEO_HEIGHT = 120;
+    inline static const int MIN_VIDEO_WIDTH = 160;
+    inline static const int MIN_VIDEO_HEIGHT = 120;
     static const int PREFERRED_ASPECT_NUMERATOR = 16;
     static const int PREFERRED_ASPECT_DENOMINATOR = 9;
 

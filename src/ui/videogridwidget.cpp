@@ -77,9 +77,9 @@ void VideoGridWidget::addStreamerWidget(int deviceIndex)
     qDebug() << "Streamer widget added. Total widgets:" << getTotalWidgetCount();
 }
 
-void VideoGridWidget::addViewerWidget(uint32_t streamId, const QString& displayId)
+void VideoGridWidget::addViewerWidget(uint32_t streamId, const QString& displayId, uint32_t callId)
 {
-    qDebug() << "Adding viewer widget for stream:" << displayId << "ID:" << streamId;
+    qDebug() << "Adding viewer widget for stream:" << displayId << "ID:" << streamId << "CallId:" << callId;
     
     // Check if already exists
     if (findViewerWidget(streamId)) {
@@ -87,7 +87,8 @@ void VideoGridWidget::addViewerWidget(uint32_t streamId, const QString& displayI
         return;
     }
 
-    ViewerWidget *widget = new ViewerWidget(streamId, displayId, m_container);
+    // Передайте callId в конструктор ViewerWidget
+    ViewerWidget *widget = new ViewerWidget(streamId, displayId, callId, m_container);
     m_viewerWidgets.append(widget);
     connectViewerWidget(widget);
     

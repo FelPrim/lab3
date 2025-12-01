@@ -46,6 +46,7 @@ public:
         return m_streamAssemblies.contains(streamId) ? m_streamAssemblies[streamId].receivedSize : -1; 
     }
     void processOrphanedPackets(int streamId);
+    virtual ~FrameAssembler(); 
 
 signals:
     void frameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
@@ -85,7 +86,7 @@ class FrameSender : public QObject
 
 public:
     explicit FrameSender(QObject *parent = nullptr);
-    
+    virtual ~FrameSender(); 
     // Добавление фрейма для отправки
     void addFrame(int streamId, int frameNumber, const QByteArray &frameData);
     
@@ -121,4 +122,6 @@ private:
     QHash<int, QVector<QByteArray>> m_fecSendBuffers; // groupId -> packets
     QHash<int, QVector<QByteArray>> m_fecReceiveBuffers; // groupId -> packets
     QHash<int, QVector<bool>> m_fecReceived; // groupId -> received flags
+private:
+    static const int MAX_FRAME_QUEUE_SIZE = DEFAULT_FPS; 
 };

@@ -4,21 +4,30 @@
 #include <QDateTime>
 #include <QDebug>
 
+// 1187 - 8 = 1179
+// 1183
+// 1183
 // Используем константы из video_defaults
 const int START_PAYLOAD = DATA_PAYLOAD_SIZE - 8;  // 1179 байта (1191 - frameNumber(4) - frameSize(4))
 const int CONTINUE_PAYLOAD = DATA_PAYLOAD_SIZE - 4; // 1183 байт (1191 - frameNumber(4))
 const int END_PAYLOAD = DATA_PAYLOAD_SIZE - 4;      // 1183 байт (1191 - frameNumber(4))
 
 // FrameAssembler implementation
-FrameAssembler::FrameAssembler(QObject *parent) : QObject(parent) {}
+FrameAssembler::FrameAssembler(QObject *parent) : QObject(parent) 
+{
+    qDebug() << "FrameAssembler: Created";
+}
 
 void FrameAssembler::processOrphanedPackets(int streamId)
 {
     if (m_orphanedPackets.contains(streamId)) {
         auto orphaned = m_orphanedPackets.values(streamId);
-        qDebug() << "Processing" << orphaned.size() << "orphaned packets for stream:" << streamId;
+        qDebug() << "FrameAssembler: Processing" << orphaned.size() 
+                 << "orphaned packets for stream:" << streamId;
         
         for (const auto& packet : orphaned) {
+            qDebug() << "FrameAssembler: Reprocessing orphaned packet - Stream:" << streamId
+                     << "Type:" << packet.first << "Size:" << packet.second.size();
             processPacket(streamId, packet.first, packet.second);
         }
         m_orphanedPackets.remove(streamId);
@@ -28,11 +37,12 @@ void FrameAssembler::processOrphanedPackets(int streamId)
 void FrameAssembler::processPacket(int streamId, PacketType type, const QByteArray &payload)
 {
     qDebug() << "FrameAssembler: Processing packet - Stream:" << streamId 
-             << "Type:" << type;
+             << "Type:" << type << "Payload size:" << payload.size();
     
     if (type != START_FRAME && !m_streamAssemblies.contains(streamId)) {
+        qDebug() << "FrameAssembler: Orphaned packet - Stream:" << streamId 
+                 << "Type:" << type << "Saving for later processing";
         m_orphanedPackets.insert(streamId, qMakePair(type, payload));
-        qDebug() << "Orphaned packet saved - Stream:" << streamId << "Type:" << type;
         return;
     }
     
@@ -48,17 +58,17 @@ void FrameAssembler::processPacket(int streamId, PacketType type, const QByteArr
         processEndFrame(streamId, payload);
         break;
     default:
-        qDebug() << "Unknown packet type in FrameAssembler:" << type;
+        qWarning() << "FrameAssembler: Unknown packet type:" << type;
         break;
     }
 }
 
 void FrameAssembler::processStartFrame(int streamId, const QByteArray &data)
 {
-
     const int START_FRAME_PAYLOAD_HEADER = 8; // frameNumber(4) + frameSize(4)
     if (data.size() < START_FRAME_PAYLOAD_HEADER) { 
-        qDebug() << "START_FRAME too small:" << data.size();
+        qWarning() << "FrameAssembler: START_FRAME too small - Stream:" << streamId
+                   << "Expected at least" << START_FRAME_PAYLOAD_HEADER << "bytes, got:" << data.size();
         return;
     }
 
@@ -68,18 +78,21 @@ void FrameAssembler::processStartFrame(int streamId, const QByteArray &data)
     int frameNumber, frameSize;
     stream >> frameNumber >> frameSize;
 
+    qDebug() << "FrameAssembler: START_FRAME header - Stream:" << streamId
+             << "Frame:" << frameNumber << "Total frame size:" << frameSize;
+
     if (frameSize <= 0 || frameSize > 10 * 1024 * 1024) {
-        qDebug() << "Invalid frame size in START_FRAME:" << frameSize;
+        qWarning() << "FrameAssembler: Invalid frame size - Stream:" << streamId
+                   << "Frame:" << frameNumber << "Size:" << frameSize;
         return;
     }
 
     QByteArray frameData = data.mid(START_FRAME_PAYLOAD_HEADER); 
-
-    // В START_FRAME тоже может быть дополнение, берем только нужное количество
     int bytesToTake = qMin(frameData.size(), frameSize);
 
-    qDebug() << "START_FRAME - Stream:" << streamId << "Frame:" << frameNumber 
-             << "Size:" << frameSize << "Data:" << bytesToTake;
+    qDebug() << "FrameAssembler: START_FRAME data - Stream:" << streamId 
+             << "Frame:" << frameNumber << "Header size:" << START_FRAME_PAYLOAD_HEADER
+             << "Available data:" << frameData.size() << "Taking:" << bytesToTake;
 
     m_streamAssemblies[streamId] = StreamAssembly(streamId, frameNumber);
 
@@ -89,7 +102,11 @@ void FrameAssembler::processStartFrame(int streamId, const QByteArray &data)
     assembly.receivedSize = bytesToTake;
     assembly.hasStartFrame = true;
 
+    qDebug() << "FrameAssembler: START_FRAME assembly created - Stream:" << streamId
+             << "Frame:" << frameNumber << "Progress:" << assembly.receivedSize << "/" << assembly.totalSize;
+
     if (assembly.isComplete()) {
+        qDebug() << "FrameAssembler: Frame completed immediately after START_FRAME";
         completeFrame(streamId);
     }
 }
@@ -97,14 +114,15 @@ void FrameAssembler::processStartFrame(int streamId, const QByteArray &data)
 void FrameAssembler::processContinueFrame(int streamId, const QByteArray &data)
 {
     if (!m_streamAssemblies.contains(streamId)) {
-        qDebug() << "CONTINUE_FRAME for unknown stream:" << streamId;
+        qWarning() << "FrameAssembler: CONTINUE_FRAME for unknown stream:" << streamId;
         return;
     }
     
     StreamAssembly& assembly = m_streamAssemblies[streamId];
     
     if (data.size() < 4) {
-        qDebug() << "CONTINUE_FRAME too small:" << data.size();
+        qWarning() << "FrameAssembler: CONTINUE_FRAME too small - Stream:" << streamId
+                   << "Expected at least 4 bytes, got:" << data.size();
         return;
     }
     
@@ -115,36 +133,42 @@ void FrameAssembler::processContinueFrame(int streamId, const QByteArray &data)
     stream >> frameNumber;
     
     if (frameNumber != assembly.frameNumber) {
-        qDebug() << "CONTINUE_FRAME frame number mismatch. Expected:" 
-                 << assembly.frameNumber << "Got:" << frameNumber;
+        qWarning() << "FrameAssembler: CONTINUE_FRAME frame number mismatch - Stream:" << streamId
+                   << "Expected:" << assembly.frameNumber << "Got:" << frameNumber;
         return;
     }
     
-    // В CONTINUE_FRAME нет дополнения нулями - берем все данные как есть
     QByteArray frameData = data.mid(4);
+    int previousReceived = assembly.receivedSize;
     
-    qDebug() << "CONTINUE_FRAME - Stream:" << streamId << "Frame:" << frameNumber 
-             << "Data:" << frameData.size() << "Total received:" << assembly.receivedSize + frameData.size();
+    qDebug() << "FrameAssembler: CONTINUE_FRAME - Stream:" << streamId 
+             << "Frame:" << frameNumber << "New data:" << frameData.size()
+             << "Previous total:" << previousReceived << "New total:" << previousReceived + frameData.size();
     
     assembly.data.append(frameData);
     assembly.receivedSize += frameData.size();
     
     if (assembly.isComplete()) {
+        qDebug() << "FrameAssembler: Frame completed by CONTINUE_FRAME";
         completeFrame(streamId);
+    } else {
+        qDebug() << "FrameAssembler: CONTINUE_FRAME progress - Stream:" << streamId
+                 << "Frame:" << frameNumber << "Progress:" << assembly.receivedSize << "/" << assembly.totalSize;
     }
 }
 
 void FrameAssembler::processEndFrame(int streamId, const QByteArray &data)
 {
     if (!m_streamAssemblies.contains(streamId)) {
-        qDebug() << "END_FRAME for unknown stream:" << streamId;
+        qWarning() << "FrameAssembler: END_FRAME for unknown stream:" << streamId;
         return;
     }
     
     StreamAssembly& assembly = m_streamAssemblies[streamId];
     
     if (data.size() < 4) {
-        qDebug() << "END_FRAME too small:" << data.size();
+        qWarning() << "FrameAssembler: END_FRAME too small - Stream:" << streamId
+                   << "Expected at least 4 bytes, got:" << data.size();
         return;
     }
     
@@ -155,40 +179,48 @@ void FrameAssembler::processEndFrame(int streamId, const QByteArray &data)
     stream >> frameNumber;
     
     if (frameNumber != assembly.frameNumber) {
-        qDebug() << "END_FRAME frame number mismatch. Expected:" 
-                 << assembly.frameNumber << "Got:" << frameNumber;
+        qWarning() << "FrameAssembler: END_FRAME frame number mismatch - Stream:" << streamId
+                   << "Expected:" << assembly.frameNumber << "Got:" << frameNumber;
         return;
     }
     
-    // В END_FRAME есть дополнение нулями - берем только нужное количество данных
     QByteArray frameData = data.mid(4);
-    
-    // Вычисляем сколько данных нам еще нужно
     int neededBytes = assembly.totalSize - assembly.receivedSize;
+    
+    qDebug() << "FrameAssembler: END_FRAME analysis - Stream:" << streamId
+             << "Frame:" << frameNumber << "Needed bytes:" << neededBytes
+             << "Available in packet:" << frameData.size();
+    
     if (neededBytes <= 0) {
-        qDebug() << "END_FRAME: already have all data, ignoring";
+        qWarning() << "FrameAssembler: END_FRAME unnecessary - Stream:" << streamId
+                   << "Frame:" << frameNumber << "Already received:" << assembly.receivedSize;
         return;
     }
     
-    // Берем только нужное количество байт (игнорируем дополнение нулями)
     int bytesToTake = qMin(neededBytes, frameData.size());
     QByteArray realData = frameData.left(bytesToTake);
+    int previousReceived = assembly.receivedSize;
     
-    qDebug() << "END_FRAME - Stream:" << streamId << "Frame:" << frameNumber 
-             << "Needed:" << neededBytes << "Taking:" << bytesToTake
-             << "Total received:" << assembly.receivedSize + bytesToTake;
+    qDebug() << "FrameAssembler: END_FRAME taking data - Stream:" << streamId 
+             << "Frame:" << frameNumber << "Taking:" << bytesToTake << "bytes"
+             << "Progress:" << previousReceived << "->" << previousReceived + bytesToTake;
     
     assembly.data.append(realData);
     assembly.receivedSize += bytesToTake;
     
     if (assembly.isComplete()) {
+        qDebug() << "FrameAssembler: Frame completed by END_FRAME";
         completeFrame(streamId);
+    } else {
+        qWarning() << "FrameAssembler: END_FRAME did not complete frame - Stream:" << streamId
+                   << "Frame:" << frameNumber << "Remaining:" << assembly.totalSize - assembly.receivedSize;
     }
 }
 
 void FrameAssembler::completeFrame(int streamId)
 {
     if (!m_streamAssemblies.contains(streamId)) {
+        qCritical() << "FrameAssembler: completeFrame called for unknown stream:" << streamId;
         return;
     }
     
@@ -197,48 +229,64 @@ void FrameAssembler::completeFrame(int streamId)
     if (assembly.data.size() >= assembly.totalSize) {
         QByteArray completeData = assembly.data.left(assembly.totalSize);
         
-        qDebug() << "FrameAssembler: COMPLETE - Stream:" << streamId 
+        qDebug() << "FrameAssembler: FRAME COMPLETE - Stream:" << streamId 
                  << "Frame:" << assembly.frameNumber 
-                 << "Total size:" << assembly.totalSize 
-                 << "Received:" << assembly.receivedSize;
+                 << "Expected:" << assembly.totalSize 
+                 << "Actual:" << completeData.size()
+                 << "Assembly time:" << (QDateTime::currentMSecsSinceEpoch() - assembly.creationTime) << "ms";
 
-        // Добавляем в очередь завершенных фреймов
         m_completeFrames.append(qMakePair(streamId, completeData));
-        
-        // Испускаем сигнал
         emit frameAssembled(streamId, assembly.frameNumber, completeData);
-        
-        // Удаляем из текущих сборок
         m_streamAssemblies.remove(streamId);
+        
+        qDebug() << "FrameAssembler: Frame emitted and assembly cleaned up";
+    } else {
+        qWarning() << "FrameAssembler: completeFrame called but data incomplete - Stream:" << streamId
+                   << "Frame:" << assembly.frameNumber << "Have:" << assembly.data.size() << "Need:" << assembly.totalSize;
     }
 }
 
 bool FrameAssembler::hasCompleteFrame() const
 {
-    return !m_completeFrames.isEmpty();
+    bool hasFrames = !m_completeFrames.isEmpty();
+    qDebug() << "FrameAssembler: hasCompleteFrame check - Result:" << hasFrames << "Count:" << m_completeFrames.size();
+    return hasFrames;
 }
 
 QPair<int, QByteArray> FrameAssembler::takeCompleteFrame()
 {
     if (m_completeFrames.isEmpty()) {
+        qDebug() << "FrameAssembler: takeCompleteFrame - No frames available";
         return qMakePair(0, QByteArray());
     }
-    return m_completeFrames.takeFirst();
+    
+    auto frame = m_completeFrames.takeFirst();
+    qDebug() << "FrameAssembler: takeCompleteFrame - Stream:" << frame.first 
+             << "Size:" << frame.second.size();
+    return frame;
 }
 
 void FrameAssembler::cleanupOldAssemblies(qint64 maxAgeMs)
 {
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+    int removedCount = 0;
     
     auto it = m_streamAssemblies.begin();
     while (it != m_streamAssemblies.end()) {
-        if (currentTime - it->creationTime > maxAgeMs) {
-            qDebug() << "Cleaning up old assembly - Stream:" << it->streamId 
-                     << "Frame:" << it->frameNumber;
+        qint64 age = currentTime - it->creationTime;
+        if (age > maxAgeMs) {
+            qWarning() << "FrameAssembler: Cleaning up old assembly - Stream:" << it->streamId 
+                     << "Frame:" << it->frameNumber << "Age:" << age << "ms"
+                     << "Progress:" << it->receivedSize << "/" << it->totalSize;
             it = m_streamAssemblies.erase(it);
+            removedCount++;
         } else {
             ++it;
         }
+    }
+    
+    if (removedCount > 0) {
+        qDebug() << "FrameAssembler: Cleanup completed - Removed" << removedCount << "assemblies";
     }
 }
 
@@ -246,60 +294,104 @@ void FrameAssembler::cleanupOldAssemblies(qint64 maxAgeMs)
 FrameAssembler::StreamAssembly::StreamAssembly(int stream, int frame)
     : streamId(stream), frameNumber(frame), totalSize(0), receivedSize(0),
       creationTime(QDateTime::currentMSecsSinceEpoch()), hasStartFrame(false)
-{}
+{
+    qDebug() << "StreamAssembly: Created - Stream:" << streamId << "Frame:" << frameNumber;
+}
 
 bool FrameAssembler::StreamAssembly::isComplete() const
 {
-    return hasStartFrame && receivedSize >= totalSize;
+    bool complete = hasStartFrame && receivedSize >= totalSize;
+    if (complete) {
+        qDebug() << "StreamAssembly: Completion check - Stream:" << streamId 
+                 << "Frame:" << frameNumber << "COMPLETE";
+    }
+    return complete;
 }
 
 // FrameSender implementation
-FrameSender::FrameSender(QObject *parent) : QObject(parent) {}
+FrameSender::FrameSender(QObject *parent) : QObject(parent) 
+{
+    qDebug() << "FrameSender: Created";
+}
 
 bool FrameSender::hasPacketsToSend() const
 {
-    return !m_packetsToSend.isEmpty();
+    bool hasPackets = !m_packetsToSend.isEmpty();
+    qDebug() << "FrameSender: hasPacketsToSend check - Result:" << hasPackets << "Count:" << m_packetsToSend.size();
+    return hasPackets;
 }
 
 QVector<QPair<PacketType, QByteArray>> FrameSender::takePacketsToSend()
 {
     QVector<QPair<PacketType, QByteArray>> packets = m_packetsToSend;
     m_packetsToSend.clear();
+    qDebug() << "FrameSender: takePacketsToSend - Returning" << packets.size() << "packets";
     return packets;
 }
 
 void FrameSender::clear()
 {
+    int frameCount = m_frameQueue.size();
+    int packetCount = m_packetsToSend.size();
+    
     m_frameQueue.clear();
     m_packetsToSend.clear();
+    
+    qDebug() << "FrameSender: clear - Removed" << frameCount << "frames and" << packetCount << "packets";
 }
 
 void FrameSender::addFrame(int streamId, int frameNumber, const QByteArray &frameData)
 {
+    qDebug() << "FrameSender: addFrame - Stream:" << streamId 
+             << "Frame:" << frameNumber << "Size:" << frameData.size()
+             << "Queue size before:" << m_frameQueue.size();
+    
+    if (m_frameQueue.size() >= MAX_FRAME_QUEUE_SIZE) {
+        FrameQueueItem dropped = m_frameQueue.first();
+        qWarning() << "FrameSender: Queue full - Dropping oldest frame - Stream:" << dropped.streamId
+                   << "Frame:" << dropped.frameNumber << "Position:" << dropped.currentPosition;
+        m_frameQueue.removeFirst();
+    }
+    
     m_frameQueue.append(FrameQueueItem(streamId, frameNumber, frameData));
+    qDebug() << "FrameSender: Frame added to queue - New queue size:" << m_frameQueue.size();
+    
     processAllFrames();
 }
 
 int FrameSender::calculateOptimalChunkSize(const FrameQueueItem &frame, PacketType type) const
 {
     int remaining = frame.frameData.size() - frame.currentPosition;
+    int chunkSize = 0;
     
     switch (type) {
     case START_FRAME:
-        return qMin(START_PAYLOAD, remaining);
+        chunkSize = qMin(START_PAYLOAD, remaining);
+        break;
     case CONTINUE_FRAME:
-        return qMin(CONTINUE_PAYLOAD, remaining);
+        chunkSize = qMin(CONTINUE_PAYLOAD, remaining);
+        break;
     case END_FRAME:
-        return qMin(END_PAYLOAD, remaining);
+        chunkSize = qMin(END_PAYLOAD, remaining);
+        break;
     default:
-        return qMin(DATA_PAYLOAD_SIZE, remaining);
+        chunkSize = qMin(DATA_PAYLOAD_SIZE, remaining);
+        break;
     }
+    
+    qDebug() << "FrameSender: calculateOptimalChunkSize - Type:" << type
+             << "Remaining:" << remaining << "Chunk:" << chunkSize;
+    
+    return chunkSize;
 }
 
 // FrameQueueItem implementation
 FrameSender::FrameQueueItem::FrameQueueItem(int stream, int frame, const QByteArray &data)
     : streamId(stream), frameNumber(frame), frameData(data), currentPosition(0)
-{}
+{
+    qDebug() << "FrameQueueItem: Created - Stream:" << streamId 
+             << "Frame:" << frameNumber << "Size:" << frameData.size();
+}
 
 void FrameSender::sendStartFrame(const FrameQueueItem &frame, int dataSize)
 {
@@ -310,53 +402,65 @@ void FrameSender::sendStartFrame(const FrameQueueItem &frame, int dataSize)
     stream << frame.frameNumber << (int)frame.frameData.size();
     stream.writeRawData(frame.frameData.constData(), dataSize);
     
-    // Дополняем нулями если нужно
+    int padding = 0;
     if (payload.size() < DATA_PAYLOAD_SIZE) {
-        payload.append(QByteArray(DATA_PAYLOAD_SIZE - payload.size(), 0));
+        padding = DATA_PAYLOAD_SIZE - payload.size();
+        payload.append(QByteArray(padding, 0));
     }
     
     m_packetsToSend.append(qMakePair(START_FRAME, payload));
     
-    qDebug() << "Sent START_FRAME - Stream:" << frame.streamId 
+    qDebug() << "FrameSender: START_FRAME - Stream:" << frame.streamId 
              << "Frame:" << frame.frameNumber 
-             << "Size:" << frame.frameData.size()
-             << "Chunk:" << dataSize;
+             << "Total size:" << frame.frameData.size()
+             << "Chunk:" << dataSize
+             << "Payload:" << payload.size()
+             << "Padding:" << padding
+             << "Position:" << frame.currentPosition << "->" << (frame.currentPosition + dataSize);
 }
 
 void FrameSender::processAllFrames()
 {
+    qDebug() << "FrameSender: processAllFrames - Queue size:" << m_frameQueue.size();
+    
     while (!m_frameQueue.isEmpty()) {
         FrameQueueItem &currentFrame = m_frameQueue.first();
         int remaining = currentFrame.frameData.size() - currentFrame.currentPosition;
         
+        qDebug() << "FrameSender: Processing frame - Stream:" << currentFrame.streamId
+                 << "Frame:" << currentFrame.frameNumber
+                 << "Remaining:" << remaining;
+        
         if (remaining <= 0) {
+            qDebug() << "FrameSender: Frame completed - Stream:" << currentFrame.streamId
+                     << "Frame:" << currentFrame.frameNumber;
             m_frameQueue.removeFirst();
             continue;
         }
 
         if (currentFrame.currentPosition == 0) {
-            // START_FRAME - никогда не дополняется нулями
             int chunkSize = qMin(START_PAYLOAD, remaining);
             sendStartFrame(currentFrame, chunkSize);
             currentFrame.currentPosition += chunkSize;
         } else {
             if (remaining > END_PAYLOAD) {
-                // CONTINUE_FRAME - никогда не дополняется нулями
                 int chunkSize = qMin(CONTINUE_PAYLOAD, remaining);
                 sendContinueFrame(currentFrame, chunkSize);
                 currentFrame.currentPosition += chunkSize;
             } else {
-                // END_FRAME - единственный пакет, который дополняется нулями
                 sendEndFrame(currentFrame, remaining);
                 currentFrame.currentPosition += remaining;
             }
         }
         
-        // Удаляем завершенный фрейм
         if (currentFrame.currentPosition >= currentFrame.frameData.size()) {
+            qDebug() << "FrameSender: Frame fully processed - Stream:" << currentFrame.streamId
+                     << "Frame:" << currentFrame.frameNumber;
             m_frameQueue.removeFirst();
         }
     }
+    
+    qDebug() << "FrameSender: processAllFrames completed - Packets to send:" << m_packetsToSend.size();
 }
 
 void FrameSender::sendContinueFrame(const FrameQueueItem &frame, int dataSize)
@@ -368,13 +472,14 @@ void FrameSender::sendContinueFrame(const FrameQueueItem &frame, int dataSize)
     stream << frame.frameNumber;
     stream.writeRawData(frame.frameData.constData() + frame.currentPosition, dataSize);
     
-    // CONTINUE_FRAME НИКОГДА не дополняется нулями!
     m_packetsToSend.append(qMakePair(CONTINUE_FRAME, payload));
     
-    qDebug() << "Sent CONTINUE_FRAME - Stream:" << frame.streamId 
+    qDebug() << "FrameSender: CONTINUE_FRAME - Stream:" << frame.streamId 
              << "Frame:" << frame.frameNumber 
              << "Chunk:" << dataSize
-             << "Position:" << frame.currentPosition;
+             << "Payload:" << payload.size()
+             << "Position:" << frame.currentPosition << "->" << (frame.currentPosition + dataSize)
+             << "Remaining:" << (frame.frameData.size() - frame.currentPosition - dataSize);
 }
 
 void FrameSender::sendEndFrame(const FrameQueueItem &frame, int dataSize)
@@ -386,15 +491,33 @@ void FrameSender::sendEndFrame(const FrameQueueItem &frame, int dataSize)
     stream << frame.frameNumber;
     stream.writeRawData(frame.frameData.constData() + frame.currentPosition, dataSize);
     
-    // ТОЛЬКО END_FRAME дополняется нулями до DATA_PAYLOAD_SIZE
+    int padding = 0;
     if (payload.size() < DATA_PAYLOAD_SIZE) {
-        payload.append(QByteArray(DATA_PAYLOAD_SIZE - payload.size(), 0));
+        padding = DATA_PAYLOAD_SIZE - payload.size();
+        payload.append(QByteArray(padding, 0));
     }
     
     m_packetsToSend.append(qMakePair(END_FRAME, payload));
     
-    qDebug() << "Sent END_FRAME - Stream:" << frame.streamId 
+    qDebug() << "FrameSender: END_FRAME - Stream:" << frame.streamId 
              << "Frame:" << frame.frameNumber 
              << "Real data:" << dataSize
-             << "Padded to:" << payload.size();
+             << "Payload:" << payload.size()
+             << "Padding:" << padding
+             << "Position:" << frame.currentPosition << "->" << (frame.currentPosition + dataSize);
+}
+
+FrameAssembler::~FrameAssembler()
+{
+    // Очищаем все контейнеры
+    m_streamAssemblies.clear();
+    m_orphanedPackets.clear();
+    m_completeFrames.clear();
+    qDebug() << "FrameAssembler: Destroyed";
+}
+
+FrameSender::~FrameSender()
+{
+    clear();
+    qDebug() << "FrameSender: Destroyed";
 }

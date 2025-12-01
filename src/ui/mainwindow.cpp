@@ -334,8 +334,8 @@ void MainWindow::onJoinPublicStreamRequested(const QString& streamId) {
 
     qDebug() << "Joining stream, server ID:" << streamIdNum;
 
-    // Создаем ViewerWidget, но НЕ инициализируем сразу
-    m_videoGrid->addViewerWidget(streamIdNum, streamId);
+    // Создаем ViewerWidget с callId = 0 для публичных стримов
+    m_videoGrid->addViewerWidget(streamIdNum, streamId, 0);  // Добавлен третий параметр
     
     // Уведомляем StreamManager о присоединении
     if (m_streamManager) {
@@ -493,9 +493,10 @@ void MainWindow::onAddDeviceRequested()
 {
     qDebug() << "Add device requested";
 
-    // Обновляем список доступных устройств
-    refreshAvailableDevices();
+    // УБРАТЬ эту строку - используем существующий список
+    // refreshAvailableDevices();
     
+    // Остальной код без изменений...
     // Проверяем есть ли доступные устройства
     if (m_availableDevices.isEmpty()) {
         QMessageBox::information(this, "No Devices", 
@@ -524,7 +525,7 @@ void MainWindow::onAddDeviceRequested()
     if (dialog.exec() == QDialog::Accepted) {
         int selectedDevice = dialog.getSelectedDeviceIndex();
         if (selectedDevice != -1) {
-            // Проверяем, что устройство все еще доступно (на случай параллельного использования)
+            // Проверяем, что устройство все еще доступно
             if (m_usedDevices.contains(selectedDevice)) {
                 QMessageBox::warning(this, "Device Busy", 
                     QString("Camera %1 is already in use. Please select another device.").arg(selectedDevice));
@@ -546,8 +547,6 @@ void MainWindow::onAddDeviceRequested()
         qDebug() << "Device selection canceled by user";
     }
 }
-
-
 
 void MainWindow::onStreamerDisconnectRequested(int deviceIndex)
 {
