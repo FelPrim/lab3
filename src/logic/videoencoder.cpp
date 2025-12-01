@@ -27,7 +27,7 @@ VideoEncoder::~VideoEncoder()
 {
     cleanupFFmpeg();
     qDebug() << "VideoEncoder destroyed for stream:" << m_streamId;
-}
+приватный}
 
 void VideoEncoder::initialize(int width, int height, int fps)
 {
@@ -123,6 +123,53 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
         m_enc_ctx = nullptr;
         emit errorOccurred(QString("VideoEncoder stream %1: avcodec_open2 failed: %2").arg(m_streamId).arg(err));
         return;
+    }
+
+
+    // Сохраняем SPS/PPS из extradata (avcC) в Annex-B (0x00 00 00 01 ...),
+    // чтобы потом при отправке ключевого кадра прикладывать их перед пакетом.
+    if (m_enc_ctx->extradata && m_enc_ctx->extradata_size > 0) {
+        const uint8_t *ed = m_enc_ctx->extradata;
+        int ed_size = m_enc_ctx->extradata_size;
+        // Если extradata уже начинается с start code — копируем как есть
+        if (ed_size >= 4 && ed[0] == 0x00 && ed[1] == 0x00 && ed[2] == 0x00 && ed[3] == 0x01) {
+            m_spsPpsAnnexB = QByteArray(reinterpret_cast<const char*>(ed), ed_size);
+            m_haveSpsPps = true;
+        } else if (ed_size >= 7 && ed[0] == 1) {
+            // Парсим avcC (ISO/IEC 14496-15) порядковым способом:
+            int pos = 0;
+            // configurationVersion == ed[0] == 1
+            pos = 5; // ed[0..4] прочитаны: configurationVersion, profile, profile_compatibility, level, lengthSizeMinusOne
+            int numSPS = ed[pos++] & 0x1f;
+            QByteArray tmp;
+            for (int i = 0; i < numSPS; ++i) {
+                if (pos + 2 > ed_size) break;
+                int sps_len = (ed[pos] << 8) | ed[pos+1];
+                pos += 2;
+                if (pos + sps_len > ed_size) break;
+                // prepend start code
+                tmp.append("\x00\x00\x00\x01", 4);
+                tmp.append(reinterpret_cast<const char*>(ed + pos), sps_len);
+                pos += sps_len;
+            }
+            if (pos + 1 <= ed_size) {
+                int numPPS = ed[pos++];
+                for (int j = 0; j < numPPS; ++j) {
+                    if (pos + 2 > ed_size) break;
+                    int pps_len = (ed[pos] << 8) | ed[pos+1];
+                    pos += 2;
+                    if (pos + pps_len > ed_size) break;
+                    tmp.append("\x00\x00\x00\x01", 4);
+                    tmp.append(reinterpret_cast<const char*>(ed + pos), pps_len);
+                    pos += pps_len;
+                }
+            }
+            if (!tmp.isEmpty()) {
+                m_spsPpsAnnexB = tmp;
+                m_haveSpsPps = true;
+                qDebug() << "VideoEncoder: extracted SPS/PPS from extradata, size:" << m_spsPpsAnnexB.size();
+            }
+        }
     }
 
     // Остальная инициализация без изменений...
@@ -281,6 +328,7 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     }
 
     m_enc_frame->pts = m_pts++;
+    int curFrameNumber = static_cast<int>(m_enc_frame->pts);
     AVFrame *sendFrame = av_frame_clone(m_enc_frame);
     int ret = avcodec_send_frame(m_enc_ctx, sendFrame);
     if (ret < 0) {
@@ -294,13 +342,39 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
         if (ret < 0) break;
 
-        // Всегда отправляем пакет, независимо от размера
-        QByteArray encodedData(reinterpret_cast<const char*>(m_pkt->data), m_pkt->size);
-        emit encodedPacketReady(m_streamId, m_currentFrameNumber, encodedData);
-        m_currentFrameNumber++;
-        
+        if (m_pkt->size <= 0) {
+            av_packet_unref(m_pkt);
+            continue;
+        }
+
+        // Номер кадра — используем PTS, который мы выставили: m_enc_frame->pts
+        int frameNumberToEmit = static_cast<int>(curFrameNumber); // curFrameNumber определён ниже
+
+        // Если это ключевой пакет — прикладываем SPS/PPS в начало
+        QByteArray encodedData;
+        if (m_pkt->flags & AV_PKT_FLAG_KEY) {
+            if (m_haveSpsPps && !m_spsPpsAnnexB.isEmpty()) {
+                encodedData.reserve(m_spsPpsAnnexB.size() + m_pkt->size);
+                encodedData.append(m_spsPpsAnnexB);
+            }
+            encodedData.append(reinterpret_cast<const char*>(m_pkt->data), m_pkt->size);
+        } else {
+            // Для не-ключевых пакетов — отправляем сам пакет
+            encodedData = QByteArray(reinterpret_cast<const char*>(m_pkt->data), m_pkt->size);
+        }
+
+        emit encodedPacketReady(m_streamId, frameNumberToEmit, encodedData);
+
+        // Увеличиваем счетчик фреймов только если это ключевой пакет или если ты хочешь инкремент на каждом пакете
+        // Здесь логичнее считать frameNumber как PTS, поэтому не трогаем m_currentFrameNumber
+        // Но для совместимости, если ты полагаешься на m_currentFrameNumber, можно инкрементить его при keyframe:
+        if (m_pkt->flags & AV_PKT_FLAG_KEY) {
+            m_currentFrameNumber++;
+        }
+
         av_packet_unref(m_pkt);
     }
+
 }
 
 void VideoEncoder::setStreamId(int streamId)

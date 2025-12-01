@@ -54,4 +54,6 @@ private:
     bool m_initialized = false;
 private:
     bool m_encoderActive = false;
+    QByteArray m_spsPpsAnnexB;
+    bool m_haveSpsPps = false;
 };
