@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <thread>
 #include <algorithm>
+#include "../video_defaults.h"
 
 extern "C" {
 #include <libavutil/imgutils.h>
@@ -39,11 +40,11 @@ void VideoEncoder::initialize(int width, int height, int fps)
         return;
     }
     
-    m_width = width;
-    m_height = height;
-    m_fps = fps;
+    m_width = DEFAULT_WIDTH;
+    m_height = DEFAULT_HEIGHT;
+    m_fps = DEFAULT_FPS;
     
-    initFFmpeg(width, height, fps);
+    initFFmpeg(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS);
     if (!m_enc_ctx) {
         emit errorOccurred(QString("VideoEncoder stream %1: initFFmpeg failed").arg(m_streamId));
     } else {
@@ -98,7 +99,7 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
     m_enc_ctx->gop_size = fps;          // Маленький GOP для быстрого восстановления
     m_enc_ctx->max_b_frames = 0;       // Без B-фреймов для низкой задержки
     m_enc_ctx->refs = 1;               // Минимальное количество reference фреймов
-    m_enc_ctx->bit_rate = m_bitrate;
+    m_enc_ctx->bit_rate = DEFAULT_BITRATE;
     m_enc_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
     
     // ОПТИМИЗАЦИИ ДЛЯ НИЗКОЙ ЗАДЕРЖКИ
@@ -266,8 +267,8 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     // Подготавливаем исходные указатели
     uint8_t *src_data[4] = { nullptr };
     int src_linesize[4] = { 0 };
-    av_image_fill_arrays(src_data, src_linesize, bgr.data, AV_PIX_FMT_BGR24, m_width, m_height, 1);
-
+    rc_data[0] = bgr.data;
+    src_linesize[0] = static_cast<int>(bgr.step);
     int got = sws_scale(m_sws_enc, src_data, src_linesize, 0, m_height, 
                        m_enc_frame->data, m_enc_frame->linesize);
     if (got <= 0) {
