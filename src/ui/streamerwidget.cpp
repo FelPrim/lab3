@@ -351,34 +351,49 @@ void StreamerWidget::initialize()
         initializeVideoCapture();
         
 
-        #ifdef TEST_DECODER
+#ifdef TEST_DECODER
+    // 1. Создаём framebuffer
+    if (!m_frameBuffer) {
         m_frameBuffer = new FrameBuffer(DEFAULT_BUFFERSZ);
+    }
+
+    // 2. Создаём декодер с разрешением захвата
+    if (!m_testDecoder) {
         m_testDecoder = new VideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, this);
+        m_testDecoder->initialize();
 
-
-        // Соединяем framebuffer -> decoder через таймер
-        QTimer* decodeTimer = new QTimer(this);
-        decodeTimer->setInterval(5); // Проверка каждые 5 мс
-        connect(decodeTimer, &QTimer::timeout, this, [this](){
-            if (!m_testDecoder || !m_frameBuffer) return;
-            
-            static int nextFrame = 0;
-            QByteArray packet;
-            if (m_frameBuffer->getFrame(nextFrame, packet)) {
-                m_testDecoder->decodeFrame(packet, nextFrame);
-                nextFrame++;
-            }
-        });
-        decodeTimer->start();
-
-        // Декодированные кадры -> display
+        // 3. Подключаем сигнал decoded frame к VideoDisplay
         connect(m_testDecoder, &VideoDecoder::frameDecoded,
-                this, [this](const QImage &image, int /*frameNumber*/){
-                    if (m_videoDisplay) {
-                        m_videoDisplay->displayFrame(image);
+                m_videoDisplay, &VideoDisplay::displayFrame);
+    }
+
+    // 4. Подключаем encoder -> framebuffer
+    if (m_videoEncoder) {
+        connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
+                this, [this](int /*streamId*/, int frameNumber, const QByteArray &packet){
+                    if (m_frameBuffer) {
+                        m_frameBuffer->insertFrame(frameNumber, packet);
                     }
                 });
-        #endif
+    }
+
+    // 5. Запускаем таймер, который будет опрашивать framebuffer и передавать кадры в декодер
+    QTimer *decoderTimer = new QTimer(this);
+    connect(decoderTimer, &QTimer::timeout, this, [this](){
+        if (!m_frameBuffer || !m_testDecoder) return;
+
+        QByteArray packet;
+        if (m_frameBuffer->getLatestFrame(packet)) {
+            static int lastFrame = -1;
+            int frameNumber = m_frameBuffer->getMaxFrameNumber();
+            if (frameNumber > lastFrame) {
+                m_testDecoder->decodeFrame(packet, frameNumber);
+                lastFrame = frameNumber;
+            }
+        }
+    });
+    decoderTimer->start(10); // опрашиваем каждые 10 мс
+#endif
         // 2. Затем настраиваем соединения (чтобы подключиться к созданному VideoCapture)
         setupConnections();
         
