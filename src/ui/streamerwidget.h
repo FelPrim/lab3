@@ -126,6 +126,8 @@ public:
 #ifdef TEST_DECODER
     class VideoDecoder* m_testDecoder = nullptr;
     FrameBuffer* m_frameBuffer = nullptr;
+    QTimer *m_frameDecoderTimer = nullptr;
+    int m_lastDecodedFrame = -1;
 #endif
 
 };
