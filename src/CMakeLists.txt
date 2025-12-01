@@ -41,6 +41,8 @@ set(SOURCES
     #  network/tcp/tcpclient.cpp
     network/tcp/tcpmanager.cpp
     network/udp/udpmanager.cpp
+    network/udp/fecbuffer.cpp
+    network/udp/packetgroupbuffer.cpp
     network/udp/myfec.cpp
     
     # UI files
@@ -84,6 +86,8 @@ set(HEADERS
     network/udp/myfec.h
     network/udp/network_packet.h
     network/endianness.h
+    network/udp/fecbuffer.h
+    network/udp/packetgroupbuffer.h
     
     # UI headers
     ui/mainwindow.h

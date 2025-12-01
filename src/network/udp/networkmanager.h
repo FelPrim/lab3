@@ -14,6 +14,8 @@
 #include "myfec.h"
 #include "network_packet.h"
 #include "../../video_defaults.h"
+#include "fecbuffer.h"
+#include "packetgroupbuffer.h"
 
 class UDPManager;
 
@@ -54,18 +56,16 @@ public slots:
 private slots:
     void cleanupOldAssemblies();
     void printStatistics();
-    void onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData);
+    void onFrameComplete(int streamId, int frameNumber, const QByteArray &frameData);
+    void onPacketFromFecReady(const NetworkPacket &packet);
+    void onPacketRecovered(uint32_t packetSequence);
 
 private:
-    // Основные методы из старой реализации
+    // Основные методы
     void processPacketNewProtocol(const QByteArray &data);
-    void sendPacketNewProtocol(const QByteArray &data, PacketType type);
     void sendPacketNewProtocol(const QByteArray &data, PacketType type, int customSequence);
     
-    // FEC методы из старой реализации
-    void processXorPacket(const NetworkPacket& packet);
-    void tryRecoverLostPackets(int groupId);
-    
+    // Статистика
     void updateSendStats(int packets, int bytes);
     void updateReceiveStats(int packets, int bytes);
     uint32_t calculateCRC32(const QByteArray &data);
@@ -78,21 +78,21 @@ private:
     QTimer *m_cleanupTimer = nullptr;
     QTimer *m_statsTimer = nullptr;
     
-    // Компоненты из старой реализации
-    FrameAssembler *m_frameAssembler = nullptr;
+    // Компоненты трехслойной архитектуры
+    FecBuffer *m_fecBuffer = nullptr;           // Слой 3: FEC восстановление
+    PacketGroupBuffer *m_packetBuffer = nullptr; // Слой 2: Группировка пакетов
+    
+    // Отправка (оставляем FrameSender)
     FrameSender *m_frameSender = nullptr;
     
+    // FEC буфер для отправки (используется при создании XOR пакетов)
+    uint8_t m_fecSendBuffer[4][1188];
+    int m_fecSendBufferCount = 0;
+    
+    // Идентификаторы
     int m_streamId;
     uint32_t m_callId = 0;
     int m_packetSequence = 0;
-   
-    // FEC буферы из старой реализации
-
-    QHash<int, QVector<QByteArray>> m_fecReceiveBuffers;
-    QHash<int, QVector<bool>> m_fecReceived;
-
-    uint8_t m_fecBuffer[4][1188];
-    int m_fecBufferCount;
 
     struct Statistics {
         quint64 totalPacketsSent = 0;
@@ -115,11 +115,7 @@ private:
     QElapsedTimer m_operationTimer;
     bool m_initialized = false;
     bool m_sendingEnabled = false;
-private:
-    static const int MAX_FEC_GROUPS = 50;
-    QHash<int, qint64> m_fecGroupTimestamps; 
+    
 private:
     static const int MAX_FEC_BUFFER_SIZE = 128;
-
-
 };

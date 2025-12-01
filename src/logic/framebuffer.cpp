@@ -1,129 +1,242 @@
+// framebuffer.cpp
 #include "framebuffer.h"
 #include <QDebug>
+#include <algorithm>
 
+// framebuffer.cpp - конструктор
 FrameBuffer::FrameBuffer(int capacity)
-    : m_capacity(DEFAULT_BUFFERSZ), m_buffer(DEFAULT_BUFFERSZ), m_frameNumbers(DEFAULT_BUFFERSZ, -1)
+    : m_capacity(qMax(1, capacity))  // Гарантируем минимум 1
 {
+    // Сначала устанавливаем емкость, потом резервируем
+    m_buffer.resize(m_capacity);
+    m_frameNumbers.resize(m_capacity);
+    
+    // Инициализируем
+    for (int i = 0; i < m_capacity; ++i) {
+        m_frameNumbers[i] = -1;
+    }
+    
+    m_minFrame = 0;
+    m_maxFrame = -1;
+    
+    qDebug() << "FrameBuffer constructed at" << this 
+             << "with capacity:" << m_capacity
+             << "buffer size:" << m_buffer.size()
+             << "frameNumbers size:" << m_frameNumbers.size();
+}
+int FrameBuffer::getBufferIndex(int frameNumber) const
+{
+    if (m_capacity == 0) return -1;
+    int idx = frameNumber % m_capacity;
+    if (idx < 0) idx += m_capacity;
+    return idx;
 }
 
 void FrameBuffer::insertFrame(int frameNumber, const QByteArray &frameData)
 {
     QMutexLocker locker(&m_mutex);
-    
+
     if (m_capacity == 0) return;
 
     // Если это первый фрейм
     if (m_maxFrame == -1) {
         m_minFrame = m_maxFrame = frameNumber;
     } else {
-        // Обновляем максимальный фрейм
         if (frameNumber > m_maxFrame) {
+            // Сохраняем старый минимальный, чтобы при продвижении очистить вытесненные слоты
+            int oldMin = m_minFrame;
+
             m_maxFrame = frameNumber;
-            // Обновляем минимальный фрейм чтобы сохранить capacity
             m_minFrame = m_maxFrame - m_capacity + 1;
             if (m_minFrame < 0) m_minFrame = 0;
+
+            // Очистим слоты для фреймов, которые выпали из буфера (oldMin .. m_minFrame-1)
+            if (m_minFrame > oldMin) {
+                for (int f = oldMin; f < m_minFrame; ++f) {
+                    int idx = getBufferIndex(f);
+                    if (idx >= 0 && idx < m_capacity) {
+                        m_frameNumbers[idx] = -1;
+                        m_buffer[idx].clear();
+                    }
+                }
+            }
         }
         // Игнорируем слишком старые фреймы
         else if (frameNumber < m_minFrame) {
             return;
         }
+        // иначе: вставляем во внутрь текущего окна (overwriting старые / пустые)
     }
 
-    // Вставляем в кольцевой буфер
-    int index = frameNumber % m_capacity;
+    int index = getBufferIndex(frameNumber);
+    if (index < 0) return;
+
+    // Заменяем слот — старый QByteArray будет освобождён при присваивании
     m_buffer[index] = frameData;
     m_frameNumbers[index] = frameNumber;
-    
-    qDebug() << "FrameBuffer: inserted frame" << frameNumber << "at index" << index 
+
+    qDebug() << "FrameBuffer: inserted frame" << frameNumber << "at index" << index
              << "size:" << frameData.size() << "bytes";
 }
 
 bool FrameBuffer::getFrame(int frameNumber, QByteArray &out) const
 {
     QMutexLocker locker(&m_mutex);
-    
+
+    if (m_capacity == 0) return false;
+    if (m_maxFrame == -1) return false;
     if (frameNumber < m_minFrame || frameNumber > m_maxFrame) {
         return false;
     }
+    int index = getBufferIndex(frameNumber);
+    if (index < 0) return false;
 
-    int index = frameNumber % m_capacity;
     if (m_frameNumbers[index] == frameNumber) {
         out = m_buffer[index];
         return true;
     }
-    
     return false;
 }
 
-bool FrameBuffer::getLatestFrame(QByteArray &out)
+bool FrameBuffer::getLatestFrame(QByteArray &out) const
 {
     QMutexLocker locker(&m_mutex);
-    return getFrame(m_maxFrame, out);
+
+    if (m_capacity == 0) return false;
+    if (m_maxFrame == -1) return false;
+
+    int index = getBufferIndex(m_maxFrame);
+    if (index < 0) return false;
+
+    if (m_frameNumbers[index] == m_maxFrame) {
+        out = m_buffer[index];
+        return true;
+    }
+    return false;
 }
 
+// framebuffer.cpp - метод clear()
 void FrameBuffer::clear()
 {
     QMutexLocker locker(&m_mutex);
+    
+    qDebug() << "FrameBuffer::clear() called at address:" << this 
+             << "capacity:" << m_capacity;
+
     m_minFrame = 0;
     m_maxFrame = -1;
-    for (int i = 0; i < m_capacity; ++i) {
-        m_frameNumbers[i] = -1;
+    
+    if (m_capacity <= 0) {
+        qWarning() << "FrameBuffer::clear(): invalid capacity" << m_capacity;
+        return;
     }
+
+    // Безопасная очистка с проверкой индексов
+    for (int i = 0; i < m_capacity && i < m_buffer.size(); ++i) {
+        m_frameNumbers[i] = -1;
+        m_buffer[i].clear();
+    }
+    
+    qDebug() << "FrameBuffer::clear(): cleared" << m_capacity << "slots";
 }
 
 int FrameBuffer::size() const
 {
     QMutexLocker locker(&m_mutex);
+    if (m_maxFrame == -1) return 0;
     if (m_maxFrame < m_minFrame) return 0;
+    // размер окна (кол-во потенциальных индексов, не фактическое кол-во заполненных)
     return m_maxFrame - m_minFrame + 1;
 }
 
-int FrameBuffer::capacity() const { return m_capacity; }
+int FrameBuffer::capacity() const { 
+    QMutexLocker locker(&m_mutex);
+    return m_capacity; 
+}
 
 void FrameBuffer::setCapacity(int capacity)
 {
     QMutexLocker locker(&m_mutex);
-    if (capacity == m_capacity) return;
-    
-    // Сохраняем данные и пересоздаем буфер
-    QVector<QByteArray> oldBuffer = m_buffer;
-    QVector<int> oldFrameNumbers = m_frameNumbers;
-    int oldCapacity = m_capacity;
-    
-    m_capacity = capacity;
-    m_buffer.resize(m_capacity);
-    m_frameNumbers.resize(m_capacity);
-    clear();
-    
-    // Переinsert старые фреймы
-    for (int i = 0; i < oldCapacity; ++i) {
-        if (oldFrameNumbers[i] != -1) {
-            insertFrame(oldFrameNumbers[i], oldBuffer[i]);
-        }
+
+    int newCap = qMax(0, capacity);
+    if (newCap == m_capacity) return;
+
+    // Если новая ёмкость == 0 — просто очистим всё и установим пустые вектора
+    if (newCap == 0) {
+        m_buffer.clear();
+        m_frameNumbers.clear();
+        m_capacity = 0;
+        m_minFrame = 0;
+        m_maxFrame = -1;
+        return;
     }
+
+    // Новый контейнер
+    QVector<QByteArray> newBuffer(newCap);
+    QVector<int> newFrameNumbers(newCap, -1);
+
+    // Переносим старые фреймы, если они попадают в новое окно
+    if (m_capacity > 0 && m_maxFrame != -1) {
+        // Проходим по текущему диапазону и копируем
+        for (int f = m_minFrame; f <= m_maxFrame; ++f) {
+            int oldIdx = getBufferIndex(f);
+            if (oldIdx < 0 || oldIdx >= m_capacity) continue;
+            int frameNumAtIdx = m_frameNumbers[oldIdx];
+            if (frameNumAtIdx != f) continue; // слот не содержит этот кадр
+
+            // Помещаем в новый буфер, если попадает в новый размер окна
+            int newIdx = f % newCap;
+            if (newIdx < 0) newIdx += newCap;
+            newBuffer[newIdx] = m_buffer[oldIdx];
+            newFrameNumbers[newIdx] = f;
+        }
+
+        // Обновим границы окна: максимальный номер остаётся тем же, минимальный зависит от ёмкости
+        int newMax = m_maxFrame;
+        int newMin = newMax - newCap + 1;
+        if (newMin < 0) newMin = 0;
+        m_minFrame = newMin;
+        m_maxFrame = newMax;
+    } else {
+        // старого содержимого нет
+        m_minFrame = 0;
+        m_maxFrame = -1;
+    }
+
+    // Присваиваем новые контейнеры
+    m_capacity = newCap;
+    m_buffer.swap(newBuffer);
+    m_frameNumbers.swap(newFrameNumbers);
 }
 
-int FrameBuffer::getMinFrameNumber() const 
-{ 
+int FrameBuffer::getMinFrameNumber() const
+{
     QMutexLocker locker(&m_mutex);
-    return m_minFrame; 
+    return m_minFrame;
 }
 
-int FrameBuffer::getMaxFrameNumber() const 
-{ 
+int FrameBuffer::getMaxFrameNumber() const
+{
     QMutexLocker locker(&m_mutex);
-    return m_maxFrame; 
+    return m_maxFrame;
 }
 
 bool FrameBuffer::hasFrame(int frameNumber) const
 {
     QMutexLocker locker(&m_mutex);
+    if (m_capacity == 0) return false;
+    if (m_maxFrame == -1) return false;
     if (frameNumber < m_minFrame || frameNumber > m_maxFrame) return false;
-    int index = frameNumber % m_capacity;
+    int index = getBufferIndex(frameNumber);
+    if (index < 0) return false;
     return m_frameNumbers[index] == frameNumber;
 }
 
-int FrameBuffer::getBufferIndex(int frameNumber) const
+FrameBuffer::~FrameBuffer()
 {
-    return frameNumber % m_capacity;
+    QMutexLocker locker(&m_mutex);
+    qDebug() << "~FrameBuffer() at" << this 
+             << "capacity:" << m_capacity;
+    
+    // Векторы очистятся автоматически при разрушении объекта
 }

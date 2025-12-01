@@ -113,10 +113,11 @@ void VideoCapture::run()
         
         // Критически важно: создаем копию, так как данные rgbFrame временные
 #ifndef TEST_DECODER
-        emit rawFrameReady(image.copy());
+    emit rawFrameReady(image.copy());
 #endif
-        
-        emit frameForEncodingReady(frame.clone()); 
+
+
+    emit frameForEncodingReady(frame.clone());
         // Периодический лог FPS (каждые 100 кадров)
         if (frameCount % 100 == 0) {
             double elapsed = fpsTimer.restart() / 1000.0;

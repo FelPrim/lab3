@@ -46,4 +46,11 @@ private:
 
     std::atomic<bool> m_busy{false};
     bool m_initialized = false;
+
+    // cache for sws context params (to detect when we must recreate it)
+    int m_sws_in_w = 0;
+    int m_sws_in_h = 0;
+    AVPixelFormat m_sws_in_fmt = AV_PIX_FMT_NONE;
+    int m_sws_out_w = 0;
+    int m_sws_out_h = 0;
 };

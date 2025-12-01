@@ -6,12 +6,72 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavutil/error.h>
 #include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
 }
 
 static QString ffmpegErrStr(int errnum) {
     char buf[256] = {0};
     av_strerror(errnum, buf, sizeof(buf));
     return QString::fromUtf8(buf);
+}
+
+// --- Helper: try to detect & convert length-prefixed NALs to Annex-B ---
+// If input already contains start codes, returns original QByteArray.
+// Otherwise tries nalSize = 4,3,2,1 and returns converted Annex-B if parsing succeeds.
+// If cannot parse, returns original input (fallback).
+static QByteArray convertToAnnexBIfNeeded(const QByteArray &in)
+{
+    if (in.isEmpty()) return in;
+
+    const uint8_t *data = reinterpret_cast<const uint8_t*>(in.constData());
+    int size = in.size();
+
+    // Quick check: if there's a start code near the beginning -> assume Annex-B already.
+    if (size >= 4 && data[0] == 0x00 && data[1] == 0x00 &&
+        (data[2] == 0x00 && data[3] == 0x01 || data[2] == 0x01)) {
+        return in; // already Annex-B
+    }
+
+    // Also scan first 32 bytes for a start code anywhere (sometimes SPS/PPS at offset)
+    int scanLimit = std::min(size, 32);
+    for (int i = 0; i <= scanLimit - 3; ++i) {
+        if (data[i] == 0x00 && data[i+1] == 0x00) {
+            if ((i+2 < size && data[i+2] == 0x01) || (i+3 < size && data[i+2] == 0x00 && data[i+3] == 0x01)) {
+                return in; // found start code -> treat as Annex-B
+            }
+        }
+    }
+
+    // Try different nal size interpretations (4..1)
+    for (int nalSize = 4; nalSize >= 1; --nalSize) {
+        int offset = 0;
+        bool ok = true;
+        QByteArray out;
+        out.reserve(size + 64);
+        while (offset + nalSize <= size) {
+            // parse big-endian length
+            uint32_t nal_len = 0;
+            for (int i = 0; i < nalSize; ++i) {
+                nal_len = (nal_len << 8) | data[offset + i];
+            }
+            offset += nalSize;
+
+            // sanity checks
+            if (nal_len == 0) { ok = false; break; }
+            if (offset + (int)nal_len > size) { ok = false; break; }
+
+            // append start code + payload
+            out.append("\x00\x00\x00\x01", 4);
+            out.append(reinterpret_cast<const char*>(data + offset), nal_len);
+            offset += nal_len;
+        }
+        if (ok && offset == size) {
+            return out; // successful conversion
+        }
+    }
+
+    // Failed to parse as length-prefixed -> return original (best-effort)
+    return in;
 }
 
 VideoDecoder::VideoDecoder(int targetWidth, int targetHeight, QObject *parent)
@@ -58,18 +118,12 @@ void VideoDecoder::initFFmpeg()
         return;
     }
 
-    // ОПТИМИЗАЦИИ ДЛЯ НИЗКОЙ ЗАДЕРЖКИ
+    // Оптимизации для низкой задержки (осторожно с флагами, они зависят от версии)
     m_dec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
-	m_dec_ctx->flags |= AV_CODEC_FLAG_OUTPUT_CORRUPT;
-	m_dec_ctx->flags |= AV_CODEC_FLAG2_SHOW_ALL;
-    m_dec_ctx->flags2 |= AV_CODEC_FLAG2_FAST;
-
-	m_dec_ctx->error_concealment = FF_EC_GUESS_MVS | FF_EC_DEBLOCK;
-    
-    // Уменьшаем размер буфера
-    m_dec_ctx->delay = 0;
-    
-    // Используем меньше потоков для снижения накладных расходов
+    m_dec_ctx->flags |= AV_CODEC_FLAG_OUTPUT_CORRUPT;
+    m_dec_ctx->flags2 |= AV_CODEC_FLAG2_FAST; 
+    m_dec_ctx->error_concealment = FF_EC_GUESS_MVS | FF_EC_DEBLOCK;
+    m_dec_ctx->delay = 0;   
     m_dec_ctx->thread_count = 1;
 
     int ret = avcodec_open2(m_dec_ctx, dec_codec, nullptr);
@@ -94,6 +148,7 @@ void VideoDecoder::initFFmpeg()
 void VideoDecoder::cleanupFFmpeg()
 {
     if (m_dec_ctx) {
+        // flush decoder
         avcodec_send_packet(m_dec_ctx, nullptr);
         while (avcodec_receive_frame(m_dec_ctx, m_dec_frame) == 0) {
             av_frame_unref(m_dec_frame);
@@ -133,148 +188,173 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
         return;
     }
 
-    // Автоматическое освобождение busy с защитой от исключений
     struct BusyGuard {
         std::atomic<bool>& busy;
         BusyGuard(std::atomic<bool>& b) : busy(b) {}
         ~BusyGuard() { 
-            busy.store(false);
+            busy.store(false, std::memory_order_release); 
         }
     } guard(m_busy);
 
-    try {
-        AVPacket *pkt = av_packet_alloc();
-        if (!pkt) {
-            emit errorOccurred("av_packet_alloc failed");
-            return;
-        }
+    // Преобразуем данные в Annex-B формат если необходимо
+    QByteArray packetData = convertToAnnexBIfNeeded(frameData);
+    if (packetData.isEmpty()) {
+        qDebug() << "VideoDecoder: packet data is empty after conversion";
+        return;
+    }
 
-        // Выделяем память с защитой
-        if (av_new_packet(pkt, frameData.size()) < 0) {
-            av_packet_free(&pkt);
-            emit errorOccurred("av_new_packet failed");
-            return;
-        }
-        memcpy(pkt->data, frameData.constData(), frameData.size());
+    // Создаем и заполняем AVPacket
+    AVPacket *pkt = av_packet_alloc();
+    if (!pkt) {
+        emit errorOccurred("VideoDecoder: av_packet_alloc failed");
+        return;
+    }
 
-        int ret = avcodec_send_packet(m_dec_ctx, pkt);
-        if (ret < 0) {
-            qDebug() << "avcodec_send_packet failed:" << ffmpegErrStr(ret);
-           // av_free(pkt->data);  // ДОБАВИТЬ ЭТУ СТРОКУ
-            av_packet_free(&pkt);
-            return;
-        }
-
-        while (ret >= 0) {
-            ret = avcodec_receive_frame(m_dec_ctx, m_dec_frame);
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
-            if (ret < 0) {
-                qDebug() << "avcodec_receive_frame failed:" << ffmpegErrStr(ret);
-                break;
-            }
-
-            // Создаем контекст масштабирования если нужно
-            if (!m_sws_dec) {
-		 /*
-                m_sws_dec = sws_getContext(m_dec_frame->width, m_dec_frame->height,
-                                        (AVPixelFormat)m_dec_frame->format,
-                                        m_targetWidth, m_targetHeight, AV_PIX_FMT_BGR24,
-                                        SWS_BILINEAR, nullptr, nullptr, nullptr);
-		*/
-		    m_sws_dec = sws_getContext(m_dec_frame->width, m_dec_frame->height,
-                            (AVPixelFormat)m_dec_frame->format,
-                            m_dec_frame->width, m_dec_frame->height, AV_PIX_FMT_BGR24,  
-                            SWS_BILINEAR, nullptr, nullptr, nullptr);
-                if (!m_sws_dec) {
-                    emit errorOccurred("sws_getContext(dec) failed");
-                    av_frame_unref(m_dec_frame);
-                    continue;
-                }
-            }
-
-            uint8_t *dst_data[4] = { nullptr };
-            int dst_linesize[4] = { 0 };
-            int bufsize = av_image_alloc(dst_data, dst_linesize, m_targetWidth, m_targetHeight, AV_PIX_FMT_BGR24, 1);
-            if (bufsize < 0) {
-                qDebug() << "av_image_alloc failed";
-                av_frame_unref(m_dec_frame);
-                continue;
-            }
-
-            int got = sws_scale(m_sws_dec, m_dec_frame->data, m_dec_frame->linesize, 0,
-                                m_dec_frame->height, dst_data, dst_linesize);
-            if (got <= 0) {
-                qDebug() << "sws_scale decode->bgr failed";
-                av_freep(&dst_data[0]);
-                av_frame_unref(m_dec_frame);
-                continue;
-            }
-
-            // Создаем QImage и эмитируем сигнал
-            // QImage img(dst_data[0], m_targetWidth, m_targetHeight, dst_linesize[0], QImage::Format_BGR888);
-            QImage img(dst_data[0], m_dec_frame->width, m_dec_frame->height, dst_linesize[0], QImage::Format_BGR888);
-	    if (!img.isNull()) {
-                emit frameDecoded(img.copy(), frameNumber);
-            } else {
-                qWarning() << "Failed to create QImage from decoded data for frame" << frameNumber;
-            }
-
-            av_freep(&dst_data[0]);
-            av_frame_unref(m_dec_frame);
-        }
-
-        av_free(pkt->data);
+    // Важно: используем av_packet_from_data для корректного управления памятью
+    pkt->data = reinterpret_cast<uint8_t*>(av_malloc(packetData.size()));
+    if (!pkt->data) {
         av_packet_free(&pkt);
+        emit errorOccurred("VideoDecoder: av_malloc for packet data failed");
+        return;
+    }
+    
+    memcpy(pkt->data, packetData.constData(), packetData.size());
+    pkt->size = packetData.size();
+
+    // Отправляем пакет в декодер
+    int ret = avcodec_send_packet(m_dec_ctx, pkt);
+    if (ret < 0) {
+        qDebug() << "VideoDecoder: avcodec_send_packet failed for frame" << frameNumber 
+                 << "error:" << ffmpegErrStr(ret);
         
-    } catch (const std::exception& e) {
-        qCritical() << "Exception in VideoDecoder::decodeFrame:" << e.what();
-        emit errorOccurred(QString("Decoder exception: %1").arg(e.what()));
-    } catch (...) {
-        qCritical() << "Unknown exception in VideoDecoder::decodeFrame";
-        emit errorOccurred("Unknown decoder exception");
+        // Освобождаем память пакета
+        av_freep(&pkt->data);
+        av_packet_free(&pkt);
+        return;
+    }
+
+    // Освобождаем пакет после отправки (декодер делает внутреннюю копию)
+    av_freep(&pkt->data);
+    av_packet_free(&pkt);
+
+    // Получаем декодированные фреймы
+    while (true) {
+        ret = avcodec_receive_frame(m_dec_ctx, m_dec_frame);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            break; // Нет доступных фреймов или конец потока
+        }
+        
+        if (ret < 0) {
+            qDebug() << "VideoDecoder: avcodec_receive_frame failed for frame" << frameNumber
+                     << "error:" << ffmpegErrStr(ret);
+            av_frame_unref(m_dec_frame);
+            break;
+        }
+
+        // Получаем параметры декодированного фрейма
+        int in_w = m_dec_frame->width;
+        int in_h = m_dec_frame->height;
+        AVPixelFormat in_fmt = static_cast<AVPixelFormat>(m_dec_frame->format);
+        
+        if (in_w <= 0 || in_h <= 0) {
+            qDebug() << "VideoDecoder: invalid frame dimensions" << in_w << "x" << in_h;
+            av_frame_unref(m_dec_frame);
+            continue;
+        }
+
+        // Вычисляем выходные размеры
+        int out_w = (m_targetWidth > 0) ? m_targetWidth : in_w;
+        int out_h = (m_targetHeight > 0) ? m_targetHeight : in_h;
+
+        // Проверяем нужно ли пересоздавать SwsContext
+        bool needRecreate = false;
+        if (!m_sws_dec) {
+            needRecreate = true;
+        } else if (m_sws_in_w != in_w || m_sws_in_h != in_h || 
+                   m_sws_in_fmt != in_fmt || 
+                   m_sws_out_w != out_w || m_sws_out_h != out_h) {
+            needRecreate = true;
+        }
+
+        if (needRecreate) {
+            if (m_sws_dec) {
+                sws_freeContext(m_sws_dec);
+                m_sws_dec = nullptr;
+            }
+            
+            m_sws_dec = sws_getContext(
+                in_w, in_h, in_fmt,
+                out_w, out_h, AV_PIX_FMT_RGB24,
+                SWS_BILINEAR, nullptr, nullptr, nullptr
+            );
+            
+            if (!m_sws_dec) {
+                emit errorOccurred(QString("VideoDecoder: sws_getContext failed for %1x%2")
+                                   .arg(in_w).arg(in_h));
+                av_frame_unref(m_dec_frame);
+                continue;
+            }
+            
+            // Кэшируем параметры
+            m_sws_in_w = in_w;
+            m_sws_in_h = in_h;
+            m_sws_in_fmt = in_fmt;
+            m_sws_out_w = out_w;
+            m_sws_out_h = out_h;
+            
+            qDebug() << "VideoDecoder: created new SwsContext for" << in_w << "x" << in_h 
+                     << "->" << out_w << "x" << out_h;
+        }
+
+        // Выделяем память для RGB изображения
+        uint8_t *dst_data[4] = { nullptr };
+        int dst_linesize[4] = { 0 };
+        
+        int buffer_size = av_image_alloc(dst_data, dst_linesize, 
+                                         out_w, out_h, AV_PIX_FMT_RGB24, 1);
+        if (buffer_size < 0) {
+            emit errorOccurred(QString("VideoDecoder: av_image_alloc failed for %1x%2")
+                               .arg(out_w).arg(out_h));
+            av_frame_unref(m_dec_frame);
+            continue;
+        }
+
+        // Конвертируем YUV -> RGB
+        int got = sws_scale(m_sws_dec, 
+                           m_dec_frame->data, m_dec_frame->linesize,
+                           0, in_h,
+                           dst_data, dst_linesize);
+        
+        if (got <= 0) {
+            qDebug() << "VideoDecoder: sws_scale failed for frame" << frameNumber;
+            av_freep(&dst_data[0]); // Освобождаем выделенную память
+            av_frame_unref(m_dec_frame);
+            continue;
+        }
+
+        // Создаем QImage
+        QImage img(dst_data[0], out_w, out_h, dst_linesize[0], QImage::Format_RGB888);
+        if (img.isNull()) {
+            qWarning() << "VideoDecoder: Failed to create QImage for frame" << frameNumber;
+        } else {
+            // Создаем копию, так как img ссылается на данные, которые мы скоро освободим
+            QImage imgCopy = img.copy();
+            emit frameDecoded(imgCopy, frameNumber);
+        }
+
+        // Освобождаем выделенную память
+        av_freep(&dst_data[0]);
+        
+        // Сбрасываем фрейм для следующей итерации
+        av_frame_unref(m_dec_frame);
     }
 }
 
 void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
 {
-	/*
-    if (!m_initialized || !m_dec_ctx || !m_dec_frame) {
-        return;
-    }
-
-    // Проверяем данные перед декодированием
-    if (frameData.isEmpty() || frameData.size() < 4) {
-        qDebug() << "Invalid frame data for decoding - too small";
-        return;
-    }
-    
-    // Проверяем наличие NAL unit starters в данных H.264
-    bool hasValidH264Data = false;
-    const char* data = frameData.constData();
-    for (int i = 0; i <= frameData.size() - 4; ++i) {
-        if ((data[i] == 0x00 && data[i+1] == 0x00 && data[i+2] == 0x00 && data[i+3] == 0x01) ||
-            (data[i] == 0x00 && data[i+1] == 0x00 && data[i+2] == 0x01)) {
-            hasValidH264Data = true;
-            break;
-        }
-    }
-    
-    if (!hasValidH264Data) {
-        qDebug() << "Invalid H.264 data - no NAL unit starters found for frame" << frameNumber;
-        return;
-    }
-    
-    // Декодируем только если данные валидны
-    decodeFrameInternal(frameData, frameNumber);
-*/
-	if (!m_initialized) return;
-
-    // ПРОПУСК ПРОВЕРОК ДЛЯ ЛУЧШЕГО ВОССТАНОВЛЕНИЯ:
-    // Убираем строгие проверки H.264 данных - пытаемся декодировать всё
+    if (!m_initialized) return;
     if (frameData.isEmpty()) return;
-    
-    // Пропускаем проверку на NAL unit starters
-    // Даже поврежденные данные пытаемся декодировать
-    
+
+    // Попытаемся декодировать всё — без строгой предварительной проверки NAL'ов
     decodeFrameInternal(frameData, frameNumber);
 }

@@ -1,3 +1,11 @@
+#define DEBUG_FRAMEBUFFER
+
+#ifdef DEBUG_FRAMEBUFFER
+#define FB_DEBUG qDebug() << "[FrameBuffer]" << Q_FUNC_INFO << "device:" << m_deviceIndex
+#else
+#define FB_DEBUG if(false) qDebug()
+#endif
+
 // streamerwidget.cpp
 #include "streamerwidget.h"
 #include <QVBoxLayout>
@@ -20,14 +28,15 @@ QString streamIdToDisplayString(uint32_t streamId) {
     return QString::fromLatin1(str, 6);
 }
 
-// В конструкторе ИНИЦИАЛИЗИРОВАТЬ m_streamManager:
+// ИСПРАВЛЕННЫЙ конструктор - наследуем от QWidget
+// streamerwidget.cpp - конструктор
 StreamerWidget::StreamerWidget(int deviceIndex, QWidget *parent)
     : QWidget(parent)
     , m_streamId(0)
-    , m_streamState(State_NoStream) // ОДНО определение
+    , m_streamState(State_NoStream)
     , m_encoderInitialized(false)
     , m_sendingPackets(false)
-    , m_streamManager(nullptr) // ДОБАВИТЬ инициализацию
+    , m_streamManager(nullptr)
     , m_displayId("---")
     , m_deviceIndex(deviceIndex)
     , m_isStreaming(false)
@@ -38,6 +47,10 @@ StreamerWidget::StreamerWidget(int deviceIndex, QWidget *parent)
     , m_mainLayout(nullptr)
     , m_videoCapture(nullptr)
     , m_videoEncoder(nullptr)
+#ifdef TEST_DECODER
+    , m_testDecoder(nullptr)
+    , m_frameBuffer(new FrameBuffer(DEFAULT_BUFFERSZ))  // Сразу создаем буфер!
+#endif
 {
     setupUI();
     setupConnections();
@@ -47,23 +60,9 @@ StreamerWidget::StreamerWidget(int deviceIndex, QWidget *parent)
         m_controlPanel->setStreamState(StreamControlPanel::StateNoStream);
         m_controlPanel->setViewersStatus(false);
     }
-}
-
-void StreamerWidget::setStreamManager(StreamManager* streamManager) {
-    m_streamManager = streamManager;
     
-    if (m_streamManager) {
-        connect(m_streamManager, &StreamManager::serverStreamCreated, 
-                this, &StreamerWidget::onServerStreamCreated);
-        connect(m_streamManager, &StreamManager::serverStreamStart, 
-                this, &StreamerWidget::onServerStreamStart);
-        connect(m_streamManager, &StreamManager::serverStreamEnd, 
-                this, &StreamerWidget::onServerStreamEnd);
-        connect(m_streamManager, &StreamManager::serverStreamDeleted, 
-                this, &StreamerWidget::onServerStreamDeleted);
-        connect(m_streamManager, &StreamManager::errorOccurred, 
-                this, &StreamerWidget::onNetworkError);
-    }
+    qDebug() << "StreamerWidget created for device:" << deviceIndex 
+             << "FrameBuffer created at:" << m_frameBuffer;
 }
 
 StreamerWidget::~StreamerWidget()
@@ -71,8 +70,33 @@ StreamerWidget::~StreamerWidget()
     cleanup();
 }
 
+void StreamerWidget::cleanupTestObjects()
+{
+#ifdef TEST_DECODER
+    qDebug() << "Cleaning up test objects for device:" << m_deviceIndex;
+    
+    // Отключаем все соединения декодера
+    if (m_testDecoder) {
+        m_testDecoder->disconnect();
+        m_testDecoder->cleanup();
+        delete m_testDecoder;
+        m_testDecoder = nullptr;
+    }
+    
+    // Удаляем буфер
+    if (m_frameBuffer) {
+        delete m_frameBuffer;
+        m_frameBuffer = nullptr;
+        qDebug() << "FrameBuffer deleted";
+    } else {
+        qDebug() << "FrameBuffer was already null";
+    }
+#endif
+}
+
 void StreamerWidget::setupUI()
 {
+    // Теперь setStyleSheet доступен, так как мы наследуем от QWidget
     setStyleSheet(R"(
         StreamerWidget {
             background: #1e1e1e;
@@ -86,7 +110,7 @@ void StreamerWidget::setupUI()
     m_mainLayout->setSpacing(0);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    // Video display
+    // Video display - this теперь QWidget*, что правильно
     m_videoDisplay = new VideoDisplay(this);
     m_videoDisplay->setPlaceholderText(PLACEHOLDER_TEXT);
     m_videoDisplay->setStyleSheet(R"(
@@ -98,7 +122,7 @@ void StreamerWidget::setupUI()
         }
     )");
 
-    // Control panel
+    // Control panel - this теперь QWidget*, что правильно
     m_controlPanel = new StreamControlPanel(StreamControlPanel::StreamerMode, this);
     m_controlPanel->setStreamId(m_displayId);
     m_controlPanel->setActive(false);
@@ -109,10 +133,6 @@ void StreamerWidget::setupUI()
     m_mainLayout->addWidget(m_controlPanel);
 }
 
-
-
-
-
 void StreamerWidget::cleanup()
 {
     qDebug() << "Cleaning up StreamerWidget for device:" << m_deviceIndex;
@@ -121,6 +141,9 @@ void StreamerWidget::cleanup()
     stopStream();
     setStreamingEnabled(false);
 
+    // Чистим тестовые объекты
+    cleanupTestObjects();
+    
     // Чистим кодировщик
     cleanupVideoEncoder();
     
@@ -140,22 +163,37 @@ void StreamerWidget::cleanup()
     qDebug() << "StreamerWidget cleanup completed for device:" << m_deviceIndex;
 }
 
-
 void StreamerWidget::initializeVideoCapture()
 {
     cleanupVideoCapture();
 
     m_videoCapture = new VideoCapture(m_deviceIndex, this);
-#ifndef TEST_DECODER 
+    
+#ifdef TEST_DECODER
+    // Прямое соединение для тестирования
+    connect(m_videoCapture, &VideoCapture::frameForEncodingReady,
+            this, [this](const cv::Mat &frame) {
+                // Ждем, пока энкодер будет инициализирован
+                if (m_videoEncoder && m_encoderInitialized) {
+                    m_videoEncoder->encodeFrame(frame);
+                } else {
+                    // Если энкодер не готов, просто игнорируем кадр
+                    static int warningCount = 0;
+                    if (warningCount++ < 5) { // Ограничим количество предупреждений
+                        qDebug() << "Encoder not ready yet, skipping frame";
+                    }
+                }
+            });
+#else
     connect(m_videoCapture, &VideoCapture::rawFrameReady,
             this, &StreamerWidget::onRawFrameReady);
-#endif
     connect(m_videoCapture, &VideoCapture::frameForEncodingReady,
             this, &StreamerWidget::onFrameForEncoding);
+#endif
+    
     connect(m_videoCapture, &VideoCapture::errorOccurred,
             this, &StreamerWidget::onVideoError);
 
-    // Note: VideoCapture initialization happens in startCapture()
     qDebug() << "VideoCapture created for device:" << m_deviceIndex;
 }
 
@@ -166,10 +204,9 @@ void StreamerWidget::cleanupVideoCapture()
         
         m_videoCapture->stopCapture();
         
-        // Даем время на корректное завершение
-        if (!m_videoCapture->wait(2000)) { // Ждем до 2 секунд
+        if (!m_videoCapture->wait(2000)) {
             qWarning() << "Video capture thread didn't finish properly for device:" << m_deviceIndex;
-            m_videoCapture->terminate(); // Принудительное завершение
+            m_videoCapture->terminate();
             m_videoCapture->wait();
         }
         
@@ -184,33 +221,58 @@ void StreamerWidget::initializeVideoEncoder()
 {
     cleanupVideoEncoder();
 
+    // В тестовом режиме используем фиктивный streamId если нет реального
+#ifdef TEST_DECODER
+    if (m_streamId == 0) {
+        m_streamId = 1; // Фиктивный ID для тестирования
+        m_displayId = streamIdToDisplayString(m_streamId);
+        qDebug() << "Using test streamId:" << m_streamId << "for device:" << m_deviceIndex;
+    }
+#endif
+
     if (m_streamId == 0) {
         qWarning() << "Cannot initialize encoder without valid stream ID";
         return;
     }
 
     m_videoEncoder = new VideoEncoder(m_streamId, this);
+    if (!m_videoEncoder) {
+        qCritical() << "Failed to create VideoEncoder";
+        return;
+    }
 
 #ifdef TEST_DECODER
-    // Подключаем к FrameBuffer только здесь, когда encoder уже создан
+    // Encoder -> FrameBuffer -> Decoder
     connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
-            this, [this](int /*streamId*/, int frameNumber, const QByteArray &packet){
+            this, [this](int streamId, int frameNumber, const QByteArray &packet) {
+                qDebug() << "StreamerWidget: Encoded frame" << frameNumber 
+                         << "for stream" << streamId << "size:" << packet.size() << "bytes";
+                
+                // 1. Сохраняем в FrameBuffer
                 if (m_frameBuffer) {
                     m_frameBuffer->insertFrame(frameNumber, packet);
+                    qDebug() << "Frame saved to buffer";
+                }
+                
+                // 2. Немедленно декодируем (для тестирования)
+                if (m_testDecoder) {
+                    m_testDecoder->decodeFrame(packet, frameNumber);
                 }
             });
-#endif
-    
+#else
     connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
             this, &StreamerWidget::onFrameEncoded);
+#endif
+    
     connect(m_videoEncoder, &VideoEncoder::errorOccurred,
             this, [this](const QString& error) {
                 qCritical() << "VideoEncoder error:" << error;
                 showError(QString("Encoder error: %1").arg(error));
             });
 
-    // Initialize encoder with default parameters
+    // Инициализируем энкодер
     m_videoEncoder->initialize(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS);
+    m_encoderInitialized = true;
 
     qDebug() << "VideoEncoder initialized for stream:" << m_streamId;
 }
@@ -221,6 +283,8 @@ void StreamerWidget::cleanupVideoEncoder()
         m_videoEncoder->cleanup();
         delete m_videoEncoder;
         m_videoEncoder = nullptr;
+        m_encoderInitialized = false;
+        qDebug() << "VideoEncoder cleaned up";
     }
 }
 
@@ -235,8 +299,7 @@ void StreamerWidget::setStreamId(uint32_t streamId, const QString &displayId)
 
     if (!m_videoEncoder) {
         initializeVideoEncoder();
-    }
-    else{
+    } else {
         m_videoEncoder->setStreamId(streamId);
     }
 
@@ -249,22 +312,14 @@ void StreamerWidget::initializeWithRealId(uint32_t streamId, const QString &disp
     initialize();
 }
 
-
-
-
-
-
-
-// В StreamerWidget::setStreamingEnabled убедимся, что правильно обновляем состояние:
 void StreamerWidget::setStreamingEnabled(bool enabled)
 {
     if (m_streamingEnabled == enabled) return;
 
     m_streamingEnabled = enabled;
     
-    // ВАЖНО: Всегда устанавливаем активное состояние для control panel
     if (m_controlPanel) {
-        m_controlPanel->setActive(true); // Всегда активно, чтобы кнопка Disconnect работала
+        m_controlPanel->setActive(true);
     }
 
     if (!enabled) {
@@ -274,19 +329,153 @@ void StreamerWidget::setStreamingEnabled(bool enabled)
     updateStatus();
 }
 
-void StreamerWidget::setViewersStatus(bool hasViewers)
+void StreamerWidget::initialize()
 {
-    if (m_hasViewers == hasViewers) return;
+    qDebug() << "Initializing StreamerWidget for device:" << m_deviceIndex;
 
-    m_hasViewers = hasViewers;
-    
-    if (m_controlPanel) {
-        m_controlPanel->setViewersStatus(hasViewers ? 1 : 0);
+    try {
+#ifdef TEST_DECODER
+        // 1. Создаем FrameBuffer если его нет
+        if (!m_frameBuffer) {
+            m_frameBuffer = new FrameBuffer(DEFAULT_BUFFERSZ);
+            qDebug() << "FrameBuffer created with capacity:" << DEFAULT_BUFFERSZ;
+        } else {
+            qDebug() << "FrameBuffer already exists, reusing...";
+        }
+        
+        // 2. Создаем декодер если его нет
+        if (!m_testDecoder) {
+            m_testDecoder = new VideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, this);
+            
+            // Инициализируем декодер (метод initialize() возвращает void)
+            try {
+                m_testDecoder->initialize();
+                qDebug() << "Test decoder initialized successfully";
+                
+                // Подключаем декодер к дисплею
+                connect(m_testDecoder, &VideoDecoder::frameDecoded,
+                        m_videoDisplay, &VideoDisplay::displayFrame, Qt::QueuedConnection);
+                
+                connect(m_testDecoder, &VideoDecoder::errorOccurred,
+                        [this](const QString& err) { 
+                            qWarning() << "Decoder error:" << err;
+                            this->showError(QString("Decoder error: %1").arg(err));
+                        });
+                        
+            } catch (const std::exception& e) {
+                qCritical() << "Failed to initialize decoder:" << e.what();
+                delete m_testDecoder;
+                m_testDecoder = nullptr;
+                showError(QString("Decoder init failed: %1").arg(e.what()));
+            }
+        } else {
+            qDebug() << "Decoder already exists, reusing...";
+        }
+#endif
+        
+        // 3. Инициализируем видеозахват
+        initializeVideoCapture();
+        
+        // 4. Включаем стриминг и обновляем статус
+        setStreamingEnabled(true);
+        updateStatus();
+        
+        // 5. Запускаем видеозахват (для превью)
+        if (m_videoCapture) {
+            m_videoCapture->startCapture();
+        }
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Failed to initialize StreamerWidget:" << e.what();
+        showError(QString("Failed to initialize: %1").arg(e.what()));
     }
-
-    updateStatus();
 }
 
+void StreamerWidget::setupConnections()
+{
+    // Control panel signals
+    connect(m_controlPanel, &StreamControlPanel::startStreamRequested,
+            this, &StreamerWidget::onStartStreamRequested);
+    connect(m_controlPanel, &StreamControlPanel::stopStreamRequested,
+            this, &StreamerWidget::onStopStreamRequested);
+    connect(m_controlPanel, &StreamControlPanel::disconnectRequested,
+            this, &StreamerWidget::onDisconnectRequested);
+
+    // Прямое соединение для локального показа превью
+    if (m_videoCapture) {
+        connect(m_videoCapture, &VideoCapture::rawFrameReady,
+                this, &StreamerWidget::onRawFrameReady);
+    }
+}
+
+void StreamerWidget::onRawFrameReady(const QImage &image)
+{
+    if (m_videoDisplay && m_streamingEnabled) {
+        m_videoDisplay->displayFrame(image);
+    }
+}
+void StreamerWidget::startStream()
+{
+    qDebug() << "StreamerWidget::startStream() called for device:" << m_deviceIndex;
+    
+    if (m_streamState != State_NoStream) {
+        qWarning() << "Cannot start stream - wrong state:" << m_streamState;
+        return;
+    }
+
+    if (!m_videoCapture) {
+        qWarning() << "Cannot start stream - video capture not initialized";
+        return;
+    }
+
+    // Очищаем буфер при начале нового стрима
+#ifdef TEST_DECODER
+    qDebug() << "Clearing FrameBuffer for new stream...";
+    if (m_frameBuffer) {
+        qDebug() << "FrameBuffer exists at address:" << m_frameBuffer 
+                 << "capacity:" << (m_frameBuffer ? m_frameBuffer->capacity() : 0);
+        m_frameBuffer->clear();
+        qDebug() << "FrameBuffer cleared for new stream";
+    } else {
+        qCritical() << "FrameBuffer is null! Cannot clear.";
+        return;  // Выходим, если буфера нет!
+    }
+#endif
+    
+    // Инициализируем кодировщик если еще не инициализирован
+    if (!m_encoderInitialized) {
+        qDebug() << "Initializing encoder for startStream...";
+        initializeVideoEncoder();
+    } else {
+        qDebug() << "Encoder already initialized, reusing...";
+    }
+    
+    // Проверяем, что энкодер успешно инициализирован
+    if (!m_videoEncoder || !m_encoderInitialized) {
+        qCritical() << "Failed to initialize video encoder for stream";
+        return;
+    }
+    
+    setStreamState(State_StreamCreated);
+    
+    // В тестовом режиме сразу переходим в активное состояние
+#ifdef TEST_DECODER
+    qDebug() << "TEST MODE: Immediately activating stream";
+    setStreamState(State_StreamActive);
+#else
+    // Отправляем запрос на создание стрима
+    if (m_streamManager) {
+        m_streamManager->createStream(m_deviceIndex);
+        qDebug() << "Stream creation requested for device:" << m_deviceIndex;
+    } else {
+        qWarning() << "StreamManager not available";
+        setStreamState(State_StreamActive);
+    }
+#endif
+    
+    qDebug() << "Stream setup completed for device:" << m_deviceIndex;
+}
+// Исправленный метод setControlPanel - удаляем вызов setParent
 void StreamerWidget::setControlPanel(StreamControlPanel* panel)
 {
     if (m_controlPanel) {
@@ -296,7 +485,7 @@ void StreamerWidget::setControlPanel(StreamControlPanel* panel)
 
     m_controlPanel = panel;
     if (m_controlPanel) {
-        m_controlPanel->setParent(this);
+        // УБИРАЕМ: m_controlPanel->setParent(this); - это лишнее
         m_mainLayout->addWidget(m_controlPanel);
         m_controlPanel->setStreamId(m_displayId);
         m_controlPanel->setActive(m_streamingEnabled);
@@ -311,6 +500,101 @@ void StreamerWidget::setControlPanel(StreamControlPanel* panel)
         connect(m_controlPanel, &StreamControlPanel::disconnectRequested,
                 this, &StreamerWidget::onDisconnectRequested);
     }
+}
+
+// ... остальные методы оставляем без изменений (из предыдущей версии) ...
+
+void StreamerWidget::setStreamState(StreamState newState)
+{
+    if (m_streamState == newState) return;
+    
+    StreamState oldState = m_streamState;
+    m_streamState = newState;
+    
+    qDebug() << "Stream state changed for device" << m_deviceIndex 
+             << ":" << oldState << "->" << newState;
+    
+    if (m_controlPanel) {
+        m_controlPanel->setStreamState(static_cast<StreamControlPanel::StreamState>(newState));
+        m_controlPanel->setViewersStatus(m_hasViewers);
+    }
+    
+    updateStatus();
+}
+
+void StreamerWidget::stopStream()
+{
+    if (m_streamState == State_NoStream) {
+        return;
+    }
+
+    qDebug() << "Stopping stream for device:" << m_deviceIndex;
+
+    // Отправляем запрос на удаление стрима
+    if (m_streamId != 0 && m_streamManager) {
+        m_streamManager->deleteStream(m_streamId);
+        qDebug() << "Stream deletion requested for:" << m_streamId;
+    }
+
+    // Останавливаем видеозахват
+    if (m_videoCapture) {
+        m_videoCapture->stopCapture();
+    }
+
+    // Очищаем кодировщик
+    cleanupVideoEncoder();
+    
+    // Сбрасываем флаги
+    m_isStreaming = false;
+    m_sendingPackets = false;
+    m_encoderInitialized = false;
+    m_streamState = State_NoStream;
+    
+    // Обновляем UI
+    if (m_controlPanel) {
+        m_controlPanel->setStreamState(StreamControlPanel::StateNoStream);
+        m_controlPanel->setViewersStatus(false);
+    }
+    
+    updateStatus();
+    
+    qDebug() << "Stream stopped for device:" << m_deviceIndex;
+}
+
+// Остальные методы остаются без изменений...
+void StreamerWidget::setStreamManager(StreamManager* streamManager) {
+    m_streamManager = streamManager;
+    
+    if (m_streamManager) {
+        connect(m_streamManager, &StreamManager::serverStreamCreated, 
+                this, &StreamerWidget::onServerStreamCreated);
+        connect(m_streamManager, &StreamManager::serverStreamStart, 
+                this, &StreamerWidget::onServerStreamStart);
+        connect(m_streamManager, &StreamManager::serverStreamEnd, 
+                this, &StreamerWidget::onServerStreamEnd);
+        connect(m_streamManager, &StreamManager::serverStreamDeleted, 
+                this, &StreamerWidget::onServerStreamDeleted);
+        connect(m_streamManager, &StreamManager::errorOccurred, 
+                this, &StreamerWidget::onNetworkError);
+    }
+}
+
+
+
+
+
+
+void StreamerWidget::setViewersStatus(bool hasViewers)
+{
+    if (m_hasViewers == hasViewers) return;
+
+    m_hasViewers = hasViewers;
+    
+    if (m_controlPanel) {
+        m_controlPanel->setViewersStatus(hasViewers ? 1 : 0);
+    }
+
+    updateStatus();
 }
 
 void StreamerWidget::updateStatus()
@@ -339,104 +623,7 @@ void StreamerWidget::onVideoError(const QString &message)
     }
 }
 
-// В StreamerWidget::initialize() - упрощенная инициализация
-// В streamerwidget.cpp - исправленный initialize()
-void StreamerWidget::initialize()
-{
-    qDebug() << "Fast initializing StreamerWidget for device:" << m_deviceIndex;
 
-    try {
-        // 1. Сначала инициализируем видеозахват
-         QThread::msleep(50);
-        initializeVideoCapture();
-        
-
-#ifdef TEST_DECODER
-if (!m_frameBuffer) {
-    m_frameBuffer = new FrameBuffer(DEFAULT_BUFFERSZ);
-}
-
-if (!m_testDecoder) {
-    m_testDecoder = new VideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, this);
-    m_testDecoder->initialize();
-    connect(m_testDecoder, &VideoDecoder::frameDecoded,
-            m_videoDisplay, &VideoDisplay::displayFrame);
-}
-
-// Encoder -> framebuffer
-if (m_videoEncoder) {
-    connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
-            this, [this](int /*streamId*/, int frameNumber, const QByteArray &packet){
-                if (m_frameBuffer) {
-                    m_frameBuffer->insertFrame(frameNumber, packet);
-                }
-            });
-}
-
-// Один таймер для опроса framebuffer
-if (!m_frameDecoderTimer) {
-    m_frameDecoderTimer = new QTimer(this);
-    m_lastDecodedFrame = -1;
-    connect(m_frameDecoderTimer, &QTimer::timeout, this, [this](){
-        if (!m_frameBuffer || !m_testDecoder) return;
-
-        int frameNumber = m_frameBuffer->getMaxFrameNumber();
-        if (frameNumber > m_lastDecodedFrame) {
-            QByteArray packet;
-            if (m_frameBuffer->getFrame(frameNumber, packet)) {
-                m_testDecoder->decodeFrame(packet, frameNumber);
-                m_lastDecodedFrame = frameNumber;
-            }
-        }
-    });
-    m_frameDecoderTimer->start(15); // ~60 FPS polling
-}
-#endif
-        // 2. Затем настраиваем соединения (чтобы подключиться к созданному VideoCapture)
-        setupConnections();
-        
-        // 3. Включаем стриминг и обновляем статус
-        setStreamingEnabled(true);
-        updateStatus();
-        
-        // 4. Немедленный запуск захвата для превью
-        if (m_videoCapture) {
-            m_videoCapture->startCapture();
-        }
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Failed to initialize StreamerWidget:" << e.what();
-        showError(QString("Failed to initialize: %1").arg(e.what()));
-    }
-}
-
-// В StreamerWidget::setupConnections() - прямые соединения для показа
-void StreamerWidget::setupConnections()
-{
-    // Control panel signals
-    connect(m_controlPanel, &StreamControlPanel::startStreamRequested,
-            this, &StreamerWidget::onStartStreamRequested);
-    connect(m_controlPanel, &StreamControlPanel::stopStreamRequested,
-            this, &StreamerWidget::onStopStreamRequested);
-    connect(m_controlPanel, &StreamControlPanel::disconnectRequested,
-            this, &StreamerWidget::onDisconnectRequested);
-
-    // ПРЯМОЕ соединение для локального показа - без кодировщика!
-    if (m_videoCapture) {
-        connect(m_videoCapture, &VideoCapture::rawFrameReady,
-                this, &StreamerWidget::onRawFrameReady);
-        connect(m_videoCapture, &VideoCapture::frameForEncodingReady,
-            this, &StreamerWidget::onFrameForEncoding);
-    }
-}
-
-// Упрощенный обработчик кадров для прямого показа
-void StreamerWidget::onRawFrameReady(const QImage &image)
-{
-    if (m_videoDisplay && m_streamingEnabled) {
-        m_videoDisplay->displayFrame(image);
-    }
-}
 
 void StreamerWidget::onServerStreamDeleted(uint32_t streamId) {
     if (streamId != m_streamId) {
@@ -461,133 +648,6 @@ void StreamerWidget::onServerStreamDeleted(uint32_t streamId) {
 }
 
 
-void StreamerWidget::startStream()
-{
-    if (m_streamState != State_NoStream) {
-        qWarning() << "Cannot start stream - wrong state:" << m_streamState;
-        return;
-    }
-
-    if (!m_videoCapture) {
-        qWarning() << "Cannot start stream - video capture not initialized";
-        return;
-    }
-
-    // Запускаем видеозахват для превью (если еще не запущен)
-    if (m_videoCapture && !m_videoCapture->isRunning()) {
-        m_videoCapture->startCapture();
-    }
-    
-    // Инициализируем кодировщик ТОЛЬКО если он еще не инициализирован
-    if (!m_encoderInitialized) {
-        initializeVideoEncoder();
-        m_encoderInitialized = true;
-    }
-    
-    // Переходим в состояние "трансляция создана"
-    setStreamState(State_StreamCreated);
-    
-    // ОТПРАВЛЯЕМ запрос на создание стрима через StreamManager
-    if (m_streamManager) {
-        m_streamManager->createStream(m_deviceIndex);
-        qDebug() << "Stream creation requested for device:" << m_deviceIndex;
-    } else {
-        qWarning() << "StreamManager not available for device:" << m_deviceIndex;
-        // Без StreamManager переходим сразу в активное состояние (для тестирования)
-        setStreamState(State_StreamActive);
-    }
-    
-    qDebug() << "Stream setup completed for device:" << m_deviceIndex;
-}
-
-
-void StreamerWidget::setStreamState(StreamState newState)
-{
-    if (m_streamState == newState) return;
-    
-    StreamState oldState = m_streamState;
-    m_streamState = newState;
-    
-    qDebug() << "Stream state changed for device" << m_deviceIndex 
-             << ":" << oldState << "->" << newState;
-    
-    // Обновляем ControlPanel
-    if (m_controlPanel) {
-        m_controlPanel->setStreamState(static_cast<StreamControlPanel::StreamState>(newState));
-        m_controlPanel->setViewersStatus(m_hasViewers);
-    }
-    
-    updateStatus();
-    
-    // Обработка переходов между состояниями - УБИРАЕМ вызов stopStream()
-    switch (newState) {
-    case State_NoStream:
-        // Только сбрасываем флаги, не вызываем stopStream (чтобы избежать рекурсии)
-        m_encoderInitialized = false;
-        m_sendingPackets = false;
-        m_isStreaming = false;
-        break;
-        
-    case State_StreamCreated:
-        if (!m_encoderInitialized) {
-            initializeVideoEncoder();
-            m_encoderInitialized = true;
-        }
-        m_sendingPackets = false;
-        setViewersStatus(false);
-        break;
-        
-    case State_StreamActive:
-        m_sendingPackets = true;
-        setViewersStatus(true);
-        break;
-        
-    case State_StreamError:
-        m_sendingPackets = false;
-        setViewersStatus(false);
-        showError("Stream error occurred");
-        break;
-    }
-}
-
-void StreamerWidget::stopStream()
-{
-    if (m_streamState == State_NoStream) {
-        return;
-    }
-
-    qDebug() << "Stopping stream for device:" << m_deviceIndex;
-
-    // ЕСЛИ есть streamId, отправляем запрос на удаление стрима
-    if (m_streamId != 0 && m_streamManager) {
-        m_streamManager->deleteStream(m_streamId);
-        qDebug() << "Stream deletion requested for:" << m_streamId;
-    }
-
-    // Останавливаем видеозахват
-    if (m_videoCapture) {
-        m_videoCapture->stopCapture();
-    }
-
-    // Останавливаем кодировщик
-    cleanupVideoEncoder();
-    
-    // Сбрасываем флаги напрямую
-    m_isStreaming = false;
-    m_sendingPackets = false;
-    m_encoderInitialized = false;
-    m_streamState = State_NoStream;
-    
-    // Обновляем UI
-    if (m_controlPanel) {
-        m_controlPanel->setStreamState(StreamControlPanel::StateNoStream);
-        m_controlPanel->setViewersStatus(false);
-    }
-    
-    updateStatus();
-    
-    qDebug() << "Stream stopped for device:" << m_deviceIndex;
-}
 
 // Обработчики серверных событий
 void StreamerWidget::onServerStreamCreated(uint32_t streamId) {
@@ -657,23 +717,7 @@ void StreamerWidget::onFrameEncoded(int streamId, int frameNumber, const QByteAr
     if (streamId != static_cast<int>(m_streamId)) return;
 
 
-#ifdef TEST_DECODER
-    if (m_testDecoder) {
-        connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
-                this, [this](int /*streamId*/, int frameNumber, const QByteArray &packet){
-                    if (m_testDecoder) {
-                        m_testDecoder->decodeFrame(packet, frameNumber);
-                    }
-                });
 
-        connect(m_testDecoder, &VideoDecoder::frameDecoded,
-                this, [this](const QImage &image, int /*frameNumber*/){
-                    if (m_videoDisplay) {
-                        m_videoDisplay->displayFrame(image);
-                    }
-                });
-    }
-#endif
     // УПРОСТИТЬ: отправляем если стрим активен
     if (m_streamManager && m_streamState == State_StreamActive) {
         m_streamManager->sendVideoFrame(m_streamId, frameNumber, packet);

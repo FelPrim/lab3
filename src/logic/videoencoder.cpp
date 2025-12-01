@@ -11,6 +11,46 @@ extern "C" {
 #include <libavutil/error.h>
 }
 
+static QByteArray avcExtradataToAnnexB(const uint8_t* extradata, int extradata_size) {
+    QByteArray out;
+    if (!extradata || extradata_size < 7) return out;
+    // extradata format (AVCDecoderConfigurationRecord):
+    // [0] configurationVersion == 1
+    // [4] lengthSizeMinusOne (lower 2 bits)
+    // [5] numOfSequenceParameterSets (lower 5 bits)
+    int pos = 0;
+    // sanity check
+    if (extradata[0] != 1) return out;
+    // lengthSizeMinusOne is at byte 4
+    if (extradata_size < 7) return out;
+    uint8_t lengthSizeMinusOne = extradata[4] & 0x03;
+    int nalLenSize = static_cast<int>(lengthSizeMinusOne) + 1;
+
+    pos = 5;
+    uint8_t numSPS = extradata[pos++] & 0x1f; // lower 5 bits
+    for (uint8_t i = 0; i < numSPS; ++i) {
+        if (pos + 2 > extradata_size) return out;
+        uint16_t sps_len = (extradata[pos] << 8) | extradata[pos + 1];
+        pos += 2;
+        if (pos + sps_len > extradata_size) return out;
+        out.append("\x00\x00\x00\x01", 4);
+        out.append(reinterpret_cast<const char*>(extradata + pos), sps_len);
+        pos += sps_len;
+    }
+    if (pos >= extradata_size) return out;
+    uint8_t numPPS = extradata[pos++];
+    for (uint8_t i = 0; i < numPPS; ++i) {
+        if (pos + 2 > extradata_size) return out;
+        uint16_t pps_len = (extradata[pos] << 8) | extradata[pos + 1];
+        pos += 2;
+        if (pos + pps_len > extradata_size) return out;
+        out.append("\x00\x00\x00\x01", 4);
+        out.append(reinterpret_cast<const char*>(extradata + pos), pps_len);
+        pos += pps_len;
+    }
+    return out;
+}
+
 static QString ffmpegErrStr(int errnum) {
     char buf[256] = {0};
     av_strerror(errnum, buf, sizeof(buf));
@@ -62,6 +102,54 @@ void VideoEncoder::cleanup()
 {
     cleanupFFmpeg();
     m_initialized = false;
+}
+
+static QByteArray convertPacketToAnnexB(const AVPacket *pkt, int nalSizeBytes) {
+    QByteArray out;
+    if (!pkt || pkt->size <= 0 || !pkt->data) return out;
+
+    const uint8_t *data = pkt->data;
+    int size = pkt->size;
+
+    // Если уже в Annex-B — просто скопировать
+    if (size >= 4 && data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x00 && data[3] == 0x01) {
+        out.append(reinterpret_cast<const char*>(data), size);
+        return out;
+    }
+    if (size >= 3 && data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x01) {
+        out.append(reinterpret_cast<const char*>(data), size);
+        return out;
+    }
+
+    // Если у нас известен размер длины NAL (1..4) — парсим
+    if (nalSizeBytes <= 0 || nalSizeBytes > 4) {
+        // Невозможно корректно распарсить — fallback: копируем как есть
+        out.append(reinterpret_cast<const char*>(data), size);
+        return out;
+    }
+
+    int offset = 0;
+    while (offset + nalSizeBytes <= size) {
+        // big-endian length
+        uint32_t nal_len = 0;
+        for (int i = 0; i < nalSizeBytes; ++i) {
+            nal_len = (nal_len << 8) | data[offset + i];
+        }
+        offset += nalSizeBytes;
+        if (nal_len == 0) {
+            // иногда встречаются нулевые длины — пропускаем
+            continue;
+        }
+        if (offset + (int)nal_len > size) {
+            // повреждённый пакет — останавливаемся
+            break;
+        }
+        // Добавляем start code + payload
+        out.append("\x00\x00\x00\x01", 4);
+        out.append(reinterpret_cast<const char*>(data + offset), nal_len);
+        offset += nal_len;
+    }
+    return out;
 }
 
 void VideoEncoder::initFFmpeg(int width, int height, int fps)
@@ -125,53 +213,7 @@ void VideoEncoder::initFFmpeg(int width, int height, int fps)
         return;
     }
 
-
-    // Сохраняем SPS/PPS из extradata (avcC) в Annex-B (0x00 00 00 01 ...),
-    // чтобы потом при отправке ключевого кадра прикладывать их перед пакетом.
-    if (m_enc_ctx->extradata && m_enc_ctx->extradata_size > 0) {
-        const uint8_t *ed = m_enc_ctx->extradata;
-        int ed_size = m_enc_ctx->extradata_size;
-        // Если extradata уже начинается с start code — копируем как есть
-        if (ed_size >= 4 && ed[0] == 0x00 && ed[1] == 0x00 && ed[2] == 0x00 && ed[3] == 0x01) {
-            m_spsPpsAnnexB = QByteArray(reinterpret_cast<const char*>(ed), ed_size);
-            m_haveSpsPps = true;
-        } else if (ed_size >= 7 && ed[0] == 1) {
-            // Парсим avcC (ISO/IEC 14496-15) порядковым способом:
-            int pos = 0;
-            // configurationVersion == ed[0] == 1
-            pos = 5; // ed[0..4] прочитаны: configurationVersion, profile, profile_compatibility, level, lengthSizeMinusOne
-            int numSPS = ed[pos++] & 0x1f;
-            QByteArray tmp;
-            for (int i = 0; i < numSPS; ++i) {
-                if (pos + 2 > ed_size) break;
-                int sps_len = (ed[pos] << 8) | ed[pos+1];
-                pos += 2;
-                if (pos + sps_len > ed_size) break;
-                // prepend start code
-                tmp.append("\x00\x00\x00\x01", 4);
-                tmp.append(reinterpret_cast<const char*>(ed + pos), sps_len);
-                pos += sps_len;
-            }
-            if (pos + 1 <= ed_size) {
-                int numPPS = ed[pos++];
-                for (int j = 0; j < numPPS; ++j) {
-                    if (pos + 2 > ed_size) break;
-                    int pps_len = (ed[pos] << 8) | ed[pos+1];
-                    pos += 2;
-                    if (pos + pps_len > ed_size) break;
-                    tmp.append("\x00\x00\x00\x01", 4);
-                    tmp.append(reinterpret_cast<const char*>(ed + pos), pps_len);
-                    pos += pps_len;
-                }
-            }
-            if (!tmp.isEmpty()) {
-                m_spsPpsAnnexB = tmp;
-                m_haveSpsPps = true;
-                qDebug() << "VideoEncoder: extracted SPS/PPS from extradata, size:" << m_spsPpsAnnexB.size();
-            }
-        }
-    }
-
+    
     // Остальная инициализация без изменений...
     m_sws_enc = sws_getContext(width, height, AV_PIX_FMT_BGR24,
                                width, height, m_enc_ctx->pix_fmt,
@@ -301,7 +343,7 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     if (bgr.cols != m_width || bgr.rows != m_height) {
         cv::Mat resized;
         cv::resize(bgr, resized, cv::Size(m_width, m_height), 0, 0, cv::INTER_LINEAR);
-        bgr = resized; // Не std::move, а обычное присваивание
+        bgr = resized;
     }
 
     if (bgr.cols < 16 || bgr.rows < 16) {
@@ -320,61 +362,107 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
         for (int x = 0; x < bgr.cols*3; ++x) sumBefore += row[x];
     }
     qDebug() << "Frame checksum (BGR sum):" << sumBefore;
-    int got = sws_scale(m_sws_enc, src_data, src_linesize, 0, m_height, 
+
+    int got = sws_scale(m_sws_enc, src_data, src_linesize, 0, m_height,
                        m_enc_frame->data, m_enc_frame->linesize);
     if (got <= 0) {
         qDebug() << "VideoEncoder stream" << m_streamId << "sws_scale failed";
         return;
     }
 
+    // Устанавливаем PTS и сохраняем текущий номер кадра (для совместимости)
     m_enc_frame->pts = m_pts++;
     int curFrameNumber = static_cast<int>(m_enc_frame->pts);
+
     AVFrame *sendFrame = av_frame_clone(m_enc_frame);
     int ret = avcodec_send_frame(m_enc_ctx, sendFrame);
     if (ret < 0) {
         qDebug() << "VideoEncoder stream" << m_streamId << "avcodec_send_frame failed:" << ffmpegErrStr(ret);
+        av_frame_free(&sendFrame);
         return;
     }
     av_frame_free(&sendFrame);
 
-    while (ret >= 0) {
-        ret = avcodec_receive_packet(m_enc_ctx, m_pkt);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
-        if (ret < 0) break;
+    // Собираем все пакеты, относящиеся к кадрам, объединяя пакеты одного PTS
+    QByteArray accum;                 // аккумулятор для текущего кадра (склеивает NAL units)
+    int64_t accumPts = AV_NOPTS_VALUE; // PTS текущего аккумулятора
+    bool accumIsKey = false;          // флаг, был ли в аккумуляторе ключевой NAL
 
-        if (m_pkt->size <= 0) {
+    while (true) {
+        ret = avcodec_receive_packet(m_enc_ctx, m_pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            break;
+        }
+        if (ret < 0) {
+            qDebug() << "VideoEncoder stream" << m_streamId << "avcodec_receive_packet failed:" << ffmpegErrStr(ret);
+            break;
+        }
+
+        // Игнорируем пустые пакеты
+        if (m_pkt->size <= 0 || !m_pkt->data) {
             av_packet_unref(m_pkt);
             continue;
         }
 
-        // Номер кадра — используем PTS, который мы выставили: m_enc_frame->pts
-        int frameNumberToEmit = static_cast<int>(curFrameNumber); // curFrameNumber определён ниже
+        // Определяем PTS данного пакета (fallback на curFrameNumber)
+        int64_t pktPts = (m_pkt->pts != AV_NOPTS_VALUE) ? m_pkt->pts : static_cast<int64_t>(curFrameNumber);
 
-        // Если это ключевой пакет — прикладываем SPS/PPS в начало
-        QByteArray encodedData;
-        if (m_pkt->flags & AV_PKT_FLAG_KEY) {
-            if (m_haveSpsPps && !m_spsPpsAnnexB.isEmpty()) {
-                encodedData.reserve(m_spsPpsAnnexB.size() + m_pkt->size);
-                encodedData.append(m_spsPpsAnnexB);
+        // Если пакет относится к новому PTS и у нас есть накопленный кадр — эмитим его
+        if (accumPts != AV_NOPTS_VALUE && pktPts != accumPts) {
+            // Emit previous full frame
+            QByteArray out = accum;
+            if (!out.isEmpty()) {
+                emit encodedPacketReady(m_streamId, m_currentFrameNumber, out);
+                m_currentFrameNumber++;
             }
-            encodedData.append(reinterpret_cast<const char*>(m_pkt->data), m_pkt->size);
-        } else {
-            // Для не-ключевых пакетов — отправляем сам пакет
-            encodedData = QByteArray(reinterpret_cast<const char*>(m_pkt->data), m_pkt->size);
+
+            // Сброс аккумулятора
+            accum.clear();
+            accumPts = AV_NOPTS_VALUE;
+            accumIsKey = false;
         }
 
-        emit encodedPacketReady(m_streamId, frameNumberToEmit, encodedData);
-
-        // Увеличиваем счетчик фреймов только если это ключевой пакет или если ты хочешь инкремент на каждом пакете
-        // Здесь логичнее считать frameNumber как PTS, поэтому не трогаем m_currentFrameNumber
-        // Но для совместимости, если ты полагаешься на m_currentFrameNumber, можно инкрементить его при keyframe:
-        if (m_pkt->flags & AV_PKT_FLAG_KEY) {
-            m_currentFrameNumber++;
+        // Если аккумулятор пуст — начинаем новый с текущим pktPts
+        if (accumPts == AV_NOPTS_VALUE) {
+            accumPts = pktPts;
         }
 
+        // Добавляем данные пакета в аккумулятор.
+        // Замечание: обычно avcodec возвращает NAL-ы уже в Annex-B или in-stream format;
+        // мы просто конкатенируем как есть.
+        if (m_pkt->size > 0 && m_pkt->data) {
+            // Определяем размер поля длины NAL (AVCC) по extradata (если доступно)
+            int nalSizeBytes = 4; // fallback
+            if (m_enc_ctx && m_enc_ctx->extradata && m_enc_ctx->extradata_size >= 5) {
+                // extradata[4] & 0x03 gives lengthSizeMinusOne
+                nalSizeBytes = (m_enc_ctx->extradata[4] & 0x03) + 1;
+            }
+
+            QByteArray annex = convertPacketToAnnexB(m_pkt, nalSizeBytes);
+
+            // Если это ключевой пакет и у нас есть extradata (SPS/PPS), — предоставить их перед IDR
+            if ((m_pkt->flags & AV_PKT_FLAG_KEY) && m_enc_ctx && m_enc_ctx->extradata && m_enc_ctx->extradata_size > 0) {
+                QByteArray header = avcExtradataToAnnexB(m_enc_ctx->extradata, m_enc_ctx->extradata_size);
+                if (!header.isEmpty()) {
+                    // Вставляем header перед данными кадра (если он ещё не вставлен в аккумулятор для этого PTS)
+                    if (!accumIsKey) {
+                        annex.prepend(header);
+                    }
+                }
+            }
+
+            accum.append(annex);
+            if (m_pkt->flags & AV_PKT_FLAG_KEY) accumIsKey = true;
+        }
         av_packet_unref(m_pkt);
     }
 
+    // После выхода из цикла — если остаётся аккумулятор, отправляем его
+if (accumPts != AV_NOPTS_VALUE && !accum.isEmpty()) {
+    QByteArray out = std::move(accum);
+    emit encodedPacketReady(m_streamId, m_currentFrameNumber, out);
+    m_currentFrameNumber++;
+}
 }
 
 void VideoEncoder::setStreamId(int streamId)

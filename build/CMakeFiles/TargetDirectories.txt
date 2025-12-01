@@ -1,4 +1,0 @@
-/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/VideoCapture.dir
-/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/edit_cache.dir
-/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/rebuild_cache.dir
-/home/aprihodko/t/GitHub/my_scripts/lab3/build/CMakeFiles/VideoCapture_autogen.dir

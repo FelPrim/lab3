@@ -5,7 +5,7 @@
 #include <QImage>
 #include <opencv2/opencv.hpp>
 #include "../video_defaults.h"
-
+    
 class VideoCapture : public QThread
 {
     Q_OBJECT

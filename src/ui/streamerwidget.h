@@ -7,14 +7,14 @@
 #include "../logic/videocapture.h"
 #include "../logic/videoencoder.h"
 #include "../network/udp/networkmanager.h" 
-#include <QWidget>
+#include <QWidget>  // ДОБАВЬТЕ этот include!
 #include <QVBoxLayout>
 #include <QLabel>
 #include "../logic/videodisplay.h"
 #include "streamcontrolpanel.h"
 class StreamManager; 
 
-class StreamerWidget : public QWidget
+class StreamerWidget : public QWidget  // ИЗМЕНИТЕ: QWidget вместо QObject
 {
     Q_OBJECT
 
@@ -69,6 +69,7 @@ private:
     void cleanupVideoCapture();
     void initializeVideoEncoder();
     void cleanupVideoEncoder();
+    void cleanupTestObjects();
     cv::Mat qImageToCvMat(const QImage &image);
 
     // Состояние
@@ -84,7 +85,7 @@ private:
     StreamControlPanel *m_controlPanel;
     QVBoxLayout *m_mainLayout;
     
-    // Видео компоненты (критически важны!)
+    // Видео компоненты
     VideoCapture *m_videoCapture;
     VideoEncoder *m_videoEncoder;
 
@@ -93,12 +94,14 @@ private:
     static const QString STATUS_HAS_VIEWERS;
     static const QString STATUS_STOPPED;
     static const QString PLACEHOLDER_TEXT;
+    
 public:
     void setStreamManager(StreamManager* streamManager);
     void forceDisconnect();
+    
 private:
     bool m_disconnecting = false;
-private:
+    
     enum StreamState {
         State_NoStream,      // Только превью, нет трансляции
         State_StreamCreated, // Трансляция создана, кодировщик работает, но пакеты не отправляются
@@ -115,7 +118,7 @@ public slots:
     void onServerStreamStart(uint32_t streamId);
     void onServerStreamEnd(uint32_t streamId);
     void onServerStreamDeleted(uint32_t streamId);
-  //  void onServerStreamError(uint32_t streamId);
+    
 private:
     void setStreamState(StreamState newState);
     StreamManager* m_streamManager; 
@@ -124,10 +127,8 @@ public:
     void onNetworkError(const QString& error);
 
 #ifdef TEST_DECODER
-    class VideoDecoder* m_testDecoder = nullptr;
+    VideoDecoder* m_testDecoder = nullptr;
     FrameBuffer* m_frameBuffer = nullptr;
-    QTimer *m_frameDecoderTimer = nullptr;
-    int m_lastDecodedFrame = -1;
 #endif
 
 };
