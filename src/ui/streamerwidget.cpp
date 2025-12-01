@@ -190,6 +190,16 @@ void StreamerWidget::initializeVideoEncoder()
     }
 
     m_videoEncoder = new VideoEncoder(m_streamId, this);
+
+#ifdef TEST_DECODER
+    // Подключаем к FrameBuffer только здесь, когда encoder уже создан
+    connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
+            this, [this](int /*streamId*/, int frameNumber, const QByteArray &packet){
+                if (m_frameBuffer) {
+                    m_frameBuffer->insertFrame(frameNumber, packet);
+                }
+            });
+#endif
     
     connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
             this, &StreamerWidget::onFrameEncoded);
@@ -345,13 +355,6 @@ void StreamerWidget::initialize()
         m_frameBuffer = new FrameBuffer(DEFAULT_BUFFERSZ);
         m_testDecoder = new VideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, this);
 
-        // Соединяем encoder -> framebuffer
-        connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
-                this, [this](int /*streamId*/, int frameNumber, const QByteArray &packet){
-                    if (m_frameBuffer) {
-                        m_frameBuffer->insertFrame(frameNumber, packet);
-                    }
-                });
 
         // Соединяем framebuffer -> decoder через таймер
         QTimer* decodeTimer = new QTimer(this);
