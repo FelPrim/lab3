@@ -267,7 +267,7 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
     // Подготавливаем исходные указатели
     uint8_t *src_data[4] = { nullptr };
     int src_linesize[4] = { 0 };
-    rc_data[0] = bgr.data;
+    src_data[0] = bgr.data;
     src_linesize[0] = static_cast<int>(bgr.step);
     int got = sws_scale(m_sws_enc, src_data, src_linesize, 0, m_height, 
                        m_enc_frame->data, m_enc_frame->linesize);

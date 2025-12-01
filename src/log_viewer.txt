@@ -1,33 +1,33 @@
 Quick scanning for video devices...
 Found device: 0 after 1 attempts
 Found device: 1 after 1 attempts
-[ WARN:0@1.322] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.323] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.323] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.324] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.325] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.325] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.326] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.327] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.758] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.758] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.759] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.760] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.761] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.761] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.762] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.763] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
 Quick scan completed. Found 2 devices
 Quick scanning for video devices...
 Found device: 0 after 1 attempts
 Found device: 1 after 1 attempts
-[ WARN:0@2.060] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@2.061] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@2.061] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@2.062] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@2.062] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@2.063] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@2.064] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@2.064] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.469] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.470] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.471] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.471] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.472] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.472] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.473] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.473] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
 Quick scan completed. Found 2 devices
 Available devices: QList(0, 1)
 Initializing MainWindow
 StreamManager created (NetworkFacade wrapper)
 StreamManager initialized
-UDP Socket local port: 59011
-UDPManager: Socket bound to port 59011
+UDP Socket local port: 54966
+UDPManager: Socket bound to port 54966
 StreamManager: setServerAddress "95.81.125.224" 23230
 StreamManager: connectToServer
 TCPManager: connecting to "95.81.125.224" : 23230
@@ -38,15 +38,15 @@ Waiting for handshake start from server...
 StreamManager: network connected
 Connection status changed: true
 TCPManager: processing message type: "5"
-NetworkFacade: Server handshake start, connectionId: 7
-HandshakeService: Starting handshake for connection 7
-NetworkFacade: Handshake started for connection 7
+NetworkFacade: Server handshake start, connectionId: 6
+HandshakeService: Starting handshake for connection 6
+NetworkFacade: Handshake started for connection 6
 TCPManager: processing message type: "6"
-NetworkFacade: Server handshake end, connectionId: 7
+NetworkFacade: Server handshake end, connectionId: 6
 HandshakeService: Handshake stopped
-HandshakeService: Handshake completed for connection 7
-NetworkFacade: Handshake completed for connection 7
-StreamManager: handshake completed, connectionId: 7
+HandshakeService: Handshake completed for connection 6
+NetworkFacade: Handshake completed for connection 6
+StreamManager: handshake completed, connectionId: 6
 ?? UDPManager: Received datagram from "::ffff:95.81.125.224" : 23231 size: 1200
 ?? UDPManager: Routing packet - stream: 12345 callId: 0 size: 1200
 ? UDPManager: No NetworkManager registered for stream 12345
