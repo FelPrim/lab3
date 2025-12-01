@@ -1,21 +1,150 @@
-VideoCapture created for device: 0
-VideoDecoder::initialize() in thread QThread(0x18ffa56ad50, name = "Qt mainThread")
-? VideoDecoder optimized for low latency
-VideoDecoder initialized
-Device 0 added successfully
-VideoCapture: quick starting device 0
+StreamManager: server stream created - ID: 234094999
+NetworkFacade: NetworkManager for stream 234094999 already exists
+NetworkManager created for outgoing stream: 234094999
+Mapped device 0 to stream 234094999
+MainWindow: server stream created - ID: 234094999
+VideoEncoder created for stream: 234094999
+VideoEncoder::initialize() for stream 234094999 in thread QThread(0x1c7e6c8b690, name = "Qt mainThread") dimensions: 854 x 480 fps: 15
+initFFMpeg
+[libx264 @ 000001c792f26b40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000001c792f26b40] profile Constrained Baseline, level 3.0, 4:2:0, 8-bit
+? VideoEncoder ULTRAFAST preset for stream: 234094999
+VideoEncoder initialized for stream: 234094999 codec: libx264 bitrate: 600000 threads: 1
+VideoEncoder initialized for stream: 234094999
+Stream officially created - ID: 234094999 Display: "VJAHST"
+VideoEncoder: streamId updated to 234094999
+Stream officially created - ID: 234094999 Display: "VJAHST"
 Requested: 854 x 480 @ 15
 Actual: 1920 x 1080 @ 15
 Starting fast capture loop for device 0
-Device 0 FPS: 60.1685
-Device 0 FPS: 43.6872
-Device 0 FPS: 28.4495
-Device 0 FPS: 29.1206
-Device 0 FPS: 62.3441
-Device 0 FPS: 174.216
-Device 0 FPS: 54.0249
-Device 0 FPS: 27.2257
-Device 0 FPS: 126.904
-Device 0 FPS: 85.3971
-Device 0 FPS: 45.8505
-Device 0 FPS: 41.425
+StreamerWidget: Received frame for encoding, state: 1
+VideoEncoder::encodeFrame was called for the first time
+
+Frame checksum (BGR sum): 19974725
+FrameBuffer: inserted frame 0 at index 0 size: 59521 bytes
+StreamerWidget: Received frame for encoding, state: 1
+Frame checksum (BGR sum): 19974725
+FrameBuffer: inserted frame 1 at index 1 size: 26 bytes
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+StreamerWidget: Received frame for encoding, state: 1
+Frame checksum (BGR sum): 20040209
+FrameBuffer: inserted frame 2 at index 2 size: 14873 bytes
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+StreamerWidget: Received frame for encoding, state: 1
+Frame checksum (BGR sum): 20040209
+FrameBuffer: inserted frame 3 at index 3 size: 4294 bytes
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+StreamerWidget: Received frame for encoding, state: 1
+Frame checksum (BGR sum): 20039260
+FrameBuffer: inserted frame 4 at index 4 size: 11771 bytes
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+StreamerWidget: Received frame for encoding, state: 1
+Frame checksum (BGR sum): 20039260
+FrameBuffer: inserted frame 5 at index 5 size: 13605 bytes
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+StreamerWidget: Received frame for encoding, state: 1
+Frame checksum (BGR sum): 19190191
+FrameBuffer: inserted frame 6 at index 6 size: 7581 bytes
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+StreamerWidget: Received frame for encoding, state: 1
+Frame checksum (BGR sum): 19190191
+FrameBuffer: inserted frame 7 at index 7 size: 560 bytes
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+StreamerWidget: Received frame for encoding, state: 1
+Frame checksum (BGR sum): 19600467
+FrameBuffer: inserted frame 8 at index 8 size: 26861 bytes
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
+[h264 @ 000001c793099280] non-existing PPS 0 referenced
+[h264 @ 000001c793099280] no frame!
+avcodec_send_packet failed: "Invalid data found when processing input"
