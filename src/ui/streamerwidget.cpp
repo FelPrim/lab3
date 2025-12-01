@@ -146,9 +146,10 @@ void StreamerWidget::initializeVideoCapture()
     cleanupVideoCapture();
 
     m_videoCapture = new VideoCapture(m_deviceIndex, this);
-    
+#ifndef TEST_DECODER 
     connect(m_videoCapture, &VideoCapture::rawFrameReady,
             this, &StreamerWidget::onRawFrameReady);
+#endif
     connect(m_videoCapture, &VideoCapture::frameForEncodingReady,
             this, &StreamerWidget::onFrameForEncoding);
     connect(m_videoCapture, &VideoCapture::errorOccurred,
@@ -339,6 +340,15 @@ void StreamerWidget::initialize()
          QThread::msleep(50);
         initializeVideoCapture();
         
+#ifdef TEST_DECODER
+    if (!m_testDecoder) {
+        m_testDecoder = new VideoDecoder(this);
+        connect(m_testDecoder, &VideoDecoder::frameDecoded,
+                this, [this](const QImage& img){
+                    if (m_videoDisplay) m_videoDisplay->displayFrame(img);
+                });
+    }
+#endif
         // 2. Затем настраиваем соединения (чтобы подключиться к созданному VideoCapture)
         setupConnections();
         
@@ -602,6 +612,14 @@ void StreamerWidget::onFrameForEncoding(const cv::Mat &frame)
 void StreamerWidget::onFrameEncoded(int streamId, int frameNumber, const QByteArray &packet)
 {
     if (streamId != static_cast<int>(m_streamId)) return;
+
+#ifdef TEST_DECODER
+    // В ТЕСТОВОМ режиме декодируем локально, не отправляем в сеть
+    if (m_testDecoder) {
+        m_testDecoder->decodePacket(packet);
+    }
+    return;
+#endif
 
     // УПРОСТИТЬ: отправляем если стрим активен
     if (m_streamManager && m_streamState == State_StreamActive) {

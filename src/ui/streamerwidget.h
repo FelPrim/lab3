@@ -1,4 +1,5 @@
 #pragma once
+#define TEST_DECODER
 
 #include "../logic/videocapture.h"
 #include "../logic/videoencoder.h"
@@ -118,5 +119,9 @@ private:
 
 public:
     void onNetworkError(const QString& error);
+
+#ifdef TEST_DECODER
+    class VideoDecoder* m_testDecoder = nullptr;
+#endif
 
 };
