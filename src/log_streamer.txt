@@ -1,33 +1,33 @@
 Quick scanning for video devices...
 Found device: 0 after 1 attempts
 Found device: 1 after 1 attempts
-[ WARN:0@1.205] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.206] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.207] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.208] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.208] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.209] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.210] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.210] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.252] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.253] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.253] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.254] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.255] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.255] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.256] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.257] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
 Quick scan completed. Found 2 devices
 Quick scanning for video devices...
 Found device: 0 after 1 attempts
 Found device: 1 after 1 attempts
-[ WARN:0@1.947] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.947] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.948] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.948] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.949] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.949] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.950] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@1.950] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.975] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.976] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.977] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.977] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.978] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.978] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.978] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.979] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
 Quick scan completed. Found 2 devices
 Available devices: QList(0, 1)
 Initializing MainWindow
 StreamManager created (NetworkFacade wrapper)
 StreamManager initialized
-UDP Socket local port: 60357
-UDPManager: Socket bound to port 60357
+UDP Socket local port: 59785
+UDPManager: Socket bound to port 59785
 StreamManager: setServerAddress "95.81.125.224" 23230
 StreamManager: connectToServer
 TCPManager: connecting to "95.81.125.224" : 23230
@@ -55,14 +55,14 @@ Add device requested
 Quick scanning for video devices...
 Found device: 0 after 1 attempts
 Found device: 1 after 1 attempts
-[ WARN:0@4.105] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@4.105] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@4.106] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@4.106] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@4.107] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@4.107] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@4.108] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@4.108] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@4.426] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@4.426] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@4.427] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@4.427] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@4.428] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@4.428] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@4.429] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@4.429] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
 Quick scan completed. Found 2 devices
 Quick adding device: 0
 Adding streamer widget for device: 0
@@ -72,8 +72,6 @@ Fast initializing StreamerWidget for device: 0
 VideoCapture created for device: 0
 Device 0 added successfully
 VideoCapture: quick starting device 0
-Requested: 1920 x 1080 @ 15
-Actual: 1920 x 1080 @ 15
 Start stream requested for: "---"
 Start stream requested for device: 0
 Cannot initialize encoder without valid stream ID
@@ -85,46 +83,48 @@ Stream setup completed for device: 0
 Start stream requested for device: 0
 Cannot start stream - wrong state: 1
 TCPManager: processing message type: "90"
-NetworkFacade: Server stream created, id: 44132157
+NetworkFacade: Server stream created, id: 11457336
 FrameAssembler: Created
 FrameSender: Created
-NetworkManager created for stream: 44132157
-UDPManager: Registered NetworkManager for stream 44132157
-NetworkManager: Initialized for stream 44132157
+NetworkManager created for stream: 11457336
+UDPManager: Registered NetworkManager for stream 11457336
+NetworkManager: Initialized for stream 11457336
 Server: "95.81.125.224" : 23230
 NetworkManager: Server address set to "95.81.125.224" : 23231
-NetworkFacade: Created NetworkManager for stream 44132157
-NetworkFacade: NetworkManager created for stream 44132157
+NetworkFacade: Created NetworkManager for stream 11457336
+NetworkFacade: NetworkManager created for stream 11457336
 === Client Network State ===
 Connection ID: 6
 Calls: QList(0)
-Streams: QList(44132157)
+Streams: QList(11457336)
 === Call Details ===
 Call 0 -> Streams: QList()
 === Stream Details ===
-Stream 44132157 -> Call: 0 , Role: "Streamer" , Status: "Inactive" - "Created, waiting for start"
+Stream 11457336 -> Call: 0 , Role: "Streamer" , Status: "Inactive" - "Created, waiting for start"
 === Summary ===
-Owned Streams: 1 - QList(44132157)
+Owned Streams: 1 - QList(11457336)
 Joined Streams: 0 - QList()
 Active Streams: 0 - QList()
 Joined Calls: 0 - QList()
 =====================
-StreamManager: server stream created - ID: 44132157
-NetworkFacade: NetworkManager for stream 44132157 already exists
-NetworkManager created for outgoing stream: 44132157
-Mapped device 0 to stream 44132157
-MainWindow: server stream created - ID: 44132157
-VideoEncoder created for stream: 44132157
-VideoEncoder::initialize() for stream 44132157 in thread QThread(0x152ac36b1b0, name = "Qt mainThread") dimensions: 1920 x 1080 fps: 15
+StreamManager: server stream created - ID: 11457336
+NetworkFacade: NetworkManager for stream 11457336 already exists
+NetworkManager created for outgoing stream: 11457336
+Mapped device 0 to stream 11457336
+MainWindow: server stream created - ID: 11457336
+VideoEncoder created for stream: 11457336
+VideoEncoder::initialize() for stream 11457336 in thread QThread(0x23228d9c8f0, name = "Qt mainThread") dimensions: 1920 x 1080 fps: 15
 initFFMpeg
-[libx264 @ 00000152b375b640] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
-[libx264 @ 00000152b375b640] profile Constrained Baseline, level 4.0, 4:2:0, 8-bit
-? VideoEncoder ULTRAFAST preset for stream: 44132157
-VideoEncoder initialized for stream: 44132157 codec: libx264 bitrate: 4800000 threads: 1
-VideoEncoder initialized for stream: 44132157
-Stream officially created - ID: 44132157 Display: "RGYOSD"
-VideoEncoder: streamId updated to 44132157
-Stream officially created - ID: 44132157 Display: "RGYOSD"
+[libx264 @ 00000232301c62c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 00000232301c62c0] profile Constrained Baseline, level 4.0, 4:2:0, 8-bit
+? VideoEncoder ULTRAFAST preset for stream: 11457336
+VideoEncoder initialized for stream: 11457336 codec: libx264 bitrate: 4800000 threads: 1
+VideoEncoder initialized for stream: 11457336
+Stream officially created - ID: 11457336 Display: "USWBZA"
+VideoEncoder: streamId updated to 11457336
+Stream officially created - ID: 11457336 Display: "USWBZA"
+Requested: 1920 x 1080 @ 15
+Actual: 1920 x 1080 @ 15
 Starting fast capture loop for device 0
 StreamerWidget: Received frame for encoding, state: 1
 VideoEncoder::encodeFrame was called for the first time
@@ -138,42 +138,36 @@ StreamerWidget: Received frame for encoding, state: 1
 StreamerWidget: Received frame for encoding, state: 1
 StreamerWidget: Received frame for encoding, state: 1
 StreamerWidget: Received frame for encoding, state: 1
-Layout updated: 1 widgets, grid: 1 x 1 video size: QSize(1498, 842)
+StreamerWidget: Received frame for encoding, state: 1
+StreamerWidget: Received frame for encoding, state: 1
+StreamerWidget: Received frame for encoding, state: 1
+StreamerWidget: Received frame for encoding, state: 1
+Start stream requested for: "USWBZA"
+Start stream requested for device: 0
+Cannot start stream - wrong state: 1
+Start stream requested for device: 0
+Cannot start stream - wrong state: 1
 StreamerWidget: Received frame for encoding, state: 1
 StreamerWidget: Received frame for encoding, state: 1
 StreamerWidget: Received frame for encoding, state: 1
 StreamerWidget: Received frame for encoding, state: 1
 StreamerWidget: Received frame for encoding, state: 1
 StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-StreamerWidget: Received frame for encoding, state: 1
-Disconnect requested for device with stream: "RGYOSD"
+Disconnect requested for device with stream: "USWBZA"
 Disconnect requested for device: 0
 Stopping stream for device: 0
-StreamManager: deleteStream 44132157
-TCPManager: sent CLIENT_STREAM_DELETE streamId= 44132157
-Stream deletion requested for: 44132157
-[libx264 @ 00000152b375b640] frame I:2     Avg QP:16.00  size:  6498
-[libx264 @ 00000152b375b640] frame P:28    Avg QP:13.07  size:    12
-[libx264 @ 00000152b375b640] mb I  I16..4: 100.0%  0.0%  0.0%
-[libx264 @ 00000152b375b640] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip:100.0%
-[libx264 @ 00000152b375b640] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0% inter: 0.0% 0.0% 0.0%
-[libx264 @ 00000152b375b640] i16 v,h,dc,p: 99%  0%  1%  0%
-[libx264 @ 00000152b375b640] i8c dc,h,v,p: 100%  0%  0%  0%
-[libx264 @ 00000152b375b640] kb/s:53.32
-VideoEncoder destroyed for stream: 44132157
+StreamManager: deleteStream 11457336
+TCPManager: sent CLIENT_STREAM_DELETE streamId= 11457336
+Stream deletion requested for: 11457336
+[libx264 @ 00000232301c62c0] frame I:2     Avg QP:16.00  size:  6498
+[libx264 @ 00000232301c62c0] frame P:18    Avg QP:13.11  size:    12
+[libx264 @ 00000232301c62c0] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 00000232301c62c0] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip:100.0%
+[libx264 @ 00000232301c62c0] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0% inter: 0.0% 0.0% 0.0%
+[libx264 @ 00000232301c62c0] i16 v,h,dc,p: 99%  0%  1%  0%
+[libx264 @ 00000232301c62c0] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 00000232301c62c0] kb/s:79.27
+VideoEncoder destroyed for stream: 11457336
 Stream stopped for device: 0
 Cleaning up StreamerWidget for device: 0
 Cleaning up video capture for device: 0
@@ -188,14 +182,14 @@ Device 0 disconnected and removed. Total used devices: 0
 Quick scanning for video devices...
 Found device: 0 after 1 attempts
 Found device: 1 after 1 attempts
-[ WARN:0@24.114] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@24.115] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@24.116] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@24.116] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@24.117] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@24.117] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@24.118] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
-[ WARN:0@24.118] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@18.993] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@18.994] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@18.994] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@18.995] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@18.995] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@18.996] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@18.996] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@18.997] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
 Quick scan completed. Found 2 devices
 Available devices: QList(0, 1)
 Device availability - Total: 2 Used: 0 Available: true
@@ -209,21 +203,21 @@ StreamerWidget: Received frame for encoding, state: 0
 Cleaning up StreamerWidget for device: 0
 StreamerWidget cleanup completed for device: 0
 TCPManager: processing message type: "4"
-StreamManager: Server success for message type 17 : "SUCCESS: deleted stream 44132157"
+StreamManager: Server success for message type 17 : "SUCCESS: deleted stream 11457336"
 Cleaning up MainWindow
 StreamManager: disconnectFromServer
 TCPManager: disconnected from server
 NetworkFacade: TCP disconnected
-UDPManager: Unregistered NetworkManager for stream 44132157
-NetworkManager: Cleaned up for stream 44132157
+UDPManager: Unregistered NetworkManager for stream 11457336
+NetworkManager: Cleaned up for stream 11457336
 StreamManager: network disconnected
 Connection status changed: false
 Connection status changed: false
 StreamManager cleanup
 StreamManager cleanup
-UDPManager: Unregistered NetworkManager for stream 44132157
-NetworkManager: Cleaned up for stream 44132157
-NetworkManager: Destructor for stream 44132157
+UDPManager: Unregistered NetworkManager for stream 11457336
+NetworkManager: Cleaned up for stream 11457336
+NetworkManager: Destructor for stream 11457336
 FrameAssembler: Destroyed
 FrameSender: clear - Removed 0 frames and 0 packets
 FrameSender: Destroyed
