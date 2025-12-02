@@ -3,18 +3,19 @@
 #ifdef TEST_DECODER
 #include "../logic/videodecoder.h"
 #include "../logic/framebuffer.h"
+#include <QTimer>
 #endif
 #include "../logic/videocapture.h"
 #include "../logic/videoencoder.h"
 #include "../network/udp/networkmanager.h" 
-#include <QWidget>  // ДОБАВЬТЕ этот include!
+#include <QWidget>
 #include <QVBoxLayout>
 #include <QLabel>
 #include "../logic/videodisplay.h"
 #include "streamcontrolpanel.h"
 class StreamManager; 
 
-class StreamerWidget : public QWidget  // ИЗМЕНИТЕ: QWidget вместо QObject
+class StreamerWidget : public QWidget
 {
     Q_OBJECT
 
@@ -129,6 +130,8 @@ public:
 #ifdef TEST_DECODER
     VideoDecoder* m_testDecoder = nullptr;
     FrameBuffer* m_frameBuffer = nullptr;
+    QTimer* m_bufferReadTimer = nullptr;
+private slots:
+    void processBufferedFrames();
 #endif
-
 };

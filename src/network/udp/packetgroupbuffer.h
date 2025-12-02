@@ -7,6 +7,8 @@
 #include <QDateTime>
 #include <QMutex>
 #include "network_packet.h"
+#include "myfec.h"
+#include "../../video_defaults.h"
 
 class PacketGroupBuffer : public QObject
 {
@@ -15,20 +17,19 @@ class PacketGroupBuffer : public QObject
 public:
     struct FramePackets {
         int frameNumber;
+        int startSequence; // packetSequence из START_FRAME
+        int frameSize;     // Общий размер фрейма в байтах
+        int totalPackets;  // Общее количество пакетов во фрейме
         QHash<int, QByteArray> packets;  // packetIndex -> packetData
         QVector<bool> received;
         qint64 timestamp;
-        bool hasStartFrame;
-        int totalPackets;
         
-        FramePackets() : frameNumber(-1), timestamp(0), 
-                        hasStartFrame(false), totalPackets(0) {}
+        FramePackets() : frameNumber(-1), startSequence(-1), frameSize(0), 
+                         totalPackets(0), timestamp(0) {}
         
         bool isComplete() const {
-            if (!hasStartFrame) return false;
-            
-            for (bool recv : received) {
-                if (!recv) return false;
+            for (int i = 0; i < totalPackets; ++i) {
+                if (!received[i]) return false;
             }
             return true;
         }
@@ -56,12 +57,20 @@ private:
     int m_streamId;
     QHash<int, FramePackets> m_frames;  // frameNumber -> FramePackets
     QList<QPair<int, QByteArray>> m_completeFrames;
+    QMultiHash<int, QPair<PacketType, QByteArray>> m_orphanedPackets; // frameNumber -> (type, payload)
     int m_completedCount = 0;
     
+    // Константы размеров (согласованы с FrameSender)
+    static const int START_PAYLOAD = DATA_PAYLOAD_SIZE - 8;     // 1179 байт
+    static const int CONTINUE_PAYLOAD = DATA_PAYLOAD_SIZE - 4;  // 1183 байт
+    static const int END_PAYLOAD = DATA_PAYLOAD_SIZE - 4;       // 1183 байт
+    
     // Обработка разных типов пакетов
-    void processStartFrame(const NetworkPacket &packet, const QByteArray &payload);
-    void processContinueFrame(const NetworkPacket &packet, const QByteArray &payload, int packetIndex);
-    void processEndFrame(const NetworkPacket &packet, const QByteArray &payload, int packetIndex);
+    void processStartFrame(const NetworkPacket &packet, const QByteArray &payload, uint32_t packetSequence);
+    void processContinueFrame(const NetworkPacket &packet, const QByteArray &payload, 
+                             uint32_t packetSequence, int frameNumber);
+    void processEndFrame(const NetworkPacket &packet, const QByteArray &payload,
+                        uint32_t packetSequence, int frameNumber);
     
     // Сборка фрейма
     QByteArray assembleFrame(const FramePackets &frameData);
@@ -69,4 +78,8 @@ private:
     // Утилиты
     int extractFrameNumber(const QByteArray &payload, int offset = 0) const;
     void checkFrameCompletion(int frameNumber);
+    void processOrphanedPackets(int frameNumber);
+    
+    // Вычисление количества пакетов
+    int calculateTotalPackets(int frameSize, int firstPacketDataSize) const;
 };
