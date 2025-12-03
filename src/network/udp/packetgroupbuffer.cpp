@@ -179,7 +179,7 @@ void PacketGroupBuffer::handleStart(FrameGroup &group, const TempPacket &tp, uin
     group.totalPackets = totalPackets;
     group.startSequence = packetSequence;
     group.packets.resize(totalPackets);
-    group.received.assign(totalPackets, 0);
+    group.received.fill(totalPackets, 0);
     group.packetsReceived = 0;
 
     // store START payload into index 0 (trim padding if frame smaller)
