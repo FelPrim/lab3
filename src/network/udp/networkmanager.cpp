@@ -33,7 +33,6 @@ NetworkManager::NetworkManager(int streamId, QObject *parent)
     , m_frameSender(new FrameSender(this))
     , m_fecSendBufferCount(0)
 {
-    m_cleanupTimer = new QTimer(this);
     memset(m_fecSendBuffer, 0, sizeof(m_fecSendBuffer));
     qDebug() << "NetworkManager created for stream:" << streamId;
     
@@ -47,12 +46,12 @@ NetworkManager::NetworkManager(int streamId, QObject *parent)
     connect(m_packetBuffer, &PacketGroupBuffer::frameComplete,
             this, &NetworkManager::onFrameComplete);
 
-    connect(m_cleanupTimer, &QTimer::timeout, this, &NetworkManager::cleanupOldAssemblies);
-m_cleanupTimer->start(500);
 }
 
 NetworkManager::~NetworkManager()
 {
+    // Таймеры удалятся автоматически благодаря parent/child механизму Qt
+    // Вызываем cleanup() для остановки таймеров и отписки
     cleanup();
     qDebug() << "NetworkManager: Destructor for stream" << m_streamId;
 }
@@ -71,41 +70,43 @@ bool NetworkManager::initialize(UDPManager *udpManager)
     m_udpManager = udpManager;
     m_udpManager->registerNetworkManager(m_streamId, this);
 
-    // Создаем таймеры
-    m_cleanupTimer = new QTimer(this);
-    m_cleanupTimer->setInterval(5000); // Очистка каждые 5 секунд
-    connect(m_cleanupTimer, &QTimer::timeout, this, &NetworkManager::cleanupOldAssemblies);
+    // Создаем таймеры только если они еще не созданы
+    if (!m_cleanupTimer) {
+        m_cleanupTimer = new QTimer(this);
+        m_cleanupTimer->setInterval(5000); // Очистка каждые 5 секунд
+        connect(m_cleanupTimer, &QTimer::timeout, 
+                this, &NetworkManager::cleanupOldAssemblies);
+    }
     
-    m_statsTimer = new QTimer(this);
-    m_statsTimer->setInterval(5000);
-    connect(m_statsTimer, &QTimer::timeout, this, &NetworkManager::printStatistics);
+    if (!m_statsTimer) {
+        m_statsTimer = new QTimer(this);
+        m_statsTimer->setInterval(5000);
+        connect(m_statsTimer, &QTimer::timeout, 
+                this, &NetworkManager::printStatistics);
+    }
     
     m_operationTimer.start();
     m_initialized = true;
     
     qDebug() << "NetworkManager: Initialized for stream" << m_streamId;
-    qDebug() << "Server:" << m_serverAddress.toString() << ":" << m_serverPort;
-    
     return true;
 }
 
 void NetworkManager::cleanup()
 {
-    // Отписываемся от UDPManager
-    if (m_udpManager) {
-        m_udpManager->unregisterNetworkManager(m_streamId);
-    }
-    
+    // Останавливаем таймеры
     if (m_cleanupTimer) {
         m_cleanupTimer->stop();
-        delete m_cleanupTimer;
-        m_cleanupTimer = nullptr;
     }
     
     if (m_statsTimer) {
         m_statsTimer->stop();
-        delete m_statsTimer;
-        m_statsTimer = nullptr;
+    }
+    
+    // Отписываемся от UDPManager
+    if (m_udpManager) {
+        m_udpManager->unregisterNetworkManager(m_streamId);
+        m_udpManager = nullptr; // Не удаляем, только обнуляем
     }
     
     m_initialized = false;
