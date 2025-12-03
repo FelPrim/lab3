@@ -2,8 +2,10 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QMessageBox>
 #include <QDebug>
+#include "../video_defaults.h"
 
 const QString ViewerWidget::PLACEHOLDER_TEXT = "Waiting for video stream...";
 const QString ViewerWidget::STATUS_ACTIVE = "● Connected";
@@ -13,17 +15,28 @@ ViewerWidget::ViewerWidget(uint32_t streamId, const QString &displayId, uint32_t
     : QWidget(parent)
     , m_videoDisplay(nullptr)
     , m_controlPanel(nullptr)
+    , m_controlLayout(nullptr)
+    , m_streamIdLabel(nullptr)
+    , m_statusLabel(nullptr)
+    , m_leaveButton(nullptr)
     , m_mainLayout(nullptr)
-    , m_displayBuffer(nullptr)
-    , m_videoDecoder(nullptr)
+    , m_bufferedDecoder(nullptr)
     , m_networkManager(nullptr)
     , m_streamId(streamId)
     , m_displayId(displayId)
     , m_callId(callId)
     , m_active(false)
 {
+    qDebug() << "=== ViewerWidget::ViewerWidget() START ===";
+    qDebug() << "Stream ID:" << streamId << "Display ID:" << displayId << "Call ID:" << callId;
+    
     setupUI();
+    qDebug() << "setupUI() completed";
+    
     setupConnections();
+    qDebug() << "setupConnections() completed";
+    
+    qDebug() << "=== ViewerWidget::ViewerWidget() END ===";
 }
 
 ViewerWidget::~ViewerWidget()
@@ -33,6 +46,8 @@ ViewerWidget::~ViewerWidget()
 
 void ViewerWidget::setupUI()
 {
+    qDebug() << "=== ViewerWidget::setupUI() START ===";
+    
     setStyleSheet(R"(
         ViewerWidget {
             background: #1e1e1e;
@@ -41,7 +56,7 @@ void ViewerWidget::setupUI()
             margin: 2px;
         }
     )");
-
+    
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setSpacing(0);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -57,50 +72,136 @@ void ViewerWidget::setupUI()
         }
     )");
 
-    // Control panel
-    m_controlPanel = new StreamControlPanel(StreamControlPanel::ViewerMode, this);
-    m_controlPanel->setStreamId(m_displayId);
-    m_controlPanel->setActive(false);
-
+    // Создаем простую панель управления для ViewerWidget
+    m_controlPanel = new QWidget(this);
+    m_controlPanel->setFixedHeight(40);
+    m_controlPanel->setStyleSheet(R"(
+        QWidget {
+            background: #2d2d2d;
+            border: none;
+            border-top: 1px solid #444;
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
+        }
+    )");
+    
+    m_controlLayout = new QHBoxLayout(m_controlPanel);
+    m_controlLayout->setContentsMargins(8, 4, 8, 4);
+    m_controlLayout->setSpacing(8);
+    
+    // Stream ID label
+    m_streamIdLabel = new QLabel(m_controlPanel);
+    m_streamIdLabel->setStyleSheet(R"(
+        QLabel {
+            color: #cccccc;
+            font-weight: bold;
+            padding: 4px;
+        }
+    )");
+    m_streamIdLabel->setText(m_displayId);
+    
+    // Status label
+    m_statusLabel = new QLabel(m_controlPanel);
+    m_statusLabel->setStyleSheet(R"(
+        QLabel {
+            color: #888888;
+            padding: 4px;
+        }
+    )");
+    m_statusLabel->setText(STATUS_INACTIVE);
+    
+    // Leave button
+    m_leaveButton = new QPushButton("Leave", m_controlPanel);
+    m_leaveButton->setFixedSize(60, 24);
+    m_leaveButton->setStyleSheet(R"(
+        QPushButton {
+            background: #444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        QPushButton:hover {
+            background: #555;
+        }
+        QPushButton:pressed {
+            background: #333;
+        }
+        QPushButton:disabled {
+            background: #2a2a2a;
+            color: #666;
+        }
+    )");
+    m_leaveButton->setEnabled(false);
+    
+    // Добавляем элементы на панель управления
+    m_controlLayout->addWidget(m_streamIdLabel);
+    m_controlLayout->addWidget(m_statusLabel);
+    m_controlLayout->addStretch();
+    m_controlLayout->addWidget(m_leaveButton);
+    
+    // Добавляем основные виджеты в основной layout
     m_mainLayout->addWidget(m_videoDisplay, 1);
     m_mainLayout->addWidget(m_controlPanel);
+    
+    qDebug() << "=== ViewerWidget::setupUI() END ===";
 }
 
 void ViewerWidget::setupConnections()
 {
-    // Control panel signals
-    connect(m_controlPanel, &StreamControlPanel::leaveStreamRequested,
-            this, &ViewerWidget::onLeaveButtonClicked);
+    qDebug() << "ViewerWidget::setupConnections for" << m_displayId;
+    
+    if (m_leaveButton) {
+        connect(m_leaveButton, &QPushButton::clicked,
+                this, &ViewerWidget::onLeaveButtonClicked);
+    }
 }
 
 void ViewerWidget::initialize()
 {
-    qDebug() << "Initializing ViewerWidget for stream:" << m_displayId << "ID:" << m_streamId;
+    qDebug() << "=== ViewerWidget::initialize() START ===";
+    qDebug() << "Stream:" << m_displayId << "ID:" << m_streamId;
+    qDebug() << "NetworkManager ptr:" << m_networkManager;
+    qDebug() << "BufferedDecoder ptr:" << m_bufferedDecoder;
 
     if (!m_networkManager) {
-        qWarning() << "NetworkManager not set before initialize()";
+        qWarning() << "ViewerWidget::initialize: NetworkManager not set for" << m_displayId;
         m_videoDisplay->setPlaceholderText("Waiting for network connection...");
         return;
     }
-    m_networkManager->setCallId(m_callId);
-    // Create video decoder
-    m_videoDecoder = new VideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, this);
-    connect(m_videoDecoder, &VideoDecoder::frameDecoded,
-            this, &ViewerWidget::onFrameReady);
 
-    // Connect to NetworkManager signals
-    connect(m_networkManager, &NetworkManager::frameAssembled,
-            this, &ViewerWidget::onFrameAssembled);
-    
-    // Note: NetworkManager doesn't have networkErrorOccurred signal, using errorOccurred if available
-    // If NetworkManager has errorOccurred signal, connect it:
-    // connect(m_networkManager, &NetworkManager::errorOccurred,
-    //         this, &ViewerWidget::onNetworkError);
+    m_networkManager->setCallId(m_callId);
+
+    if (!m_bufferedDecoder) {
+        m_bufferedDecoder = new BufferedVideoDecoder(
+            DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS, -1, this
+        );
+
+        connect(m_bufferedDecoder, &BufferedVideoDecoder::frameReady,
+                this, &ViewerWidget::onFrameReady, Qt::QueuedConnection);
+
+        connect(m_bufferedDecoder, &BufferedVideoDecoder::errorOccurred,
+                this, [this](const QString& error) {
+                    qCritical() << "BufferedVideoDecoder error for stream" << m_displayId << ":" << error;
+                    showError(QString("Decoder error: %1").arg(error));
+                }, Qt::QueuedConnection);
+
+        m_bufferedDecoder->initialize();
+        qDebug() << "BufferedVideoDecoder created for" << m_displayId;
+    }
+
+    disconnect(m_networkManager, nullptr, this, nullptr);
+    bool ok = connect(m_networkManager, &NetworkManager::frameAssembled,
+                      this, &ViewerWidget::onFrameAssembled, Qt::QueuedConnection);
+    if (!ok) {
+        qWarning() << "Failed to connect NetworkManager::frameAssembled for" << m_displayId;
+    }
 
     setActive(true);
     updateStatus();
-    
-    qDebug() << "ViewerWidget initialized for stream:" << m_displayId;
+    connect(m_networkManager, &NetworkManager::frameAssembled,
+        m_bufferedDecoder, &BufferedVideoDecoder::addFrame);
+    qDebug() << "ViewerWidget initialized with BufferedVideoDecoder for stream:" << m_displayId;
 }
 
 void ViewerWidget::cleanup()
@@ -109,15 +210,16 @@ void ViewerWidget::cleanup()
 
     setActive(false);
 
-    // Disconnect from NetworkManager
     if (m_networkManager) {
         m_networkManager->disconnect(this);
     }
 
-    if (m_videoDecoder) {
-        m_videoDecoder->cleanup();
-        delete m_videoDecoder;
-        m_videoDecoder = nullptr;
+    if (m_bufferedDecoder) {
+        m_bufferedDecoder->cleanup();
+        m_bufferedDecoder->clear();
+        delete m_bufferedDecoder;
+        m_bufferedDecoder = nullptr;
+        qDebug() << "BufferedVideoDecoder cleaned up";
     }
 
     clearDisplay();
@@ -127,18 +229,46 @@ void ViewerWidget::setNetworkManager(NetworkManager* networkManager)
 {
     if (m_networkManager == networkManager) return;
 
-    // Disconnect from old NetworkManager
     if (m_networkManager) {
         m_networkManager->disconnect(this);
     }
 
     m_networkManager = networkManager;
 
-    // Connect to new NetworkManager if we're already initialized
-    if (m_networkManager && m_videoDecoder) {
-        connect(m_networkManager, &NetworkManager::frameAssembled,
-                this, &ViewerWidget::onFrameAssembled);
+    if (!m_networkManager) {
+        qDebug() << "ViewerWidget::setNetworkManager called with nullptr for" << m_displayId;
+        m_videoDisplay->setPlaceholderText("Waiting for network connection...");
+        return;
+    }
+
+    if (!m_bufferedDecoder) {
+        m_bufferedDecoder = new BufferedVideoDecoder(
+            DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FPS, -1, this
+        );
+
+        connect(m_bufferedDecoder, &BufferedVideoDecoder::frameReady,
+                this, &ViewerWidget::onFrameReady, Qt::QueuedConnection);
+
+        connect(m_bufferedDecoder, &BufferedVideoDecoder::errorOccurred,
+                this, [this](const QString& error) {
+                    qCritical() << "BufferedVideoDecoder error for stream" << m_displayId << ":" << error;
+                    showError(QString("Decoder error: %1").arg(error));
+                }, Qt::QueuedConnection);
+
+        m_bufferedDecoder->initialize();
+    }
+
+    bool ok = connect(m_networkManager, &NetworkManager::frameAssembled,
+                      this, &ViewerWidget::onFrameAssembled, Qt::QueuedConnection);
+    if (!ok) {
+        qWarning() << "ViewerWidget: failed to connect frameAssembled signal for stream:" << m_displayId;
+    } else {
         qDebug() << "ViewerWidget connected to NetworkManager for stream:" << m_streamId;
+    }
+
+    if (!m_active) {
+        setActive(true);
+        updateStatus();
     }
 }
 
@@ -147,13 +277,11 @@ void ViewerWidget::setActive(bool active)
     if (m_active == active) return;
 
     m_active = active;
-    
-    if (m_controlPanel) {
-        m_controlPanel->setActive(active);
-        m_controlPanel->setConnectionStatus(active);
-    }
-
     updateStatus();
+    
+    if (active && m_bufferedDecoder) {
+        m_bufferedDecoder->clear();
+    }
 }
 
 void ViewerWidget::setStreamId(uint32_t streamId, const QString &displayId)
@@ -161,8 +289,8 @@ void ViewerWidget::setStreamId(uint32_t streamId, const QString &displayId)
     m_streamId = streamId;
     m_displayId = displayId;
 
-    if (m_controlPanel) {
-        m_controlPanel->setStreamId(displayId);
+    if (m_streamIdLabel) {
+        m_streamIdLabel->setText(displayId);
     }
 
     updateStatus();
@@ -188,42 +316,47 @@ void ViewerWidget::clearDisplay()
     }
 }
 
-void ViewerWidget::setControlPanel(StreamControlPanel* panel)
-{
-    if (m_controlPanel) {
-        m_mainLayout->removeWidget(m_controlPanel);
-        m_controlPanel->deleteLater();
-    }
-
-    m_controlPanel = panel;
-    if (m_controlPanel) {
-        m_controlPanel->setParent(this);
-        m_mainLayout->addWidget(m_controlPanel);
-        m_controlPanel->setStreamId(m_displayId);
-        m_controlPanel->setActive(m_active);
-
-        // Reconnect signals
-        connect(m_controlPanel, &StreamControlPanel::leaveStreamRequested,
-                this, &ViewerWidget::onLeaveButtonClicked);
-    }
-}
-
 void ViewerWidget::updateStatus()
 {
-    if (m_controlPanel) {
-        m_controlPanel->setConnectionStatus(m_active);
+    if (m_statusLabel) {
+        if (m_active) {
+            m_statusLabel->setText(STATUS_ACTIVE);
+            m_statusLabel->setStyleSheet(R"(
+                QLabel {
+                    color: #4CAF50;
+                    padding: 4px;
+                }
+            )");
+        } else {
+            m_statusLabel->setText(STATUS_INACTIVE);
+            m_statusLabel->setStyleSheet(R"(
+                QLabel {
+                    color: #888888;
+                    padding: 4px;
+                }
+            )");
+        }
+    }
+    
+    if (m_leaveButton) {
+        m_leaveButton->setEnabled(m_active);
     }
 }
 
 void ViewerWidget::onFrameAssembled(int streamId, int frameNumber, const QByteArray &frameData)
 {
-    if (streamId != static_cast<int>(m_streamId) || !m_active) {
+    if (streamId != static_cast<int>(m_streamId)) return;
+    if (!m_active) return;
+    if (!m_bufferedDecoder) {
+        qWarning() << "Received frame but bufferedDecoder is null for stream:" << m_displayId;
         return;
     }
 
-    // Pass assembled frame to decoder with frameNumber
-    if (m_videoDecoder) {
-        m_videoDecoder->decodeFrame(frameData, frameNumber);
+    m_bufferedDecoder->addFrame(streamId, frameNumber, frameData);
+
+    if (frameNumber % 30 == 0) {
+        qDebug() << "ViewerWidget: Added frame" << frameNumber
+                 << "size:" << frameData.size() << "bytes to decoder for stream:" << m_displayId;
     }
 }
 
@@ -239,6 +372,10 @@ void ViewerWidget::onLeaveRequested()
     
     setActive(false);
     clearDisplay();
+    
+    if (m_bufferedDecoder) {
+        m_bufferedDecoder->clear();
+    }
     
     emit streamLeft(m_streamId);
 }
@@ -262,6 +399,11 @@ void ViewerWidget::onStreamLeft(uint32_t streamId)
     if (streamId == m_streamId) {
         setActive(false);
         clearDisplay();
+        
+        if (m_bufferedDecoder) {
+            m_bufferedDecoder->clear();
+        }
+        
         qDebug() << "ViewerWidget: left stream" << m_streamId;
     }
 }
@@ -270,5 +412,33 @@ void ViewerWidget::onNetworkError(const QString& error)
 {
     qCritical() << "Network error for viewer stream" << m_streamId << ":" << error;
     setActive(false);
-    m_videoDisplay->setPlaceholderText(QString("Network error: %1").arg(error));
+    
+    if (m_videoDisplay) {
+        m_videoDisplay->setPlaceholderText(QString("Network error: %1").arg(error));
+    }
+    
+    if (m_statusLabel) {
+        m_statusLabel->setText("● Error");
+        m_statusLabel->setStyleSheet(R"(
+            QLabel {
+                color: #f44336;
+                padding: 4px;
+            }
+        )");
+    }
+}
+
+void ViewerWidget::showError(const QString &message)
+{
+    qDebug() << "ViewerWidget Error for stream" << m_displayId << ":" << message;
+    
+    if (m_statusLabel) {
+        m_statusLabel->setText("● Error");
+        m_statusLabel->setStyleSheet(R"(
+            QLabel {
+                color: #f44336;
+                padding: 4px;
+            }
+        )");
+    }
 }

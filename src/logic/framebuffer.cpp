@@ -3,15 +3,12 @@
 #include <QDebug>
 #include <algorithm>
 
-// framebuffer.cpp - конструктор
 FrameBuffer::FrameBuffer(int capacity)
-    : m_capacity(qMax(1, capacity))  // Гарантируем минимум 1
+    : m_capacity(qMax(1, capacity))
 {
-    // Сначала устанавливаем емкость, потом резервируем
     m_buffer.resize(m_capacity);
     m_frameNumbers.resize(m_capacity);
     
-    // Инициализируем
     for (int i = 0; i < m_capacity; ++i) {
         m_frameNumbers[i] = -1;
     }
@@ -19,11 +16,84 @@ FrameBuffer::FrameBuffer(int capacity)
     m_minFrame = 0;
     m_maxFrame = -1;
     
-    qDebug() << "FrameBuffer constructed at" << this 
-             << "with capacity:" << m_capacity
-             << "buffer size:" << m_buffer.size()
-             << "frameNumbers size:" << m_frameNumbers.size();
+    qDebug() << "FrameBuffer constructed with capacity:" << m_capacity;
 }
+
+int FrameBuffer::filledSlotsCount() const
+{
+    QMutexLocker locker(&m_mutex);
+    
+    if (m_maxFrame == -1) return 0;
+    
+    int count = 0;
+    for (int i = 0; i < m_capacity; ++i) {
+        if (m_frameNumbers[i] != -1) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int FrameBuffer::findFrameWithDelay(int delayFrames) const
+{
+    if (m_maxFrame == -1) return -1;
+    
+    // Целевой кадр = самый новый - задержка
+    int targetFrame = m_maxFrame - delayFrames;
+    
+    // Если целевой кадр выпал из буфера, берем самый старый
+    if (targetFrame < m_minFrame) {
+        return m_minFrame;
+    }
+    
+    // Проверяем, есть ли целевой кадр в буфере
+    if (hasFrame(targetFrame)) {
+        return targetFrame;
+    }
+    
+    // Если целевого кадра нет, ищем ближайший доступный
+    // Ищем ближайший кадр к целевому (в любую сторону)
+    int closestFrame = -1;
+    int minDistance = std::numeric_limits<int>::max();
+    
+    for (int i = 0; i < m_capacity; ++i) {
+        int frameNum = m_frameNumbers[i];
+        if (frameNum != -1) {
+            int distance = std::abs(frameNum - targetFrame);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestFrame = frameNum;
+            }
+        }
+    }
+    
+    return closestFrame;
+}
+
+bool FrameBuffer::getFrameWithDelay(int delayFrames, QByteArray &out, int &outFrameNumber) const
+{
+    QMutexLocker locker(&m_mutex);
+    
+    if (m_maxFrame == -1 || delayFrames < 0) {
+        return false;
+    }
+    
+    // Находим кадр с нужной задержкой
+    int targetFrame = findFrameWithDelay(delayFrames);
+    
+    if (targetFrame == -1) {
+        return false;
+    }
+    
+    // Получаем данные кадра
+    if (getFrame(targetFrame, out)) {
+        outFrameNumber = targetFrame;
+        return true;
+    }
+    
+    return false;
+}
+
 int FrameBuffer::getBufferIndex(int frameNumber) const
 {
     if (m_capacity == 0) return -1;

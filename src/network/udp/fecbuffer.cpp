@@ -1,178 +1,256 @@
 #include "fecbuffer.h"
+#include "packetgroupbuffer.h"
 #include "network_packet.h"
 #include <QDebug>
+#include <cassert>
 
 FecBuffer::FecBuffer(int streamId, QObject *parent)
-    : QObject(parent), m_streamId(streamId), m_recoveredCount(0)
+    : QObject(parent), m_streamId(streamId), m_packetGroupBuffer(nullptr), 
+      m_recoveredCount(0), m_lastCleanedSequence(0)
 {
+}
+
+void FecBuffer::setPacketGroupBuffer(PacketGroupBuffer* packetGroupBuffer)
+{
+    m_packetGroupBuffer = packetGroupBuffer;
+    qDebug() << "FecBuffer: PacketGroupBuffer pointer set for stream" << m_streamId;
+}
+
+bool FecBuffer::shouldProcessPacket(uint32_t packetSequence, qint64 currentTime)
+{
+    Q_UNUSED(currentTime);
+    QMutexLocker locker(&m_sequenceMutex);
+    
+    // Если packetSequence меньше или равен последнему очищенному, пакет слишком старый
+    if (packetSequence <= m_lastCleanedSequence) {
+        qDebug() << "FecBuffer: Packet too old, sequence:" << packetSequence 
+                 << "last cleaned:" << m_lastCleanedSequence;
+        return false;
+    }
+    
+    return true;
+}
+
+void FecBuffer::updateLastCleanedSequence(uint32_t packetSequence)
+{
+    QMutexLocker locker(&m_sequenceMutex);
+    if (packetSequence > m_lastCleanedSequence) {
+        m_lastCleanedSequence = packetSequence;
+    }
 }
 
 bool FecBuffer::addPacket(const NetworkPacket &packet)
 {
-    // Получаем заголовок в host byte order
     PacketHeader header;
     memcpy(&header, &packet.route, sizeof(PacketHeader));
     cast_from_nbe(header);
     
     uint32_t packetSequence = header.header.packetSequence;
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+    
+    // Шаг 1: Проверка на слишком старый пакет
+    if (!shouldProcessPacket(packetSequence, currentTime)) {
+        qDebug() << "FecBuffer: Ignoring too old packet, sequence:" << packetSequence;
+        return false;
+    }
+    
     int groupId = packetSequence / FEC_GROUP_SIZE;
     int position = packetSequence % FEC_GROUP_SIZE;
     
-    qDebug() << "FecBuffer: Adding packet - group:" << groupId << "position:" << position;
+    qDebug() << "FecBuffer: Adding packet - group:" << groupId 
+             << "position:" << position << "isXor:" << packet.isXorPacket();
     
-    // Создаем группу если не существует
+    // Шаг 2: Создаем группу если не существует
     if (!m_groups.contains(groupId)) {
         FecGroup newGroup;
         newGroup.groupId = groupId;
-        newGroup.timestamp = QDateTime::currentMSecsSinceEpoch();
-        newGroup.packets.resize(FEC_TOTAL_PACKETS);
-        newGroup.received.resize(FEC_TOTAL_PACKETS, false);
+        newGroup.callId = header.header.callId;
+        newGroup.streamId = header.header.streamId;
+        newGroup.creationTime = currentTime;
+        newGroup.lastUpdateTime = currentTime;
         m_groups[groupId] = newGroup;
     }
     
     FecGroup &group = m_groups[groupId];
+    group.lastUpdateTime = currentTime;
     
-    // Сохраняем данные пакета
+    // Шаг 3: Проверка на дубликат
+    if (group.received[position]) {
+        qDebug() << "FecBuffer: Duplicate packet, ignoring. Sequence:" << packetSequence;
+        return false;
+    }
+    
+    // Шаг 4: Сохраняем данные пакета
     QByteArray packetData;
     if (packet.isXorPacket()) {
-        // Для XOR пакетов используем getXorPacketData
         packetData = PacketProcessor::getXorPacketData(packet);
-        // Добавляем обратно FEC флаг для хранения
-        if (!packetData.isEmpty()) {
-            packetData[0] |= 0x80;
+        if (packetData.size() != XOR_PACKET_DATA_SIZE) {
+            qDebug() << "FecBuffer: Invalid XOR packet size:" << packetData.size()
+                     << "expected:" << XOR_PACKET_DATA_SIZE;
+            return false;
         }
     } else {
-        // Для обычных пакетов создаем данные вручную
-        packetData.resize(1188);
         const DataPacket* dataPacket = packet.asDataPacket();
-        if (dataPacket) {
-            packetData[0] = dataPacket->type;
-            memcpy(packetData.data() + 1, dataPacket->payload, 1187);
+        if (!dataPacket) {
+            qDebug() << "FecBuffer: Invalid data packet";
+            return false;
         }
+        
+        packetData.resize(XOR_PACKET_DATA_SIZE);
+        char* buffer = packetData.data(); // Сохраняем указатель
+        buffer[0] = dataPacket->type & 0x7F;
+        memcpy(buffer + 1, dataPacket->payload, DATA_PAYLOAD_SIZE);
     }
     
     if (!packetData.isEmpty()) {
+        // Сохраняем время получения пакета
         group.packets[position] = packetData;
         group.received[position] = true;
         
-        // Если это XOR пакет (position = 4), пытаемся восстановить
-        if (position == FEC_DATA_PACKETS) {
-            tryRecoverLostPackets();
+        // Шаг 5: Отправляем только пакеты данных (не XOR) в PacketGroupBuffer
+        if (!packet.isXorPacket()) {
+            forwardPacketToGroupBuffer(packet);
+            qDebug() << "FecBuffer: Forwarding data packet to PacketGroupBuffer, sequence:" 
+                     << packetSequence;
+        } else {
+            qDebug() << "FecBuffer: XOR packet received, NOT forwarding, sequence:" 
+                     << packetSequence;
         }
         
-        // Добавляем оригинальный пакет в список готовых
-        m_readyPackets.append(packet);
-        emit packetReady(packet);
-        
-        // Если пакет данных и группа уже может быть восстановлена
-        if (position < FEC_DATA_PACKETS && group.canRecover()) {
-            tryRecoverLostPackets();
+        // Шаг 6: Проверяем возможность восстановления и восстанавливаем при необходимости
+        if (group.canRecover()) {
+            qDebug() << "FecBuffer: Group" << groupId << "can be recovered, attempting recovery";
+            int missingIndex = group.getMissingIndex();
+            if (missingIndex != -1) {
+                recoverPacketInGroup(groupId, missingIndex, currentTime);
+            }
         }
     }
     
     return true;
 }
 
-int FecBuffer::calculateGroupId(uint32_t packetSequence) const
+bool FecBuffer::recoverPacketInGroup(int groupId, int missingIndex, qint64 currentTime)
 {
-    return packetSequence / FEC_GROUP_SIZE;
-}
-
-int FecBuffer::calculatePositionInGroup(uint32_t packetSequence) const
-{
-    return packetSequence % FEC_GROUP_SIZE;
-}
-
-void FecBuffer::tryRecoverLostPackets()
-{
-    auto it = m_groups.begin();
-    while (it != m_groups.end()) {
-        FecGroup &group = it.value();
-        
-        if (group.canRecover()) {
-            int missingIndex = group.getMissingIndex();
-            if (missingIndex != -1) {
-                // Восстанавливаем пакет
-                uint8_t recoveredData[1188] = {0};
-                
-                // Начинаем с XOR пакета (индекс 4)
-                if (group.received[FEC_DATA_PACKETS] && !group.packets[FEC_DATA_PACKETS].isEmpty()) {
-                    QByteArray xorData = group.packets[FEC_DATA_PACKETS];
-                    if (!xorData.isEmpty()) {
-                        xorData[0] &= 0x7F; // Сбрасываем FEC флаг
-                        memcpy(recoveredData, xorData.constData(), xorData.size());
-                    }
-                }
-                
-                // XOR со всеми полученными пакетами данных
-                for (int i = 0; i < FEC_DATA_PACKETS; ++i) {
-                    if (i != missingIndex && group.received[i] && !group.packets[i].isEmpty()) {
-                        const QByteArray &packetData = group.packets[i];
-                        const uint8_t *data = reinterpret_cast<const uint8_t*>(packetData.constData());
-                        
-                        for (int j = 0; j < 1188; ++j) {
-                            recoveredData[j] ^= data[j];
-                        }
-                    }
-                }
-                
-                // Сбрасываем FEC флаг в первом байте
-                recoveredData[0] &= 0x7F;
-                
-                // Создаем восстановленный пакет
-                uint32_t packetSequence = group.groupId * FEC_GROUP_SIZE + missingIndex;
-                uint8_t packetType = recoveredData[0];
-                QByteArray payload(reinterpret_cast<const char*>(recoveredData + 1), 1187);
-                
-                // Нужно получить callId из группы (берем из первого полученного пакета)
-                uint32_t callId = 0;
-                for (int i = 0; i < FEC_TOTAL_PACKETS; ++i) {
-                    if (group.received[i]) {
-                        // TODO: Извлечь callId из заголовка пакета
-                        break;
-                    }
-                }
-                
-                NetworkPacket recoveredPacket = PacketProcessor::createDataPacket(
-                    callId, m_streamId, packetSequence, packetType, payload);
-                
-                // Сохраняем восстановленный пакет в группе
-                group.packets[missingIndex] = QByteArray(reinterpret_cast<const char*>(recoveredData), 1188);
-                group.received[missingIndex] = true;
-                
-                // Добавляем в список готовых пакетов
-                m_readyPackets.append(recoveredPacket);
-                m_recoveredCount++;
-                
-                emit packetRecovered(packetSequence);
-                emit packetReady(recoveredPacket);
-                
-                qDebug() << "FecBuffer: Recovered packet - sequence:" << packetSequence;
+    if (!m_groups.contains(groupId)) {
+        qWarning() << "FecBuffer: Group" << groupId << "not found for recovery";
+        return false;
+    }
+    
+    FecGroup &group = m_groups[groupId];
+    
+    qDebug() << "FecBuffer: Recovering packet in group" << groupId 
+             << "missing index:" << missingIndex;
+    
+    // Проверяем, что XOR-пакет есть и не пуст
+    if (!group.received[FEC_DATA_PACKETS] || group.packets[FEC_DATA_PACKETS].isEmpty()) {
+        qWarning() << "FecBuffer: No XOR packet available for recovery";
+        return false;
+    }
+    
+    QByteArray xorData = group.packets[FEC_DATA_PACKETS];
+    if (xorData.size() != XOR_PACKET_DATA_SIZE) {
+        qWarning() << "FecBuffer: XOR packet has invalid size:" << xorData.size();
+        return false;
+    }
+    
+    // Восстанавливаем пакет
+    uint8_t recoveredData[XOR_PACKET_DATA_SIZE] = {0};
+    
+    // Начинаем с XOR пакета
+    memcpy(recoveredData, xorData.constData(), XOR_PACKET_DATA_SIZE);
+    
+    // XOR со всеми полученными пакетами данных
+    for (int i = 0; i < FEC_DATA_PACKETS; ++i) {
+        if (i != missingIndex && group.received[i] && !group.packets[i].isEmpty()) {
+            const QByteArray &packetData = group.packets[i];
+            if (packetData.size() != XOR_PACKET_DATA_SIZE) {
+                qWarning() << "FecBuffer: Packet" << i << "has invalid size:" << packetData.size();
+                continue;
+            }
+            
+            const uint8_t *data = reinterpret_cast<const uint8_t*>(packetData.constData());
+            for (int j = 0; j < XOR_PACKET_DATA_SIZE; ++j) {
+                recoveredData[j] ^= data[j];
             }
         }
-        
-        ++it;
+    }
+    
+    // Проверяем, что восстановленный тип пакета валиден
+    uint8_t packetType = recoveredData[0] & 0x7F;
+    if (packetType < 0x01 || packetType > 0x03) {
+        qWarning() << "FecBuffer: Invalid recovered packet type:" << packetType;
+        return false;
+    }
+    
+    // Создаем восстановленный пакет
+    uint32_t packetSequence = group.groupId * FEC_GROUP_SIZE + missingIndex;
+    QByteArray payload(reinterpret_cast<const char*>(recoveredData + 1), DATA_PAYLOAD_SIZE);
+    
+    NetworkPacket recoveredPacket = PacketProcessor::createDataPacket(
+        group.callId, group.streamId, packetSequence, packetType, payload);
+    
+    // Сохраняем восстановленный пакет в группе
+    group.packets[missingIndex] = QByteArray(reinterpret_cast<const char*>(recoveredData), XOR_PACKET_DATA_SIZE);
+    group.received[missingIndex] = true;
+    group.lastUpdateTime = currentTime;
+    
+    // Отправляем восстановленный пакет в PacketGroupBuffer
+    forwardPacketToGroupBuffer(recoveredPacket);
+    m_recoveredCount++;
+    
+    emit packetRecovered(packetSequence);
+    
+    qDebug() << "FecBuffer: Successfully recovered packet - sequence:" << packetSequence
+             << "type:" << packetType;
+    
+    return true;
+}
+
+void FecBuffer::forwardPacketToGroupBuffer(const NetworkPacket &packet)
+{
+    if (m_packetGroupBuffer) {
+        m_packetGroupBuffer->addPacket(packet);
+    } else {
+        qWarning() << "FecBuffer: PacketGroupBuffer pointer is not set, cannot forward packet";
     }
 }
-
-QList<NetworkPacket> FecBuffer::getReadyPackets()
-{
-    QList<NetworkPacket> ready = m_readyPackets;
-    m_readyPackets.clear();
-    return ready;
-}
-
 void FecBuffer::cleanup(qint64 maxAgeMs)
 {
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
     auto it = m_groups.begin();
+    int removedCount = 0;
+    uint32_t maxCleanedSequence = 0;
     
     while (it != m_groups.end()) {
-        if (currentTime - it.value().timestamp > maxAgeMs) {
-            qDebug() << "FecBuffer: Cleaning up old group" << it.key();
+        FecGroup &group = it.value();
+        
+        // Удаляем группу, если она не обновлялась дольше maxAgeMs
+        if ((currentTime - group.lastUpdateTime) > maxAgeMs) {
+            // Максимальный возможный sequence в этой группе
+            uint32_t maxPossibleSeqInGroup = (group.groupId + 1) * FEC_GROUP_SIZE - 1;
+            
+            if (maxPossibleSeqInGroup > maxCleanedSequence) {
+                maxCleanedSequence = maxPossibleSeqInGroup;
+            }
+            
+            qDebug() << "FecBuffer: Cleaning up old group" << it.key() 
+                     << "lastUpdate:" << group.lastUpdateTime
+                     << "max possible sequence:" << maxPossibleSeqInGroup;
             it = m_groups.erase(it);
+            removedCount++;
         } else {
             ++it;
         }
+    }
+    
+    // Обновляем последний очищенный sequence
+    if (maxCleanedSequence > 0) {
+        updateLastCleanedSequence(maxCleanedSequence);
+    }
+    
+    if (removedCount > 0) {
+        qDebug() << "FecBuffer: Removed" << removedCount << "old groups, last cleaned sequence:" 
+                 << m_lastCleanedSequence;
     }
 }

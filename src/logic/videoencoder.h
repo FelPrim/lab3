@@ -1,5 +1,4 @@
 #pragma once
-#define TEST_DECODER
 
 #include <QObject>
 #include <QByteArray>

@@ -175,6 +175,7 @@ NetworkManager* NetworkFacade::getNetworkManager(int streamId)
 
 void NetworkFacade::sendStreamCreate(uint32_t callId)
 {
+    qDebug() << "sendStreamCreate called";
     if (m_tcp) m_tcp->sendClientStreamCreate(callId);
 }
 

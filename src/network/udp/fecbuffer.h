@@ -5,9 +5,11 @@
 #include <QVector>
 #include <QByteArray>
 #include <QDateTime>
+#include <QMutex>
 #include "network_packet.h"
 #include "../../video_defaults.h"
-#include "network_packet.h" 
+
+class PacketGroupBuffer;
 
 class FecBuffer : public QObject
 {
@@ -16,34 +18,30 @@ class FecBuffer : public QObject
 public:
     explicit FecBuffer(int streamId, QObject *parent = nullptr);
     
-    // Добавить пакет для FEC обработки
+    void setPacketGroupBuffer(PacketGroupBuffer* packetGroupBuffer);
     bool addPacket(const NetworkPacket &packet);
-    
-    // Попытаться восстановить потерянные пакеты
-    void tryRecoverLostPackets();
-    
-    // Очистить старые данные (старше maxAgeMs миллисекунд)
     void cleanup(qint64 maxAgeMs = 1000);
     
-    // Получить готовые пакеты (включая восстановленные)
-    QList<NetworkPacket> getReadyPackets();
-    
-    // Получить статистику
+    // Статистика
     int getRecoveredCount() const { return m_recoveredCount; }
     int getGroupCount() const { return m_groups.size(); }
+    uint32_t getLastCleanedSequence() const { return m_lastCleanedSequence; }
 
 signals:
     void packetRecovered(uint32_t packetSequence);
-    void packetReady(const NetworkPacket &packet);
 
 private:
     struct FecGroup {
         int groupId;
-        QVector<QByteArray> packets;  // 5 элементов: 0-3 - данные, 4 - XOR
-        QVector<bool> received;       // Флаги получения
-        qint64 timestamp;
+        uint32_t callId;
+        uint32_t streamId;
+        QVector<QByteArray> packets;      // 5 элементов: 0-3 - данные, 4 - XOR
+        QVector<bool> received;           // Флаги получения
+        qint64 creationTime;              // Время создания группы
+        qint64 lastUpdateTime;            // Время последнего обновления
         
-        FecGroup() : groupId(-1), timestamp(0) {
+        FecGroup() : groupId(-1), callId(0), streamId(0), 
+                    creationTime(0), lastUpdateTime(0) {
             packets.resize(FEC_TOTAL_PACKETS);
             received.resize(FEC_TOTAL_PACKETS, false);
         }
@@ -66,14 +64,18 @@ private:
     
     int m_streamId;
     QHash<int, FecGroup> m_groups;
-    QList<NetworkPacket> m_readyPackets;
+    PacketGroupBuffer* m_packetGroupBuffer;
     int m_recoveredCount = 0;
     
-    // Методы восстановления
-    bool recoverPacket(FecGroup &group, int missingIndex);
-    NetworkPacket createRecoveredPacket(const FecGroup &group, int missingIndex, const QByteArray &data);
+    // Трекер последнего очищенного packetSequence
+    uint32_t m_lastCleanedSequence = 0;
+    QMutex m_sequenceMutex;
     
-    // Утилиты
-    int calculateGroupId(uint32_t packetSequence) const;
-    int calculatePositionInGroup(uint32_t packetSequence) const;
+    // Вспомогательные методы
+    void forwardPacketToGroupBuffer(const NetworkPacket &packet);
+    bool shouldProcessPacket(uint32_t packetSequence, qint64 currentTime);
+    void updateLastCleanedSequence(uint32_t packetSequence);
+    
+    // Восстановление конкретного пакета в группе
+    bool recoverPacketInGroup(int groupId, int missingIndex, qint64 currentTime);
 };

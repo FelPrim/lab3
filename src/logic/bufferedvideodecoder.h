@@ -1,9 +1,9 @@
+// bufferedvideodecoder.h
 #pragma once
 
 #include <QObject>
-#include <QTimer>
-#include <QMap>
-#include "../logic/videodecoder.h"
+#include "framebuffer.h"
+#include "videodecoder.h"
 #include "../video_defaults.h"
 
 class BufferedVideoDecoder : public QObject
@@ -11,49 +11,37 @@ class BufferedVideoDecoder : public QObject
     Q_OBJECT
 
 public:
-    // Простой конструктор с минимальными параметрами
-    explicit BufferedVideoDecoder(int width, int height, int targetFps = DEFAULT_FPS, QObject *parent = nullptr);
+    explicit BufferedVideoDecoder(int width, int height, int fps, 
+                                 int bufferDelayFrames = -1, // -1 = автоматический расчет
+                                 QObject *parent = nullptr);
     ~BufferedVideoDecoder();
 
-    // Всего два публичных метода: инициализация и добавление кадра
+    // Основные методы
     void initialize();
-    void addEncodedFrame(int frameNumber, const QByteArray &frameData);
-
-    // Простые геттеры для отладки
-    int getBufferSize() const { return m_frameMap.size(); }
-    int getCurrentFrame() const { return m_currentFrame; }
+    void cleanup();
+    void clear();
+    
+    // Установка задержки (в кадрах)
+    void setBufferDelay(int delayFrames);
+    
+    // Единственный публичный метод для добавления кадров
+    void addFrame(int streamId, int frameNumber, const QByteArray &frameData); // Добавить frameNumber
 
 signals:
-    // Единственный важный сигнал - декодированный кадр готов
-    void frameDecoded(const QImage &image);
+    void frameReady(const QImage &image, int frameNumber);
+    void errorOccurred(const QString &message);
 
 private slots:
-    // Внутренний слот для обработки декодированных кадров
     void onFrameDecoded(const QImage &image, int frameNumber);
 
 private:
-    // Внутренние методы
-    void setupDecoder();
     void processNextFrame();
-    void cleanupOldFrames();
-    
-    // Вычисление, какой кадр декодировать следующим
-    int findFrameToDecode();
 
 private:
-    // Параметры видео
-    int m_width;
-    int m_height;
-    int m_targetFps;
-    
-    // Компоненты
-    VideoDecoder *m_decoder;
-    QTimer *m_decodeTimer;
-    
-    // Буфер закодированных кадров
-    QMap<int, QByteArray> m_frameMap;
-    
-    // Состояние
-    int m_currentFrame;
-    bool m_initialized;
+    FrameBuffer m_buffer;
+    VideoDecoder m_decoder;
+    int m_targetFps = 0;
+    int m_bufferDelayFrames = 0;  // Задержка в кадрах
+    int m_lastDecodedFrame = -1;
+    bool m_decoderBusy = false;
 };

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <QByteArray>
 #include "../endianness.h"
+#include "../../video_defaults.h"
 
 #pragma pack(push, 1)
 
@@ -192,3 +193,18 @@ public:
         return packet.content.dataPacket.isValidType();
     }
 };
+
+// Добавить в network_packet.h после класса PacketProcessor
+inline static int packetSequenceToDataIndex(uint32_t packetSequence) {
+    int group = packetSequence / FEC_GROUP_SIZE;
+    int position = packetSequence % FEC_GROUP_SIZE;
+    
+    // XOR-пакет не имеет индекса данных
+    assert(position != FEC_GROUP_SIZE - 1);
+    
+    return group * FEC_DATA_PACKETS + position;
+}
+
+inline static bool isXorPacketSequence(uint32_t packetSequence) {
+    return (packetSequence % FEC_GROUP_SIZE) == FEC_GROUP_SIZE - 1;
+}

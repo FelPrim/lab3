@@ -1,11 +1,3 @@
-#define DEBUG_FRAMEBUFFER
-
-#ifdef DEBUG_FRAMEBUFFER
-#define FB_DEBUG qDebug() << "[FrameBuffer]" << Q_FUNC_INFO << "device:" << m_deviceIndex
-#else
-#define FB_DEBUG if(false) qDebug()
-#endif
-
 // streamerwidget.cpp
 #include "streamerwidget.h"
 #include <QVBoxLayout>
@@ -48,9 +40,7 @@ StreamerWidget::StreamerWidget(int deviceIndex, QWidget *parent)
     , m_videoCapture(nullptr)
     , m_videoEncoder(nullptr)
 #ifdef TEST_DECODER
-    , m_testDecoder(nullptr)
-    , m_frameBuffer(nullptr)
-    , m_bufferReadTimer(nullptr)
+    , m_bufferedDecoder(nullptr)  // ТОЛЬКО этот указатель
 #endif
 {
     setupUI();
@@ -75,28 +65,12 @@ void StreamerWidget::cleanupTestObjects()
 #ifdef TEST_DECODER
     qDebug() << "Cleaning up test objects for device:" << m_deviceIndex;
     
-    // Останавливаем и удаляем таймер
-    if (m_bufferReadTimer) {
-        m_bufferReadTimer->stop();
-        delete m_bufferReadTimer;
-        m_bufferReadTimer = nullptr;
-        qDebug() << "Buffer read timer stopped and deleted";
-    }
-    
-    // Отключаем все соединения декодера
-    if (m_testDecoder) {
-        m_testDecoder->disconnect();
-        m_testDecoder->cleanup();
-        delete m_testDecoder;
-        m_testDecoder = nullptr;
-        qDebug() << "TestDecoder deleted";
-    }
-    
-    // Удаляем буфер
-    if (m_frameBuffer) {
-        delete m_frameBuffer;
-        m_frameBuffer = nullptr;
-        qDebug() << "FrameBuffer deleted";
+    // Удаляем BufferedVideoDecoder
+    if (m_bufferedDecoder) {
+        m_bufferedDecoder->cleanup();
+        delete m_bufferedDecoder;
+        m_bufferedDecoder = nullptr;
+        qDebug() << "BufferedVideoDecoder deleted";
     }
 #endif
 }
@@ -165,24 +139,28 @@ void StreamerWidget::initializeVideoCapture()
     m_videoCapture = new VideoCapture(m_deviceIndex, this);
     
 #ifdef TEST_DECODER
-    // Только для тестового режима - отправляем кадры на кодирование
     connect(m_videoCapture, &VideoCapture::frameForEncodingReady,
-            this, [this](const cv::Mat &frame) {
+            this, [this](const cv::Mat &frame) {                
                 if (m_videoEncoder && m_encoderInitialized) {
                     m_videoEncoder->encodeFrame(frame);
                 } else {
-                    static int warningCount = 0;
-                    if (warningCount++ < 5) {
-                        qDebug() << "Encoder not ready yet, skipping frame";
-                    }
+                    qDebug() << "[TEST ENCODING] Encoder not ready, dropping frame";
                 }
             });
 #else
-    connect(m_videoCapture, &VideoCapture::rawFrameReady,
-            this, &StreamerWidget::onRawFrameReady);
     connect(m_videoCapture, &VideoCapture::frameForEncodingReady,
             this, &StreamerWidget::onFrameForEncoding);
 #endif
+    
+    // Добавим также отладку для rawFrameReady
+    connect(m_videoCapture, &VideoCapture::rawFrameReady,
+            this, [this](const QImage &image) {
+                static int rawFrameCounter = 0;
+                rawFrameCounter++;
+                if (m_videoDisplay && m_streamingEnabled) {
+                    m_videoDisplay->displayFrame(image);
+                }
+            });
     
     connect(m_videoCapture, &VideoCapture::errorOccurred,
             this, &StreamerWidget::onVideoError);
@@ -232,20 +210,18 @@ void StreamerWidget::initializeVideoEncoder()
     }
 
 #ifdef TEST_DECODER
-    // ТОЛЬКО сохраняем в FrameBuffer - НЕ передаем напрямую в декодер
+    // Отправляем закодированные кадры в BufferedVideoDecoder
     connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
             this, [this](int streamId, int frameNumber, const QByteArray &packet) {
-                qDebug() << "[ENCODER->BUFFER] Encoded frame" << frameNumber 
-                         << "for stream" << streamId << "size:" << packet.size() << "bytes";
+                qDebug() << "[ENCODER->BUFFERED_DECODER] Encoded frame" << frameNumber 
+                         << "size:" << packet.size() << "bytes";
                 
-                // ТОЛЬКО сохраняем в FrameBuffer
-                if (m_frameBuffer) {
-                    m_frameBuffer->insertFrame(frameNumber, packet);
-                    qDebug() << "Frame saved to buffer";
+                // Отправляем в BufferedVideoDecoder
+                if (m_bufferedDecoder) {
+                    m_bufferedDecoder->addFrame(frameNumber, packet);
                 } else {
-                    qWarning() << "FrameBuffer is null!";
+                    qWarning() << "BufferedVideoDecoder is null!";
                 }
-                // НЕ вызываем decodeFrame здесь - только через буфер!
             });
 #else
     connect(m_videoEncoder, &VideoEncoder::encodedPacketReady,
@@ -273,53 +249,50 @@ void StreamerWidget::cleanupVideoEncoder()
         qDebug() << "VideoEncoder cleaned up";
     }
 }
-
 void StreamerWidget::initialize()
 {
     qDebug() << "Initializing StreamerWidget for device:" << m_deviceIndex;
 
     try {
 #ifdef TEST_DECODER
-        // 1. Создаем FrameBuffer
-        if (!m_frameBuffer) {
-            m_frameBuffer = new FrameBuffer(DEFAULT_BUFFERSZ);
-            qDebug() << "FrameBuffer created with capacity:" << DEFAULT_BUFFERSZ;
-        }
-        
-        // 2. Создаем декодер
-        if (!m_testDecoder) {
-            m_testDecoder = new VideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, this);
-            m_testDecoder->initialize();
-            qDebug() << "Test decoder initialized";
+        // 1. Создаем BufferedVideoDecoder
+        if (!m_bufferedDecoder) {
+            // Используем автоматический расчет задержки (передаем -1)
+            m_bufferedDecoder = new BufferedVideoDecoder(DEFAULT_WIDTH, DEFAULT_HEIGHT, 
+                                                        DEFAULT_FPS, -1, this);
+            m_bufferedDecoder->initialize();
+            qDebug() << "BufferedVideoDecoder created and initialized";
             
-            connect(m_testDecoder, &VideoDecoder::frameDecoded,
-                    m_videoDisplay, &VideoDisplay::displayFrame, Qt::QueuedConnection);
+            // ВАЖНО: Подключаем сигнал правильно
+            connect(m_bufferedDecoder, &BufferedVideoDecoder::frameReady,
+                    this, [this](const QImage &image, int frameNumber) {
+                        qDebug() << "[BUFFERED_DECODER] Frame" << frameNumber << "ready, size:" 
+                                 << image.size() << "format:" << image.format();
+                        
+                        if (m_videoDisplay) {
+                            m_videoDisplay->displayFrame(image);
+                        } else {
+                            qWarning() << "VideoDisplay is null!";
+                        }
+                    }, Qt::QueuedConnection);
             
-            connect(m_testDecoder, &VideoDecoder::errorOccurred,
-                    [this](const QString& err) { 
-                        qWarning() << "Decoder error:" << err;
+            // Обработка ошибок
+            connect(m_bufferedDecoder, &BufferedVideoDecoder::errorOccurred,
+                    this, [this](const QString& err) { 
+                        qWarning() << "BufferedVideoDecoder error:" << err;
                         showError(QString("Decoder error: %1").arg(err));
                     });
         }
-        
-        // 3. Создаем таймер для чтения из буфера
-        if (!m_bufferReadTimer) {
-            m_bufferReadTimer = new QTimer(this);
-            connect(m_bufferReadTimer, &QTimer::timeout, 
-                    this, &StreamerWidget::processBufferedFrames);
-            m_bufferReadTimer->start(33);  // ~30 FPS
-            qDebug() << "Buffer read timer started";
-        }
 #endif
         
-        // 4. Инициализируем видеозахват
+        // 2. Инициализируем видеозахват
         initializeVideoCapture();
         
-        // 5. Включаем стриминг
+        // 3. Включаем стриминг
         setStreamingEnabled(true);
         updateStatus();
         
-        // 6. Запускаем видеозахват для превью
+        // 4. Запускаем видеозахват для превью
         if (m_videoCapture) {
             m_videoCapture->startCapture();
         }
@@ -329,7 +302,6 @@ void StreamerWidget::initialize()
         showError(QString("Failed to initialize: %1").arg(e.what()));
     }
 }
-
 
 // Остальные методы без изменений...
 
@@ -357,7 +329,10 @@ void StreamerWidget::onRawFrameReady(const QImage &image)
 
 void StreamerWidget::startStream()
 {
-    qDebug() << "StreamerWidget::startStream() called for device:" << m_deviceIndex;
+    qDebug() << "=== StreamerWidget::startStream() DEBUG ===";
+    qDebug() << "Device index:" << m_deviceIndex;
+    qDebug() << "Stream state:" << m_streamState;
+    qDebug() << "StreamManager pointer:" << m_streamManager;
     
     if (m_streamState != State_NoStream) {
         qWarning() << "Cannot start stream - wrong state:" << m_streamState;
@@ -370,44 +345,32 @@ void StreamerWidget::startStream()
     }
 
 #ifdef TEST_DECODER
-    qDebug() << "Clearing FrameBuffer for new stream...";
-    if (m_frameBuffer) {
-        m_frameBuffer->clear();
-        qDebug() << "FrameBuffer cleared for new stream";
-    } else {
-        qCritical() << "FrameBuffer is null!";
-        return;
+    qDebug() << "Clearing BufferedVideoDecoder for new stream...";
+    if (m_bufferedDecoder) {
+        m_bufferedDecoder->clear();
     }
 #endif
     
-    if (!m_encoderInitialized) {
-        qDebug() << "Initializing encoder for startStream...";
-        initializeVideoEncoder();
-    }
-    
-    if (!m_videoEncoder || !m_encoderInitialized) {
-        qCritical() << "Failed to initialize video encoder for stream";
-        return;
-    }
+    // ИЗМЕНЕНИЕ 1: НЕ инициализируем энкодер здесь!
+    // Вместо этого сначала создаем стрим на сервере
     
     setStreamState(State_StreamCreated);
     
-#ifdef TEST_DECODER
-    qDebug() << "TEST MODE: Immediately activating stream";
-    setStreamState(State_StreamActive);
-#else
+    qDebug() << "DEBUG: Before calling StreamManager::createStream()";
     if (m_streamManager) {
+        // Вызываем createStream БЕЗ предварительной инициализации энкодера
         m_streamManager->createStream(m_deviceIndex);
         qDebug() << "Stream creation requested for device:" << m_deviceIndex;
     } else {
-        qWarning() << "StreamManager not available";
-        setStreamState(State_StreamActive);
+        qCritical() << "ERROR: StreamManager is NULL!";
+        return;
     }
-#endif
     
-    qDebug() << "Stream setup completed for device:" << m_deviceIndex;
+    qDebug() << "=== StreamerWidget::startStream() END ===";
+    
+    // Энкодер будет инициализирован ПОСЛЕ получения streamId от сервера
+    // в методе onServerStreamCreated()
 }
-
 // Остальные методы остаются без изменений (как в вашем исходном файле)...
 // [Вставьте сюда оставшуюся часть вашего кода без изменений]
 
@@ -629,7 +592,6 @@ void StreamerWidget::onServerStreamEnd(uint32_t streamId)
 // Модифицируем обработчик кадров для кодирования
 void StreamerWidget::onFrameForEncoding(const cv::Mat &frame)
 {
-    qDebug() << "StreamerWidget: Received frame for encoding, state:" << m_streamState;
     
     // Кодируем кадры только если трансляция создана или активна
     if (m_streamState == State_StreamCreated || m_streamState == State_StreamActive) {
@@ -727,22 +689,6 @@ void StreamerWidget::onNetworkError(const QString& error)
     setStreamState(State_StreamError);
     showError(QString("Network error: %1").arg(error));
 }
-
-#ifdef TEST_DECODER
-void StreamerWidget::processBufferedFrames()
-{
-    if (!m_frameBuffer || !m_testDecoder) return;
-    
-    QByteArray frameData;
-    if (m_frameBuffer->getLatestFrame(frameData)) {
-        int frameNumber = m_frameBuffer->getMaxFrameNumber();
-        qDebug() << "[BUFFER->DECODER] Reading frame" << frameNumber 
-                 << "from buffer";
-        // Теперь данные идут ТОЛЬКО через буфер!
-        m_testDecoder->decodeFrame(frameData, frameNumber);
-    }
-}
-#endif
 
 // Вставьте этот код после метода processBufferedFrames() или в соответствующее место
 

@@ -16,6 +16,7 @@
 #include "../../video_defaults.h"
 #include "fecbuffer.h"
 #include "packetgroupbuffer.h"
+#include <QTimer>
 
 class UDPManager;
 
@@ -57,7 +58,6 @@ private slots:
     void cleanupOldAssemblies();
     void printStatistics();
     void onFrameComplete(int streamId, int frameNumber, const QByteArray &frameData);
-    void onPacketFromFecReady(const NetworkPacket &packet);
     void onPacketRecovered(uint32_t packetSequence);
 
 private:
@@ -118,4 +118,5 @@ private:
     
 private:
     static const int MAX_FEC_BUFFER_SIZE = 128;
+    void checkMemory();
 };

@@ -2,11 +2,11 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include "../logic/videodisplay.h"
-#include "streamcontrolpanel.h"
-#include "../network/udp/networkdisplaybuffer.h"
-#include "../logic/videodecoder.h"
+#include "../logic/bufferedvideodecoder.h"
 #include "../network/udp/networkmanager.h"
 
 class ViewerWidget : public QWidget
@@ -30,8 +30,8 @@ public:
     void displayFrame(const QImage &frame);
     void clearDisplay();
 
-    void setControlPanel(StreamControlPanel* panel);  
     void setNetworkManager(NetworkManager* networkManager);
+    void showError(const QString &message);
 
 public slots:
     void onFrameReady(const QImage &frame, int frameNumber);
@@ -50,10 +50,16 @@ private:
     void updateStatus();
 
     VideoDisplay *m_videoDisplay;
-    StreamControlPanel *m_controlPanel;
+    
+    // Простая панель управления для ViewerWidget
+    QWidget *m_controlPanel;
+    QHBoxLayout *m_controlLayout;
+    QLabel *m_streamIdLabel;
+    QLabel *m_statusLabel;
+    QPushButton *m_leaveButton;
+    
     QVBoxLayout *m_mainLayout;
-    NetworkDisplayBuffer *m_displayBuffer;
-    VideoDecoder *m_videoDecoder;
+    BufferedVideoDecoder *m_bufferedDecoder;
     NetworkManager *m_networkManager;
     
     uint32_t m_callId;     

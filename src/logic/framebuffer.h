@@ -1,7 +1,6 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-#define TEST_DECODER
 #include <QVector>
 #include <QMutex>
 #include <QByteArray>
@@ -11,14 +10,17 @@ class FrameBuffer
 {
 public:
     explicit FrameBuffer(int capacity = DEFAULT_BUFFERSZ);
-public:
     ~FrameBuffer();
+    
     // Основной метод - вставка фрейма по номеру
     void insertFrame(int frameNumber, const QByteArray &frameData);
 
-    // Получение фрейма по номеру
+    // Получение фреймов
     bool getFrame(int frameNumber, QByteArray &out) const;
     bool getLatestFrame(QByteArray &out) const;
+    
+    // Новый метод: получение кадра с задержкой
+    bool getFrameWithDelay(int delayFrames, QByteArray &out, int &outFrameNumber) const;
 
     // Управление буфером
     void clear();
@@ -29,11 +31,16 @@ public:
     int getMinFrameNumber() const;
     int getMaxFrameNumber() const;
     bool hasFrame(int frameNumber) const;
+    
+    // Статистика заполнения
+    int filledSlotsCount() const;
 
 private:
-    // Возвращает индекс в m_buffer для заданного номера кадра.
-    // Возвращает -1 если m_capacity == 0.
+    // Возвращает индекс в m_buffer для заданного номера кадра
     int getBufferIndex(int frameNumber) const;
+    
+    // Внутренний метод для поиска кадра с определенной задержкой
+    int findFrameWithDelay(int delayFrames) const;
 
 private:
     mutable QMutex m_mutex;

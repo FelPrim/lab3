@@ -79,21 +79,42 @@ void VideoGridWidget::addStreamerWidget(int deviceIndex)
 
 void VideoGridWidget::addViewerWidget(uint32_t streamId, const QString& displayId, uint32_t callId)
 {
-    qDebug() << "Adding viewer widget for stream:" << displayId << "ID:" << streamId << "CallId:" << callId;
+    qDebug() << "=== VideoGridWidget::addViewerWidget() START ===";
+    qDebug() << "Stream ID:" << streamId << "Display:" << displayId << "Call ID:" << callId;
     
-    // Check if already exists
+    // Используем findViewerWidget для проверки существования
     if (findViewerWidget(streamId)) {
-        qWarning() << "Viewer widget for stream" << streamId << "already exists";
+        qWarning() << "ViewerWidget already exists for stream:" << streamId;
         return;
     }
-
-    // Передайте callId в конструктор ViewerWidget
-    ViewerWidget *widget = new ViewerWidget(streamId, displayId, callId, m_container);
-    m_viewerWidgets.append(widget);
-    connectViewerWidget(widget);
     
-    updateLayout();
-    qDebug() << "Viewer widget added. Total widgets:" << getTotalWidgetCount();
+    // Создаем виджет
+    ViewerWidget* viewerWidget = new ViewerWidget(streamId, displayId, callId, m_container); // m_container вместо this
+    qDebug() << "ViewerWidget created at:" << viewerWidget;
+    
+    // НЕ вызываем initialize() здесь!
+    
+    // Создаем grid layout если еще не создан
+    if (!m_gridLayout) {
+        m_gridLayout = new QGridLayout(m_container);
+        m_gridLayout->setSpacing(10);
+        m_gridLayout->setContentsMargins(10, 10, 10, 10);
+        m_container->setLayout(m_gridLayout);
+    }
+    
+    // Добавляем в layout (автоматически разместится в следующей свободной ячейке)
+    int count = m_streamerWidgets.size() + m_viewerWidgets.size();
+    int row = count / 2; // пример: 2 колонки
+    int col = count % 2;
+    m_gridLayout->addWidget(viewerWidget, row, col);
+    
+    // Сохраняем указатель
+    m_viewerWidgets.append(viewerWidget);
+    
+    // Подключаем сигналы
+    connectViewerWidget(viewerWidget);
+    
+    qDebug() << "=== VideoGridWidget::addViewerWidget() END ===";
 }
 
 void VideoGridWidget::removeStreamerWidget(int deviceIndex)

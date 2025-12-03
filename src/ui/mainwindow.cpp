@@ -319,10 +319,9 @@ void MainWindow::onConferenceJoined(uint32_t callId, const QString& displayId)
     // Можно обновить UI или показать статус
 }
 
-
-
 void MainWindow::onJoinPublicStreamRequested(const QString& streamId) {
-    qDebug() << "Join public stream requested:" << streamId;
+    qDebug() << "=== MainWindow::onJoinPublicStreamRequested() START ===";
+    qDebug() << "Stream ID:" << streamId;
 
     if (streamId.length() != 6) {
         showError("Stream ID must be 6 characters");
@@ -334,54 +333,61 @@ void MainWindow::onJoinPublicStreamRequested(const QString& streamId) {
 
     qDebug() << "Joining stream, server ID:" << streamIdNum;
 
-    // Создаем ViewerWidget с callId = 0 для публичных стримов
-    m_videoGrid->addViewerWidget(streamIdNum, streamId, 0);  // Добавлен третий параметр
+    // НЕ создаем ViewerWidget здесь - ждем подтверждения от сервера
     
     // Уведомляем StreamManager о присоединении
     if (m_streamManager) {
         m_streamManager->joinStream(streamId);
+        // ViewerWidget будет создан в onServerStreamJoined()
     } else {
         qWarning() << "StreamManager not available for joining stream";
-        // Если StreamManager недоступен, удаляем виджет
-        m_videoGrid->removeViewerWidget(streamIdNum);
         showError("Cannot join stream - not connected to server");
     }
+    
+    qDebug() << "=== MainWindow::onJoinPublicStreamRequested() END ===";
 }
 
+
 void MainWindow::onServerStreamJoined(uint32_t streamId) {
-    qDebug() << "MainWindow: server stream joined - ID:" << streamId;
+    qDebug() << "=== MainWindow::onServerStreamJoined() START ===";
+    qDebug() << "Stream ID:" << streamId;
     
-    // Находим или создаем ViewerWidget
+    // Находим ViewerWidget (он уже должен быть создан)
     ViewerWidget* viewer = m_videoGrid->findViewerWidget(streamId);
     if (!viewer) {
+        qWarning() << "ViewerWidget not found for stream:" << streamId;
         // Создаем, если не существует
         char displayId[7] = {0};
         id_to_string(streamId, displayId);
         QString streamDisplayId = QString::fromLatin1(displayId, 6);
-        m_videoGrid->addViewerWidget(streamId, streamDisplayId);
+        qDebug() << "Creating ViewerWidget with Display ID:" << streamDisplayId;
+        m_videoGrid->addViewerWidget(streamId, streamDisplayId, 0);  // CallId = 0 для публичных
         viewer = m_videoGrid->findViewerWidget(streamId);
     }
     
     if (viewer) {
+        qDebug() << "Found ViewerWidget:" << viewer;
         // Устанавливаем NetworkManager и инициализируем
         if (m_streamManager) {
             NetworkManager* networkManager = m_streamManager->getNetworkManagerForStream(streamId);
+            qDebug() << "NetworkManager ptr:" << networkManager;
             if (networkManager) {
                 viewer->setNetworkManager(networkManager);
-                viewer->initialize();
+                viewer->initialize();  // ТОЛЬКО здесь вызываем initialize()
                 viewer->onStreamJoined(streamId);
                 qDebug() << "ViewerWidget activated for stream:" << streamId;
             } else {
                 qWarning() << "NetworkManager not available for stream:" << streamId;
             }
+        } else {
+            qWarning() << "StreamManager is null!";
         }
     } else {
-        qWarning() << "Failed to create ViewerWidget for stream:" << streamId;
+        qCritical() << "Failed to create/find ViewerWidget for stream:" << streamId;
     }
+    
+    qDebug() << "=== MainWindow::onServerStreamJoined() END ===";
 }
-
-
-
 
 void MainWindow::onViewerLeaveRequested(uint32_t streamId)
 {

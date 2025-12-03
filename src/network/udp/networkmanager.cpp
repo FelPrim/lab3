@@ -8,6 +8,21 @@
 #include "../../video_defaults.h"
 #include <cstdint>
 
+void NetworkManager::checkMemory()
+{
+    static qint64 lastCheck = 0;
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    
+    if (now - lastCheck > 1000) {
+        lastCheck = now;
+        
+        // Проверить все NetworkManager
+        qDebug()    << "FEC groups:" << m_fecBuffer->getGroupCount()
+                    << "Frame groups:" << m_packetBuffer->getFrameCount();
+        
+    }
+}
+
 NetworkManager::NetworkManager(int streamId, QObject *parent)
     : QObject(parent)
     , m_streamId(streamId)
@@ -18,17 +33,22 @@ NetworkManager::NetworkManager(int streamId, QObject *parent)
     , m_frameSender(new FrameSender(this))
     , m_fecSendBufferCount(0)
 {
+    m_cleanupTimer = new QTimer(this);
     memset(m_fecSendBuffer, 0, sizeof(m_fecSendBuffer));
     qDebug() << "NetworkManager created for stream:" << streamId;
     
+    // Устанавливаем связь между FecBuffer и PacketGroupBuffer
+    m_fecBuffer->setPacketGroupBuffer(m_packetBuffer);
+    
     // Подключаем сигналы новых компонентов
-    connect(m_fecBuffer, &FecBuffer::packetReady,
-            this, &NetworkManager::onPacketFromFecReady);
     connect(m_fecBuffer, &FecBuffer::packetRecovered,
             this, &NetworkManager::onPacketRecovered);
     
     connect(m_packetBuffer, &PacketGroupBuffer::frameComplete,
             this, &NetworkManager::onFrameComplete);
+
+    connect(m_cleanupTimer, &QTimer::timeout, this, &NetworkManager::cleanupOldAssemblies);
+m_cleanupTimer->start(500);
 }
 
 NetworkManager::~NetworkManager()
@@ -121,7 +141,7 @@ void NetworkManager::stop()
     
     // Очищаем приемные буферы
     m_fecBuffer->cleanup(0);
-    m_packetBuffer->cleanup(0);
+    m_packetBuffer->cleanupOldFramesByTimeout(0); // Немедленная очистка
     
     qDebug() << "NetworkManager: Stopped for stream" << m_streamId;
 }
@@ -147,13 +167,6 @@ void NetworkManager::onFrameComplete(int streamId, int frameNumber, const QByteA
     
     // Передаем сигнал дальше
     emit frameAssembled(streamId, frameNumber, frameData);
-}
-
-void NetworkManager::onPacketFromFecReady(const NetworkPacket &packet)
-{
-    // Пакет из FEC-буфера (уже восстановлен если нужно)
-    // Передаем в PacketGroupBuffer (слой 2)
-    m_packetBuffer->addPacket(packet);
 }
 
 void NetworkManager::onPacketRecovered(uint32_t packetSequence)
@@ -278,7 +291,7 @@ void NetworkManager::cleanupOldAssemblies()
 {
     // Очищаем все три слоя с таймаутом 1 секунда
     m_fecBuffer->cleanup(1000);
-    m_packetBuffer->cleanup(1000);
+        m_packetBuffer->cleanupOldFramesByTimeout(1000); // НОВАЯ СТРОКА
 }
 
 void NetworkManager::updateSendStats(int packets, int bytes)
@@ -309,6 +322,7 @@ void NetworkManager::printStatistics()
         lossRate = (double)lostFrames / m_stats.expectedFrames.size() * 100.0;
     }
     
+    checkMemory();
     QString stats = QString(
         "=== New Protocol Statistics (Stream: %1) ===\n"
         "Time: %2s | Frames: %3 sent, %4 received (%5% loss)\n"

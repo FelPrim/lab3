@@ -184,6 +184,7 @@ void StreamControlPanel::updateUI()
     if (!m_streamId.isEmpty()) {
         m_streamIdLabel->setText(QString("Stream ID: %1").arg(m_streamId));
     }
+    m_startStopButton->setEnabled(true);
 
     if (m_mode == StreamerMode) {
         // Streamer mode - отображаем состояния трансляции

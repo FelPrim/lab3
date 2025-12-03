@@ -11,6 +11,8 @@
         "new": "cpp",
         "algorithm": "cpp",
         "fstream": "cpp",
-        "qthread": "cpp"
+        "qthread": "cpp",
+        "regex": "cpp",
+        "qdatastream": "cpp"
     }
 }

@@ -105,20 +105,29 @@ void StreamManager::disconnectFromServer()
     emit connectionStatusChanged(false);
 }
 
+
 void StreamManager::createStream(int deviceIndex)
 {
-    qDebug() << "StreamManager: createStream for device" << deviceIndex;
+    qDebug() << "=== StreamManager::createStream() DEBUG ===";
+    qDebug() << "Device index:" << deviceIndex;
+    qDebug() << "NetworkFacade pointer:" << m_networkFacade;
+    qDebug() << "Connected to server:" << m_connectedToServer;
+    qDebug() << "Handshake completed:" << (m_networkFacade ? m_networkFacade->isHandshakeCompleted() : false);
     
     if (!m_networkFacade || !m_networkFacade->isHandshakeCompleted()) {
         qDebug() << "Handshake not completed, queuing stream creation";
         m_pendingStreamCreates.append(deviceIndex);
-        return;
+        qDebug() << "Pending stream creates count:" << m_pendingStreamCreates.count();
+    } else {
+        // Публичный стрим (callId = 0)
+        qDebug() << "Sending stream create request to server...";
+        m_networkFacade->sendStreamCreate(0);
+        m_deviceToStreamMap[deviceIndex] = 0; // Временно, пока не получим реальный ID
+        qDebug() << "Stream create request sent for device:" << deviceIndex;
     }
-    
-    // Публичный стрим (callId = 0)
-    m_networkFacade->sendStreamCreate(0);
-    m_deviceToStreamMap[deviceIndex] = 0; // Временно, пока не получим реальный ID
+    qDebug() << "=== StreamManager::createStream() END ===";
 }
+
 
 void StreamManager::joinStream(const QString &streamId)
 {
@@ -270,7 +279,8 @@ void StreamManager::onServerStreamDeleted(uint32_t id)
 void StreamManager::onServerStreamJoined(uint32_t id)
 {
     qDebug() << "StreamManager: server stream joined - ID:" << id;
-    
+    qDebug() << "=== StreamManager::onServerStreamJoined ===";
+    qDebug() << "Stream ID:" << id;
     // Создаем NetworkManager для входящего стрима
     if (m_networkFacade) {
         NetworkManager* manager = m_networkFacade->createNetworkManager(static_cast<int>(id));

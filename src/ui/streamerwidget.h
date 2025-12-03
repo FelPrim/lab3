@@ -1,9 +1,6 @@
 #pragma once
-#define TEST_DECODER
 #ifdef TEST_DECODER
-#include "../logic/videodecoder.h"
-#include "../logic/framebuffer.h"
-#include <QTimer>
+#include "../logic/bufferedvideodecoder.h"
 #endif
 #include "../logic/videocapture.h"
 #include "../logic/videoencoder.h"
@@ -128,10 +125,6 @@ public:
     void onNetworkError(const QString& error);
 
 #ifdef TEST_DECODER
-    VideoDecoder* m_testDecoder = nullptr;
-    FrameBuffer* m_frameBuffer = nullptr;
-    QTimer* m_bufferReadTimer = nullptr;
-private slots:
-    void processBufferedFrames();
+    BufferedVideoDecoder* m_bufferedDecoder = nullptr;
 #endif
 };

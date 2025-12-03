@@ -1,85 +1,98 @@
 #pragma once
 
 #include <QObject>
-#include <QHash>
 #include <QVector>
 #include <QByteArray>
+#include <QHash>
+#include <QList>
 #include <QDateTime>
-#include <QMutex>
+#include <cstdint>
+#include <limits>
 #include "network_packet.h"
-#include "myfec.h"
 #include "../../video_defaults.h"
 
 class PacketGroupBuffer : public QObject
 {
     Q_OBJECT
-
 public:
-    struct FramePackets {
-        int frameNumber;
-        int startSequence; // packetSequence из START_FRAME
-        int frameSize;     // Общий размер фрейма в байтах
-        int totalPackets;  // Общее количество пакетов во фрейме
-        QHash<int, QByteArray> packets;  // packetIndex -> packetData
-        QVector<bool> received;
-        qint64 timestamp;
-        
-        FramePackets() : frameNumber(-1), startSequence(-1), frameSize(0), 
-                         totalPackets(0), timestamp(0) {}
-        
-        bool isComplete() const {
-            for (int i = 0; i < totalPackets; ++i) {
-                if (!received[i]) return false;
-            }
-            return true;
-        }
-    };
-
     explicit PacketGroupBuffer(int streamId, QObject *parent = nullptr);
-    
-    // Добавить пакет (после FEC)
+
     void addPacket(const NetworkPacket &packet);
-    
-    // Получить готовые фреймы
-    QList<QPair<int, QByteArray>> getCompleteFrames();
-    
-    // Очистить старые данные
-    void cleanup(qint64 maxAgeMs = 1000);
-    
-    // Статистика
-    int getFrameCount() const { return m_frames.size(); }
+    void cleanup();
+    void cleanupOldFramesByTimeout(qint64 maxAgeMs = 2000); // НОВЫЙ МЕТОД
+
+    int getFrameCount() const { return m_groups.size(); }
     int getCompletedCount() const { return m_completedCount; }
+    int getLatestFrameNumber() const { return m_latestFrameNumber; }
+    qint64 getLastActivityTime() const { return m_lastActivityTime; }
 
 signals:
     void frameComplete(int streamId, int frameNumber, const QByteArray &frameData);
+    void frameDropped(int streamId, int frameNumber, const QString &reason); // НОВЫЙ СИГНАЛ
 
 private:
+    struct TempPacket {
+        uint32_t packetSequence;
+        uint8_t rawType; // raw type byte stored in dataPacket.type (without FEC bit)
+        QByteArray payload; // full payload (1187 bytes)
+    };
+
+    struct FrameGroup {
+        int frameNumber = -1;
+        uint32_t startSequence = std::numeric_limits<uint32_t>::max();
+        int frameSize = 0;
+        int totalPackets = 0;
+        int packetsReceived = 0;
+        qint64 creationTimeMs = 0;
+        qint64 lastUpdateTimeMs = 0; // НОВОЕ ПОЛЕ: время последнего обновления
+
+        QVector<QByteArray> packets; // index -> data (packet body without frameNumber/size prefix)
+        QVector<char> received;      // index -> 0/1
+        QList<TempPacket> tempPackets;
+
+        // В FrameGroup структуре:
+bool isStale(qint64 currentTime, qint64 maxAgeMs) const {
+    // Кадр считается устаревшим если:
+    // 1. Прошло слишком много времени с момента создания (даже если пакеты приходят)
+    // 2. И он не собран
+    if (isComplete()) return false;
+    return (currentTime - creationTimeMs) > maxAgeMs;
+}
+
+        FrameGroup() : 
+            creationTimeMs(QDateTime::currentMSecsSinceEpoch()),
+            lastUpdateTimeMs(QDateTime::currentMSecsSinceEpoch()) 
+        {}
+        
+        bool hasStart() const { return startSequence != std::numeric_limits<uint32_t>::max(); }
+        bool isComplete() const { return totalPackets > 0 && packetsReceived == totalPackets; }
+        bool isExpired(qint64 currentTime, qint64 maxAgeMs) const {
+            return (currentTime - lastUpdateTimeMs) > maxAgeMs;
+        }
+        void updateLastActivity() {
+            lastUpdateTimeMs = QDateTime::currentMSecsSinceEpoch();
+        }
+    };
+
     int m_streamId;
-    QHash<int, FramePackets> m_frames;  // frameNumber -> FramePackets
-    QList<QPair<int, QByteArray>> m_completeFrames;
-    QMultiHash<int, QPair<PacketType, QByteArray>> m_orphanedPackets; // frameNumber -> (type, payload)
+    QHash<int, FrameGroup> m_groups; // frameNumber -> FrameGroup
     int m_completedCount = 0;
-    
-    // Константы размеров (согласованы с FrameSender)
-    static const int START_PAYLOAD = DATA_PAYLOAD_SIZE - 8;     // 1179 байт
-    static const int CONTINUE_PAYLOAD = DATA_PAYLOAD_SIZE - 4;  // 1183 байт
-    static const int END_PAYLOAD = DATA_PAYLOAD_SIZE - 4;       // 1183 байт
-    
-    // Обработка разных типов пакетов
-    void processStartFrame(const NetworkPacket &packet, const QByteArray &payload, uint32_t packetSequence);
-    void processContinueFrame(const NetworkPacket &packet, const QByteArray &payload, 
-                             uint32_t packetSequence, int frameNumber);
-    void processEndFrame(const NetworkPacket &packet, const QByteArray &payload,
-                        uint32_t packetSequence, int frameNumber);
-    
-    // Сборка фрейма
-    QByteArray assembleFrame(const FramePackets &frameData);
-    
-    // Утилиты
-    int extractFrameNumber(const QByteArray &payload, int offset = 0) const;
-    void checkFrameCompletion(int frameNumber);
-    void processOrphanedPackets(int frameNumber);
-    
-    // Вычисление количества пакетов
+    int m_latestFrameNumber = -1;
+    qint64 m_lastActivityTime = 0; // Время последней активности (получения пакета)
+
+    static constexpr int START_FIRST_DATA = DATA_PAYLOAD_SIZE - 8;   // 1187 - 8 = 1179
+    static constexpr int CONTINUE_DATA = DATA_PAYLOAD_SIZE - 4;     // 1187 - 4 = 1183
+
+    int getRelativePacketIndex(uint32_t currentSequence, uint32_t startSequence) const;
     int calculateTotalPackets(int frameSize, int firstPacketDataSize) const;
+    int extractFrameNumber(const QByteArray &payload, int offset = 0) const;
+    int extractFrameSize(const QByteArray &payload, int offset = 4) const;
+
+    void handleStart(FrameGroup &group, const TempPacket &tp, uint32_t packetSequence);
+    void handleContinue(FrameGroup &group, const TempPacket &tp, uint32_t packetSequence);
+    void handleEnd(FrameGroup &group, const TempPacket &tp, uint32_t packetSequence);
+    void tryAssemble(FrameGroup &group);
+    void cleanupOldFrames(); // по количеству кадров
+    void cleanupExpiredFrames(qint64 maxAgeMs); // по таймауту (НОВЫЙ МЕТОД)
+    void cleanupOldestIncompleteFrame();
 };

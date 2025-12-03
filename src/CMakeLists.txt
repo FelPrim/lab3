@@ -18,6 +18,7 @@ endif()
 # ---------------------------------------------------------------------------
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Test)
 find_package(OpenCV REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O1")
 
 # ---------------------------------------------------------------------------
 # Sources & headers (updated for new structure)
@@ -31,10 +32,11 @@ set(SOURCES
     logic/videoencoder.cpp
     logic/videodecoder.cpp
     logic/framebuffer.cpp
+    logic/bufferedvideodecoder.cpp
     
     # Network files
     network/udp/networkmanager.cpp
-    network/udp/networkdisplaybuffer.cpp
+   # network/udp/networkdisplaybuffer.cpp
     network/networkfacade.cpp
     network/streammanager.cpp
     network/handshake.cpp
@@ -73,10 +75,11 @@ set(HEADERS
     logic/videoencoder.h
     logic/videodecoder.h
     logic/framebuffer.h
-    
+    logic/bufferedvideodecoder.h
+
     # Network headers
     network/udp/networkmanager.h
-    network/udp/networkdisplaybuffer.h
+ #   network/udp/networkdisplaybuffer.h
     network/networkfacade.h
     network/streammanager.h
     network/handshake.h
