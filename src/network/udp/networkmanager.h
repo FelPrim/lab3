@@ -11,7 +11,6 @@
 #include <QtEndian>
 #include <QMutex>
 #include <QQueue>
-#include "myfec.h"
 #include "network_packet.h"
 #include "../../video_defaults.h"
 #include "fecbuffer.h"
@@ -81,9 +80,6 @@ private:
     // Компоненты трехслойной архитектуры
     FecBuffer *m_fecBuffer = nullptr;           // Слой 3: FEC восстановление
     PacketGroupBuffer *m_packetBuffer = nullptr; // Слой 2: Группировка пакетов
-    
-    // Отправка (оставляем FrameSender)
-    FrameSender *m_frameSender = nullptr;
     
     // FEC буфер для отправки (используется при создании XOR пакетов)
     uint8_t m_fecSendBuffer[4][1188];
