@@ -8,6 +8,39 @@
 #include "../../video_defaults.h"
 #include <cstdint>
 
+struct StartData{
+    nuint32_t frameNumber;
+    nuint32_t frameSize;
+    uint8_t payload[START_PAYLOAD];
+};
+
+struct ContinueData{
+    nuint32_t frameNumber;
+    uint8_t payload[CONTINUE_PAYLOAD];
+};
+
+struct EndData{
+    nuint32_t frameNumber;
+    uint8_t payload[END_DATA];
+};
+static_assert(sizeof(StartData) == sizeof(ContinueData) == sizeof(EndData) == sizeof(XorPacket)-1);
+
+struct TypedPacket{
+    nRouteHeader route;
+    union {
+        struct XorPacket xorpacket;
+        struct NotXorPack{
+            uint8_t type;
+            union {
+                struct StartData start_;
+                struct ContinueData continue_;
+                struct EndData end_;
+            } packet;
+        } datapacket;
+    } content;
+};
+static_assert(sizeof(TypedPacket) == 1200);
+
 void NetworkManager::checkMemory()
 {
     static qint64 lastCheck = 0;
@@ -184,7 +217,13 @@ void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray &frameData
     
     try {
         qDebug() << "NetworkManager: Sending video frame" << frameNumber << "size:" << frameData.size();
-        
+        // m_callId, m_streamId, frameNumber, frameData
+        frameSize = frameData.size();
+        this->frameNumber = frameNumber;
+        if (data_size <= START_PAYLOAD){
+            // фрейм помещается в один пакет
+            sendPacketNewProtocol(frameData, START_FRAME);
+        }
         m_frameSender->addFrame(m_streamId, frameNumber, frameData);
         
         while (m_frameSender->hasPacketsToSend()) {
@@ -202,21 +241,56 @@ void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray &frameData
     }
 }
 
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType type, int customSequence)
+void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType type)
 {
     if (!m_udpManager) return;
-
-    NetworkPacket packet = PacketProcessor::createDataPacket(m_callId, m_streamId, 
-                                                           customSequence, static_cast<uint8_t>(type), data);
-    QByteArray datagram = PacketProcessor::toByteArray(packet);
-    m_udpManager->sendPacket(datagram, m_serverAddress, m_serverPort);
+    
+    TypedPacket packet = {0};
+    memset(&packet, 0, sizeof(packet));
+    packet.header.callId = m_callId;
+    packet.header.streamId = m_streamId;
+    packet.header.packetSequence = m_packetSequence;
+    cast_to_nbe(packet.route);
+    uint32_t sz = 0;
+    switch (type){
+        case START_FRAME:
+        {
+            packet.content.datapacket.type = START_FRAME;
+            struct StartData& start = packet.content.datapacket.packet.start_;
+            start.frameNumber= qToBigEndian(frameNumber);
+            start.frameSize = qToBigEndian(frameSize);
+            sz = frameSize;
+            memcpy(&start.payload, 
+                    data.constData(), sz);
+            break;
+        }
+        case CONTINUE_FRAME:
+        {
+            packet.content.datapacket.type = CONTINUE_FRAME;
+            struct ContinueData& continue_ = packet.content.datapacket.packet.continue_;
+            continue_.frameNumber = qToBigEndian(frameNumber);
+            sz = CONTINUE_PAYLOAD;
+            memcpy(&continue_.payload, data.constData(), sz);
+            break;
+        }
+        case END_FRAME:
+        {
+            packet.content.datapacket.type = END_FRAME;
+            struct EndData& end = packet.content.datapacket.packet.end_;
+            end.frameNumber = qToBigEndian(frameNumber);
+            sz = END_PAYLOAD;
+            memcpy(&end.payload, data.constData(), sz);
+            break;
+        }
+    }
+    m_udpManager->sendPacket(packet, m_serverAddress, m_serverPort);
     m_packetSequence++;
 
     m_stats.totalPacketsSent++;
-    m_stats.totalBytesSent += data.size();
+    m_stats.totalBytesSent += sz; 
 
     // FEC логика отправки: сохраняем пакет в буфер для отправки XOR
-    QByteArray dataPart = datagram.mid(PacketProcessor::ROUTE_HEADER_SIZE);
+    QByteArray dataPart = packet.content;//datagram.mid(PacketProcessor::ROUTE_HEADER_SIZE);
     
     if (m_fecSendBufferCount < 4) {
         memcpy(m_fecSendBuffer[m_fecSendBufferCount], dataPart.constData(), 1188);
@@ -225,7 +299,7 @@ void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType ty
 
     // Отправляем XOR когда набралось 4 пакета
     if (m_fecSendBufferCount == 4) {
-        uint8_t xorData[1188] = {0};
+        uint8_t xorData[XOR_PAYLOAD] = {0};
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 1188; j++) {
                 xorData[j] ^= m_fecSendBuffer[i][j];

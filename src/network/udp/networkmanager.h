@@ -115,4 +115,6 @@ private:
 private:
     static const int MAX_FEC_BUFFER_SIZE = 128;
     void checkMemory();
+    uint32_t frameNumber = 0;
+    uint32_t frameSize = 0;
 };
