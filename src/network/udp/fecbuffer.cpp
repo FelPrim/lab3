@@ -21,8 +21,13 @@ bool FecBuffer::shouldProcessPacket(uint32_t packetSequence, qint64 currentTime)
     Q_UNUSED(currentTime);
     QMutexLocker locker(&m_sequenceMutex);
     
-    // Если packetSequence меньше или равен последнему очищенному, пакет слишком старый
-    if (packetSequence <= m_lastCleanedSequence) {
+    // Если мы еще не очищали пакеты, принимаем все
+    if (m_lastCleanedSequence == 0) {
+        return true;
+    }
+    
+    // Если packetSequence меньше последнего очищенного (не <=!), пакет слишком старый
+    if (packetSequence < m_lastCleanedSequence) {
         qDebug() << "FecBuffer: Packet too old, sequence:" << packetSequence 
                  << "last cleaned:" << m_lastCleanedSequence;
         return false;
@@ -41,13 +46,19 @@ void FecBuffer::updateLastCleanedSequence(uint32_t packetSequence)
 
 bool FecBuffer::addPacket(const NetworkPacket &packet)
 {
+
+    if (!PacketProcessor::isValidPacketType(packet)) {
+        qDebug() << "FecBuffer: Invalid packet type";
+        return false;
+    }
+
     PacketHeader header;
     memcpy(&header, &packet.route, sizeof(PacketHeader));
     cast_from_nbe(header);
     
     uint32_t packetSequence = header.header.packetSequence;
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
-    
+    qDebug() << "Got packet:" << packetSequence;
     // Шаг 1: Проверка на слишком старый пакет
     if (!shouldProcessPacket(packetSequence, currentTime)) {
         qDebug() << "FecBuffer: Ignoring too old packet, sequence:" << packetSequence;
@@ -57,8 +68,8 @@ bool FecBuffer::addPacket(const NetworkPacket &packet)
     int groupId = packetSequence / FEC_GROUP_SIZE;
     int position = packetSequence % FEC_GROUP_SIZE;
     
-    qDebug() << "FecBuffer: Adding packet - group:" << groupId 
-             << "position:" << position << "isXor:" << packet.isXorPacket();
+   // qDebug() << "FecBuffer: Adding packet - group:" << groupId 
+   //          << "position:" << position << "isXor:" << packet.isXorPacket();
     
     // Шаг 2: Создаем группу если не существует
     if (!m_groups.contains(groupId)) {
@@ -68,14 +79,29 @@ bool FecBuffer::addPacket(const NetworkPacket &packet)
         newGroup.streamId = header.header.streamId;
         newGroup.creationTime = currentTime;
         newGroup.lastUpdateTime = currentTime;
+        
+        // ВАЖНО: Явно инициализируем vectors
+        newGroup.packets.resize(FEC_TOTAL_PACKETS);
+        newGroup.received.resize(FEC_TOTAL_PACKETS, false);
+        
         m_groups[groupId] = newGroup;
+   //     qDebug() << "FecBuffer: Created new group" << groupId 
+   //              << "packets size:" << newGroup.packets.size()
+   //              << "received size:" << newGroup.received.size();
     }
     
     FecGroup &group = m_groups[groupId];
     group.lastUpdateTime = currentTime;
     
+    // ВАЖНО: Проверяем границы массива
+    if (position < 0 || position >= FEC_TOTAL_PACKETS) {
+        qWarning() << "FecBuffer: Invalid position" << position 
+                   << "for FEC_TOTAL_PACKETS =" << FEC_TOTAL_PACKETS;
+        return false;
+    }
+    
     // Шаг 3: Проверка на дубликат
-    if (group.received[position]) {
+    if (position < group.received.size() && group.received[position]) {
         qDebug() << "FecBuffer: Duplicate packet, ignoring. Sequence:" << packetSequence;
         return false;
     }
@@ -96,28 +122,62 @@ bool FecBuffer::addPacket(const NetworkPacket &packet)
             return false;
         }
         
+       
+        // Создаем packetData правильного размера
         packetData.resize(XOR_PACKET_DATA_SIZE);
-        char* buffer = packetData.data(); // Сохраняем указатель
+        char* buffer = packetData.data();
+        
+        // Копируем тип пакета (без FEC бита)
         buffer[0] = dataPacket->type & 0x7F;
+        
+        // Копируем payload
+     //   qDebug() << "FecBuffer: dataPacket payload pointer:" << (void*)dataPacket->payload;
         memcpy(buffer + 1, dataPacket->payload, DATA_PAYLOAD_SIZE);
+     //   qDebug() << "FecBuffer: The end of memcpy, packetData size:" << packetData.size();
     }
-    
+
+    // Шаг 5: Сохраняем данные в группу
     if (!packetData.isEmpty()) {
-        // Сохраняем время получения пакета
-        group.packets[position] = packetData;
+        // Проверяем, что вектор packets имеет достаточный размер
+        if (position >= group.packets.size()) {
+            qWarning() << "FecBuffer: packets vector too small! position:" << position
+                       << "size:" << group.packets.size();
+            // Исправляем ситуацию
+            group.packets.resize(position + 1);
+            group.received.resize(position + 1, false);
+        }
+        
+        // Сохраняем данные пакета
+        if (position < group.packets.size()) {
+            group.packets[position] = packetData;
+       //     qDebug() << "FecBuffer: Assignment successful";
+        } else {
+            qCritical() << "FecBuffer: CRITICAL - position out of bounds!";
+            qCritical() << "  position:" << position;
+            qCritical() << "  packets.size:" << group.packets.size();
+            qCritical() << "  groupId:" << groupId;
+            // Попробуем исправить
+            group.packets.resize(position + 1);
+            group.received.resize(position + 1, false);
+            group.packets[position] = packetData;
+        }
         group.received[position] = true;
         
-        // Шаг 5: Отправляем только пакеты данных (не XOR) в PacketGroupBuffer
+   //     qDebug() << "FecBuffer: Stored packet in group, position:" << position
+   //              << "packetData size:" << packetData.size()
+   //              << "group.packets[" << position << "] size:" << group.packets[position].size();
+   //     
+        // Шаг 6: Отправляем только пакеты данных (не XOR) в PacketGroupBuffer
         if (!packet.isXorPacket()) {
             forwardPacketToGroupBuffer(packet);
-            qDebug() << "FecBuffer: Forwarding data packet to PacketGroupBuffer, sequence:" 
-                     << packetSequence;
+        //    qDebug() << "FecBuffer: Forwarding data packet to PacketGroupBuffer, sequence:" 
+       //              << packetSequence;
         } else {
             qDebug() << "FecBuffer: XOR packet received, NOT forwarding, sequence:" 
                      << packetSequence;
         }
         
-        // Шаг 6: Проверяем возможность восстановления и восстанавливаем при необходимости
+        // Шаг 7: Проверяем возможность восстановления
         if (group.canRecover()) {
             qDebug() << "FecBuffer: Group" << groupId << "can be recovered, attempting recovery";
             int missingIndex = group.getMissingIndex();
@@ -125,6 +185,8 @@ bool FecBuffer::addPacket(const NetworkPacket &packet)
                 recoverPacketInGroup(groupId, missingIndex, currentTime);
             }
         }
+    } else {
+        qWarning() << "FecBuffer: packetData is empty!";
     }
     
     return true;
@@ -179,7 +241,7 @@ bool FecBuffer::recoverPacketInGroup(int groupId, int missingIndex, qint64 curre
     // Проверяем, что восстановленный тип пакета валиден
     uint8_t packetType = recoveredData[0] & 0x7F;
     if (packetType < 0x01 || packetType > 0x03) {
-        qWarning() << "FecBuffer: Invalid recovered packet type:" << packetType;
+        qCritical() << "FecBuffer: Invalid recovered packet type:" << packetType;
         return false;
     }
     
@@ -209,12 +271,36 @@ bool FecBuffer::recoverPacketInGroup(int groupId, int missingIndex, qint64 curre
 
 void FecBuffer::forwardPacketToGroupBuffer(const NetworkPacket &packet)
 {
-    if (m_packetGroupBuffer) {
-        m_packetGroupBuffer->addPacket(packet);
-    } else {
-        qWarning() << "FecBuffer: PacketGroupBuffer pointer is not set, cannot forward packet";
+  //  qDebug() << "FecBuffer::forwardPacketToGroupBuffer - START";
+ //   qDebug() << "  this:" << (void*)this;
+  //  qDebug() << "  m_streamId:" << m_streamId;
+  //  qDebug() << "  m_packetGroupBuffer:" << (void*)m_packetGroupBuffer;
+    
+    // Проверяем валидность packet
+   // qDebug() << "  packet.isXorPacket():" << packet.isXorPacket();
+    
+    if (!m_packetGroupBuffer) {
+        qCritical() << "FecBuffer: CRITICAL - m_packetGroupBuffer is NULL!";
+        qCritical() << "  Cannot forward packet, streamId:" << m_streamId;
+        return;
     }
+    
+    // Проверяем, что m_packetGroupBuffer указывает на валидный объект
+  //  qDebug() << "  m_packetGroupBuffer streamId:" << m_packetGroupBuffer->getStreamId();
+    
+    try {
+    //    qDebug() << "  Calling m_packetGroupBuffer->addPacket()";
+        m_packetGroupBuffer->addPacket(packet);
+   //     qDebug() << "  m_packetGroupBuffer->addPacket() completed";
+    } catch (const std::exception& e) {
+        qCritical() << "FecBuffer: Exception in addPacket:" << e.what();
+    } catch (...) {
+        qCritical() << "FecBuffer: Unknown exception in addPacket";
+    }
+    
+ //   qDebug() << "FecBuffer::forwardPacketToGroupBuffer - END";
 }
+
 void FecBuffer::cleanup(qint64 maxAgeMs)
 {
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();

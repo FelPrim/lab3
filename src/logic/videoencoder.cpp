@@ -361,7 +361,6 @@ void VideoEncoder::encodeFrame(const cv::Mat &frame_in)
         const uchar* row = bgr.ptr<uchar>(y);
         for (int x = 0; x < bgr.cols*3; ++x) sumBefore += row[x];
     }
-    qDebug() << "Frame checksum (BGR sum):" << sumBefore;
 
     int got = sws_scale(m_sws_enc, src_data, src_linesize, 0, m_height,
                        m_enc_frame->data, m_enc_frame->linesize);

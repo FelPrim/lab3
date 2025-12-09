@@ -62,7 +62,7 @@ private slots:
 private:
     // Основные методы
     void processPacketNewProtocol(const QByteArray &data);
-    void sendPacketNewProtocol(const QByteArray &data, PacketType type, int customSequence);
+    void sendPacketNewProtocol(const char *data, const uint32_t size, PacketType type);
     
     // Статистика
     void updateSendStats(int packets, int bytes);
@@ -91,21 +91,14 @@ private:
     int m_packetSequence = 0;
 
     struct Statistics {
-        quint64 totalPacketsSent = 0;
-        quint64 totalPacketsReceived = 0;
-        quint64 totalBytesSent = 0;
-        quint64 totalBytesReceived = 0;
-        quint64 framesSent = 0;
-        quint64 framesReceived = 0;
-        quint64 assembliesCompleted = 0;
-        quint64 assembliesDropped = 0;
+        quint32 totalPacketsSent = 0;
+        quint32 totalPacketsReceived = 0;
+        quint32 fecGroupsSent = 0;
+        quint32 fecGroupsRecovered = 0;
+        quint32 packetsRecoveredByFEC = 0;
+        quint32 framesSent = 0;
+        quint32 framesReceived = 0;
         
-        QSet<QPair<int, int>> expectedFrames;
-        QSet<QPair<int, int>> receivedFrames;
-        
-        quint64 fecGroupsSent = 0;
-        quint64 fecGroupsRecovered = 0;
-        quint64 packetsRecoveredByFEC = 0;
     } m_stats;
     
     QElapsedTimer m_operationTimer;
@@ -114,7 +107,6 @@ private:
     
 private:
     static const int MAX_FEC_BUFFER_SIZE = 128;
-    void checkMemory();
     uint32_t frameNumber = 0;
     uint32_t frameSize = 0;
 };

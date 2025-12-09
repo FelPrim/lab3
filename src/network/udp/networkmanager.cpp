@@ -6,27 +6,39 @@
 #include <QVariant>
 #include "network_packet.h"
 #include "../../video_defaults.h"
-#include <cstdint>
+#include <cstdint>    
 
+#pragma pack(push, 1)
 struct StartData{
     nuint32_t frameNumber;
     nuint32_t frameSize;
     uint8_t payload[START_PAYLOAD];
 };
 
+#pragma pack(push, 1)
 struct ContinueData{
     nuint32_t frameNumber;
     uint8_t payload[CONTINUE_PAYLOAD];
 };
 
+#pragma pack(push, 1)
 struct EndData{
     nuint32_t frameNumber;
-    uint8_t payload[END_DATA];
+    uint8_t payload[END_PAYLOAD];
 };
-static_assert(sizeof(StartData) == sizeof(ContinueData) == sizeof(EndData) == sizeof(XorPacket)-1);
 
+constexpr int StartDataSize = sizeof(StartData);
+constexpr int ContinueDataSize = sizeof(ContinueData);
+constexpr int EndDataSize = sizeof(EndData);
+constexpr int XorPacketSize = sizeof(XorPacket)-1;
+
+static_assert(StartDataSize == ContinueDataSize);
+static_assert(EndDataSize == XorPacketSize);
+static_assert(StartDataSize == EndDataSize);
+
+#pragma pack(push, 1)
 struct TypedPacket{
-    nRouteHeader route;
+    PacketHeader route;
     union {
         struct XorPacket xorpacket;
         struct NotXorPack{
@@ -39,22 +51,9 @@ struct TypedPacket{
         } datapacket;
     } content;
 };
-static_assert(sizeof(TypedPacket) == 1200);
 
-void NetworkManager::checkMemory()
-{
-    static qint64 lastCheck = 0;
-    qint64 now = QDateTime::currentMSecsSinceEpoch();
-    
-    if (now - lastCheck > 1000) {
-        lastCheck = now;
-        
-        // Проверить все NetworkManager
-        qDebug()    << "FEC groups:" << m_fecBuffer->getGroupCount()
-                    << "Frame groups:" << m_packetBuffer->getFrameCount();
-        
-    }
-}
+constexpr int TypedPacketSize = sizeof(TypedPacket);
+static_assert(TypedPacketSize == 1200);
 
 NetworkManager::NetworkManager(int streamId, QObject *parent)
     : QObject(parent)
@@ -63,7 +62,6 @@ NetworkManager::NetworkManager(int streamId, QObject *parent)
     , m_serverPort(DEFAULT_ECHO_SERVER_PORT)
     , m_fecBuffer(new FecBuffer(streamId, this))
     , m_packetBuffer(new PacketGroupBuffer(streamId, this))
-    , m_frameSender(new FrameSender(this))
     , m_fecSendBufferCount(0)
 {
     memset(m_fecSendBuffer, 0, sizeof(m_fecSendBuffer));
@@ -83,8 +81,6 @@ NetworkManager::NetworkManager(int streamId, QObject *parent)
 
 NetworkManager::~NetworkManager()
 {
-    // Таймеры удалятся автоматически благодаря parent/child механизму Qt
-    // Вызываем cleanup() для остановки таймеров и отписки
     cleanup();
     qDebug() << "NetworkManager: Destructor for stream" << m_streamId;
 }
@@ -168,11 +164,6 @@ void NetworkManager::stop()
     m_fecSendBufferCount = 0;
     memset(m_fecSendBuffer, 0, sizeof(m_fecSendBuffer));
     
-    // Очищаем отправитель
-    if (m_frameSender) {
-        m_frameSender->clear();
-    }
-    
     // Очищаем приемные буферы
     m_fecBuffer->cleanup(0);
     m_packetBuffer->cleanupOldFramesByTimeout(0); // Немедленная очистка
@@ -196,10 +187,8 @@ void NetworkManager::processPacket(const QByteArray &data, const QHostAddress &s
 
 void NetworkManager::onFrameComplete(int streamId, int frameNumber, const QByteArray &frameData)
 {
-    m_stats.framesReceived++;
-    m_stats.receivedFrames.insert(qMakePair(streamId, frameNumber));
-    
     // Передаем сигнал дальше
+
     emit frameAssembled(streamId, frameNumber, frameData);
 }
 
@@ -211,26 +200,65 @@ void NetworkManager::onPacketRecovered(uint32_t packetSequence)
     qDebug() << "NetworkManager: Packet recovered by FEC, sequence:" << packetSequence;
 }
 
-void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray &frameData)
+void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray& frameData)
 {
     if (!m_initialized || !m_udpManager || !m_sendingEnabled) return;
-    
+    QByteArray firstBytes = frameData.left(qMin(20, frameData.size()));
+    qDebug() << "Sending frame" << frameNumber 
+         << "size:" << frameData.size() 
+         << "first packet:" << m_packetSequence;
+      //   << "firstBytes(hex):" << firstBytes.toHex();
+        
+    // Логируем начало фрейма для отладки
+    if (frameData.size() >= 20) {
+        QByteArray header = frameData.left(20);
+       // qDebug() << "Frame header (hex):" << header.toHex();
+        
+        // Проверяем наличие SPS/PPS
+        if (frameData.size() > 4) {
+            for (int i = 0; i < qMin(frameData.size() - 4, 100); i++) {
+                if (frameData[i] == 0x00 && frameData[i+1] == 0x00 && 
+                    frameData[i+2] == 0x00 && frameData[i+3] == 0x01) {
+                    uint8_t nal_type = static_cast<uint8_t>(frameData[i+4]) & 0x1F;
+                    if (nal_type == 7 || nal_type == 8) {
+                        qDebug() << "Found NAL unit at offset" << i 
+                                << "type:" << nal_type 
+                                << (nal_type == 7 ? "(SPS)" : "(PPS)");
+                    }
+                }
+            }
+        }
+    }
+        
     try {
-        qDebug() << "NetworkManager: Sending video frame" << frameNumber << "size:" << frameData.size();
         // m_callId, m_streamId, frameNumber, frameData
         frameSize = frameData.size();
         this->frameNumber = frameNumber;
-        if (data_size <= START_PAYLOAD){
+        const char* arg = frameData.data();
+        if (frameSize <= START_PAYLOAD){
             // фрейм помещается в один пакет
-            sendPacketNewProtocol(frameData, START_FRAME);
+            sendPacketNewProtocol(arg, frameSize, START_FRAME);
         }
-        m_frameSender->addFrame(m_streamId, frameNumber, frameData);
-        
-        while (m_frameSender->hasPacketsToSend()) {
-            auto packets = m_frameSender->takePacketsToSend();
-            for (const auto &packet : packets) {
-                sendPacketNewProtocol(packet.second, packet.first, m_packetSequence);
+        else{
+            // frameSize = START_PAYLOAD + N*CONTINUE_PAYLOAD + END_PAYLOAD*k, k in (0, 1]
+            const uint32_t size_without_first = frameSize - START_PAYLOAD;
+            uint32_t ContinueQuan = size_without_first / CONTINUE_PAYLOAD;
+            uint32_t EndPayloadOrZero = size_without_first % CONTINUE_PAYLOAD;
+
+            if (EndPayloadOrZero == 0){
+                // frameSize > START_PAYLOAD -> size_without_first > 0 -> EndPayloadOrZero и ContinueQuan не могут быть одновременно = 0
+                assert(ContinueQuan != 0);
+                ContinueQuan -= 1;
+                EndPayloadOrZero = END_PAYLOAD;
             }
+
+            sendPacketNewProtocol(arg, START_PAYLOAD, START_FRAME);
+            arg += START_PAYLOAD; 
+            for (uint32_t i = 0; i < ContinueQuan; ++i){
+                sendPacketNewProtocol(arg, CONTINUE_PAYLOAD, CONTINUE_FRAME);
+                arg += CONTINUE_PAYLOAD; 
+            }
+            sendPacketNewProtocol(arg, EndPayloadOrZero, END_FRAME);
         }
         
         m_stats.framesSent++;
@@ -241,17 +269,17 @@ void NetworkManager::sendVideoFrame(int frameNumber, const QByteArray &frameData
     }
 }
 
-void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType type)
+void NetworkManager::sendPacketNewProtocol(const char *data, const uint32_t size, PacketType type)
 {
     if (!m_udpManager) return;
     
-    TypedPacket packet = {0};
+    TypedPacket packet = {0};    
     memset(&packet, 0, sizeof(packet));
-    packet.header.callId = m_callId;
-    packet.header.streamId = m_streamId;
-    packet.header.packetSequence = m_packetSequence;
-    cast_to_nbe(packet.route);
-    uint32_t sz = 0;
+    PacketHeader& header = packet.route;
+    header.header.callId = m_callId;
+    header.header.streamId = m_streamId;
+    header.header.packetSequence = m_packetSequence;
+    cast_to_nbe(header);
     switch (type){
         case START_FRAME:
         {
@@ -259,9 +287,11 @@ void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType ty
             struct StartData& start = packet.content.datapacket.packet.start_;
             start.frameNumber= qToBigEndian(frameNumber);
             start.frameSize = qToBigEndian(frameSize);
-            sz = frameSize;
-            memcpy(&start.payload, 
-                    data.constData(), sz);
+            memcpy(&start.payload, data, size);
+            qDebug() << "DBG send Start packet:" << m_packetSequence 
+            <<"frameNumber:" << frameNumber
+         << "frameSize:" << frameSize;
+   //      << "start(13):" << QByteArray(data, 13).toHex();
             break;
         }
         case CONTINUE_FRAME:
@@ -269,8 +299,10 @@ void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType ty
             packet.content.datapacket.type = CONTINUE_FRAME;
             struct ContinueData& continue_ = packet.content.datapacket.packet.continue_;
             continue_.frameNumber = qToBigEndian(frameNumber);
-            sz = CONTINUE_PAYLOAD;
-            memcpy(&continue_.payload, data.constData(), sz);
+            memcpy(&continue_.payload, data, size);
+        qDebug() << "DBG send Continue packet:" << m_packetSequence 
+            <<"frameNumber:" << frameNumber;
+       //  << "continue(12):" << QByteArray(data, 12).toHex();
             break;
         }
         case END_FRAME:
@@ -278,49 +310,54 @@ void NetworkManager::sendPacketNewProtocol(const QByteArray &data, PacketType ty
             packet.content.datapacket.type = END_FRAME;
             struct EndData& end = packet.content.datapacket.packet.end_;
             end.frameNumber = qToBigEndian(frameNumber);
-            sz = END_PAYLOAD;
-            memcpy(&end.payload, data.constData(), sz);
+            memcpy(&end.payload, data, size);
+            qDebug() << "DBG send End packet:" << m_packetSequence 
+            <<"frameNumber:" << frameNumber;
+        // << "end(12):" << QByteArray(data, 12).toHex();
             break;
         }
     }
-    m_udpManager->sendPacket(packet, m_serverAddress, m_serverPort);
+    
+    m_udpManager->sendPacket(QByteArray::fromRawData((const char*)&packet, sizeof(packet)), m_serverAddress, m_serverPort);
     m_packetSequence++;
 
     m_stats.totalPacketsSent++;
-    m_stats.totalBytesSent += sz; 
 
-    // FEC логика отправки: сохраняем пакет в буфер для отправки XOR
-    QByteArray dataPart = packet.content;//datagram.mid(PacketProcessor::ROUTE_HEADER_SIZE);
+    QByteArray dataPart = QByteArray::fromRawData((const char*)&packet.content, sizeof(packet.content));
     
     if (m_fecSendBufferCount < 4) {
-        memcpy(m_fecSendBuffer[m_fecSendBufferCount], dataPart.constData(), 1188);
+        memcpy(m_fecSendBuffer[m_fecSendBufferCount], dataPart.constData(), sizeof(packet.content));
         m_fecSendBufferCount++;
     }
 
-    // Отправляем XOR когда набралось 4 пакета
-    if (m_fecSendBufferCount == 4) {
+    if (m_fecSendBufferCount >= 4) {
         uint8_t xorData[XOR_PAYLOAD] = {0};
         for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 1188; j++) {
+            #pragma omp simd
+            for (int j = 0; j < XOR_PAYLOAD; j++) {
                 xorData[j] ^= m_fecSendBuffer[i][j];
             }
         }
         xorData[0] |= 0x80;
 
-        int xorSequence = m_packetSequence++; // Используем текущий sequence
+        int xorSequence = m_packetSequence; 
         
-        QByteArray xorDataArray(reinterpret_cast<const char*>(xorData), 1188);
-        NetworkPacket xorPacket = PacketProcessor::createXorPacket(m_callId, m_streamId, xorSequence, xorDataArray);
-        QByteArray xorDatagram = PacketProcessor::toByteArray(xorPacket);
+        NetworkPacket xorPacket = {0}; // = PacketProcessor::createXorPacket(m_callId, m_streamId, xorSequence, xorDataArray);
+        static_assert(sizeof(PacketHeader) == sizeof(nRouteHeader));
+        PacketHeader& route = (PacketHeader&) xorPacket.route;
+        route.header.callId = m_callId;
+        route.header.streamId = m_streamId;
+        route.header.packetSequence = m_packetSequence;
+        cast_to_nbe(route);
+        memcpy(&xorPacket.content.xorPacket, xorData, XOR_PAYLOAD);
+
+        QByteArray xorDatagram = QByteArray::fromRawData((const char*)&xorPacket, MAX_PACKET_SIZE);//PacketProcessor::toByteArray(xorPacket);
         m_udpManager->sendPacket(xorDatagram, m_serverAddress, m_serverPort);
 
         m_stats.totalPacketsSent++;
-        m_stats.totalBytesSent += 1188;
-        m_stats.fecGroupsSent++;
+        m_packetSequence++;
+     //   qDebug() << "NetworkManager: Sent XOR packet, sequence:" << xorSequence;
 
-        qDebug() << "NetworkManager: Sent XOR packet, sequence:" << xorSequence;
-
-        // Сбрасываем буфер ПОСЛЕ отправки XOR
         m_fecSendBufferCount = 0;
         memset(m_fecSendBuffer, 0, sizeof(m_fecSendBuffer));
     }
@@ -343,10 +380,10 @@ void NetworkManager::processPacketNewProtocol(const QByteArray& data) {
     uint32_t packetCallId = header.header.callId;
     uint32_t packetStreamId = header.header.streamId;
     
-    qDebug() << "=== PACKET RECEIVED ===";
-    qDebug() << "Expected callId:" << m_callId << "streamId:" << m_streamId;
-    qDebug() << "Received callId:" << packetCallId << "streamId:" << packetStreamId;
-    qDebug() << "Packet size:" << data.size();
+   // qDebug() << "=== PACKET RECEIVED ===";
+   // qDebug() << "Expected callId:" << m_callId << "streamId:" << m_streamId;
+   // qDebug() << "Received callId:" << packetCallId << "streamId:" << packetStreamId;
+   // qDebug() << "Packet size:" << data.size();
 
     // Проверяем соответствие callId и streamId
     if (packetCallId != m_callId || packetStreamId != static_cast<uint32_t>(m_streamId)) {
@@ -372,13 +409,11 @@ void NetworkManager::cleanupOldAssemblies()
 void NetworkManager::updateSendStats(int packets, int bytes)
 {
     m_stats.totalPacketsSent += packets;
-    m_stats.totalBytesSent += bytes;
 }
 
 void NetworkManager::updateReceiveStats(int packets, int bytes)
 {
     m_stats.totalPacketsReceived += packets;
-    m_stats.totalBytesReceived += bytes;
 }
 
 void NetworkManager::printStatistics()
@@ -387,17 +422,6 @@ void NetworkManager::printStatistics()
     
     if (elapsedSeconds == 0) return;
     
-    double sendRate = (m_stats.totalBytesSent / 1024.0) / elapsedSeconds;
-    double receiveRate = (m_stats.totalBytesReceived / 1024.0) / elapsedSeconds;
-    
-    // Расчет потерь
-    double lossRate = 0.0;
-    if (m_stats.expectedFrames.size() > 0) {
-        int lostFrames = m_stats.expectedFrames.size() - m_stats.receivedFrames.size();
-        lossRate = (double)lostFrames / m_stats.expectedFrames.size() * 100.0;
-    }
-    
-    checkMemory();
     QString stats = QString(
         "=== New Protocol Statistics (Stream: %1) ===\n"
         "Time: %2s | Frames: %3 sent, %4 received (%5% loss)\n"
@@ -408,11 +432,8 @@ void NetworkManager::printStatistics()
      .arg(elapsedSeconds, 0, 'f', 1)
      .arg(m_stats.framesSent)
      .arg(m_stats.framesReceived)
-     .arg(lossRate, 0, 'f', 2)
      .arg(m_stats.totalPacketsSent)
      .arg(m_stats.totalPacketsReceived)
-     .arg(sendRate, 0, 'f', 2)
-     .arg(receiveRate, 0, 'f', 2)
      .arg(m_stats.fecGroupsSent)
      .arg(m_stats.fecGroupsRecovered)
      .arg(m_stats.packetsRecoveredByFEC);

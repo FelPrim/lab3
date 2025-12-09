@@ -2,9 +2,10 @@
 
 #include <QThread>
 #include <QImage>
+#include <QElapsedTimer>
 #include <opencv2/opencv.hpp>
 #include "../video_defaults.h"
-    
+
 class VideoCapture : public QThread
 {
     Q_OBJECT
@@ -13,11 +14,19 @@ public:
     explicit VideoCapture(int deviceIndex, QObject *parent = nullptr);
     ~VideoCapture() override;
 
-
     static QList<int> getAvailableDevices();
     void startCapture();
     void stopCapture();
     int getDeviceIndex() const { return m_deviceIndex; }
+    bool isStable() const { return m_stable; }
+    
+    // Установка целевого FPS
+    void setTargetFps(int fps) { 
+        if (fps > 0 && fps <= 60) {
+            m_targetFps = fps;
+            m_frameIntervalMs = 1000 / m_targetFps;
+        }
+    }
 
 signals:
     // Сигнал с исходным кадром для прямого показа
@@ -33,12 +42,9 @@ private:
     int m_deviceIndex;
     std::atomic<bool> m_running{false};
     cv::VideoCapture m_capture;
-    float m_fps = DEFAULT_FPS;
-public:
-    // Статический метод для получения списка доступных устройств
-public:
-    bool isStable() const { return m_stable; }
+    int m_targetFps = DEFAULT_FPS;  // Целевой FPS
+    qint64 m_frameIntervalMs = 1000/DEFAULT_FPS; // Интервал между кадрами (66 мс для 15 FPS)
     
-private:
+    // Для контроля стабильности
     std::atomic<bool> m_stable{false};
 };

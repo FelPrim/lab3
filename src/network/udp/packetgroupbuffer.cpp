@@ -6,17 +6,11 @@
 #include "network_packet.h"
 
 
-enum PacketType {
-    START_FRAME = 0x01,
-    CONTINUE_FRAME = 0x02,
-    END_FRAME = 0x03,
-    FEC_PACKET = 0x04
-};
-
-
 PacketGroupBuffer::PacketGroupBuffer(int streamId, QObject *parent)
     : QObject(parent), m_streamId(streamId)
 {
+    qDebug() << "PacketGroupBuffer constructor - streamId:" << streamId;
+    qDebug() << "  this:" << (void*)this;
     m_lastActivityTime = QDateTime::currentMSecsSinceEpoch();
 }
 
@@ -89,9 +83,15 @@ void PacketGroupBuffer::cleanupOldestIncompleteFrame()
 
 void PacketGroupBuffer::addPacket(const NetworkPacket &packet)
 {
+   // qDebug() << "PacketGroupBuffer::addPacket - START";
+   // qDebug() << "  streamId:" << m_streamId;
+    
     if (m_groups.size() >= DEFAULT_FPS*DEFAULT_BUFFERSECONDS) {
+        qDebug() << "  Buffer full, cleaning up oldest incomplete frame";
         cleanupOldestIncompleteFrame();
+        qDebug() << "  call end";
     }
+
     // Обновляем время последней активности
     m_lastActivityTime = QDateTime::currentMSecsSinceEpoch();
     
@@ -103,19 +103,22 @@ void PacketGroupBuffer::addPacket(const NetworkPacket &packet)
 
     // We assume fecbuffer already filters XOR-packets out; but double-check just in case:
     if (packet.isXorPacket()) {
+        qDebug() << "  isXorPacket";
         return;
     }
-
+   // qDebug() << "  isnotXorPacket";
     uint8_t pktType = PacketProcessor::getPacketType(packet); // returns 1/2/3
     QByteArray payload = PacketProcessor::getDataPacketPayload(packet); // 1187 bytes
 
+   // qDebug() << "  gotPacketType";
     // payload always has frameNumber at offset 0
     int frameNumber = extractFrameNumber(payload, 0);
+  //  qDebug() << "  extractFrameNumber";
     if (frameNumber < 0) {
         qWarning() << "PacketGroupBuffer: can't parse frameNumber";
         return;
     }
-
+    qDebug() << "PGB: recieved packet:" << packetSequence << " frame: " << frameNumber; //<< " payload.left(40): " << payload.left(40).toHex();
     // Prepare temp packet
     TempPacket tp;
     tp.packetSequence = packetSequence;
@@ -132,17 +135,22 @@ void PacketGroupBuffer::addPacket(const NetworkPacket &packet)
     
     // Обновляем время последней активности группы
     group.updateLastActivity();
-
+ //   qDebug() << "  updateLastActivity";
     if (frameNumber > m_latestFrameNumber) m_latestFrameNumber = frameNumber;
+
+    // В методе addPacket, перед switch:
 
     switch (pktType) {
     case START_FRAME:
+     //   qDebug() << "  Calling handleStart";
         handleStart(group, tp, packetSequence);
         break;
     case CONTINUE_FRAME:
+      //  qDebug() << "  Calling handleContinue";
         handleContinue(group, tp, packetSequence);
         break;
     case END_FRAME:
+    //    qDebug() << "  Calling handleEnd";
         handleEnd(group, tp, packetSequence);
         break;
     default:
@@ -150,15 +158,23 @@ void PacketGroupBuffer::addPacket(const NetworkPacket &packet)
         return;
     }
 
+  //  qDebug() << "  After switch, group.isComplete():" << group.isComplete();
+   // qDebug() << "  packetsReceived:" << group.packetsReceived << "/" << group.totalPackets;
+
     if (group.isComplete()) {
+    //    qDebug() << "  Calling tryAssemble";
         tryAssemble(group);
+    } else {
+  //      qDebug() << "  Frame not complete yet";
     }
 
     cleanupOldFrames();
+ //   qDebug() << "PacketGroupBuffer::addPacket - END";
 }
 
 void PacketGroupBuffer::handleStart(FrameGroup &group, const TempPacket &tp, uint32_t packetSequence)
 {
+//    qDebug() << "  handleStart - START";
     // START: [frameNumber(4)][frameSize(4)][data up to 1179 padded with zeros]
     if (tp.payload.size() < 8) {
         qWarning() << "PacketGroupBuffer: START payload too small";
@@ -166,33 +182,52 @@ void PacketGroupBuffer::handleStart(FrameGroup &group, const TempPacket &tp, uin
     }
 
     int frameSize = extractFrameSize(tp.payload, 4);
+    qDebug() << "Start. framesize:" << frameSize;
+
+   // qDebug() << "    frameSize:" << frameSize;
     if (frameSize <= 0) {
         qWarning() << "PacketGroupBuffer: invalid frameSize" << frameSize;
         return;
     }
 
     int firstDataSize = qMax(0, tp.payload.size() - 8); // likely 1179
+  //  qDebug() << "    firstDataSize:" << firstDataSize;
     int totalPackets = calculateTotalPackets(frameSize, firstDataSize);
+  //  qDebug() << "    totalPackets:" << totalPackets;
 
     // init group
     group.frameSize = frameSize;
     group.totalPackets = totalPackets;
     group.startSequence = packetSequence;
+    
+  //  qDebug() << "    Before resize - packets size:" << group.packets.size() 
+  //           << "received size:" << group.received.size();
+    
+    // ОЧЕНЬ ВАЖНО: Используем resize для обоих векторов
     group.packets.resize(totalPackets);
-    group.received.fill(totalPackets, 0);
+    group.received.resize(totalPackets);
+    group.received.fill(0);  // Заполняем нулями
+    
+  //  qDebug() << "    After resize - packets size:" << group.packets.size() 
+ //            << "received size:" << group.received.size();
+    
     group.packetsReceived = 0;
 
     // store START payload into index 0 (trim padding if frame smaller)
     if (firstDataSize > 0) {
         int toCopy = qMin(firstDataSize, frameSize); // if whole frame fits into START
+        qDebug() << "    Storing START data, toCopy:" << toCopy;
         group.packets[0] = tp.payload.mid(8, toCopy);
         group.received[0] = 1;
         group.packetsReceived = 1;
+        qDebug() << "    Stored at index 0, packetsReceived:" << group.packetsReceived;
     }
 
     // place any previously stored temp packets
+   // qDebug() << "    Processing tempPackets, count:" << group.tempPackets.size();
     for (auto it = group.tempPackets.begin(); it != group.tempPackets.end(); ) {
         int relIdx = getRelativePacketIndex(it->packetSequence, group.startSequence);
+    //    qDebug() << "      Temp packet relIdx:" << relIdx;
         if (relIdx >= 1 && relIdx < group.totalPackets) {
             uint8_t t = it->rawType;
             if (t == CONTINUE_FRAME) {
@@ -202,6 +237,7 @@ void PacketGroupBuffer::handleStart(FrameGroup &group, const TempPacket &tp, uin
                         group.packets[relIdx] = d;
                         group.received[relIdx] = 1;
                         group.packetsReceived++;
+     //                   qDebug() << "        Placed CONTINUE at index" << relIdx;
                     }
                 }
             } else if (t == END_FRAME) {
@@ -211,6 +247,7 @@ void PacketGroupBuffer::handleStart(FrameGroup &group, const TempPacket &tp, uin
                         group.packets[relIdx] = d;
                         group.received[relIdx] = 1;
                         group.packetsReceived++;
+    //                    qDebug() << "        Placed END at index" << relIdx;
                     }
                 }
             }
@@ -219,10 +256,14 @@ void PacketGroupBuffer::handleStart(FrameGroup &group, const TempPacket &tp, uin
             ++it;
         }
     }
+    
+ //   qDebug() << "  handleStart - END, packetsReceived:" << group.packetsReceived;
 }
 
 void PacketGroupBuffer::handleContinue(FrameGroup &group, const TempPacket &tp, uint32_t packetSequence)
 {
+ //   qDebug() << "  handleContinue - START";
+    
     // CONTINUE: [frameNumber(4)][1183 bytes data]
     if (tp.payload.size() < 4) {
         qWarning() << "PacketGroupBuffer: CONTINUE payload too small";
@@ -230,26 +271,40 @@ void PacketGroupBuffer::handleContinue(FrameGroup &group, const TempPacket &tp, 
     }
 
     if (!group.hasStart()) {
+    //    qDebug() << "    No START yet, storing in tempPackets";
         group.tempPackets.append(tp);
         return;
     }
 
     int relIdx = getRelativePacketIndex(packetSequence, group.startSequence);
+  //  qDebug() << "    relIdx:" << relIdx << "totalPackets:" << group.totalPackets;
+    
     if (relIdx <= 0 || relIdx >= group.totalPackets) {
-        // either duplicate of start or out of range
+        qDebug() << "    relIdx out of range, ignoring";
         return;
     }
 
-    if (group.received[relIdx]) return; // duplicate
+    if (relIdx >= group.received.size()) {
+        qWarning() << "    ERROR: relIdx" << relIdx << ">= received.size()" << group.received.size();
+        return;
+    }
+    
+    if (group.received[relIdx]) {
+        qDebug() << "    Duplicate packet, ignoring";
+        return;
+    }
 
     QByteArray data = tp.payload.mid(4);
     group.packets[relIdx] = data;
     group.received[relIdx] = 1;
     group.packetsReceived++;
+   // qDebug() << "  handleContinue - END, packetsReceived:" << group.packetsReceived;
 }
 
 void PacketGroupBuffer::handleEnd(FrameGroup &group, const TempPacket &tp, uint32_t packetSequence)
 {
+  //  qDebug() << "  handleEnd - START";
+    
     // END: [frameNumber(4)][1183 bytes data possibly padded]
     if (tp.payload.size() < 4) {
         qWarning() << "PacketGroupBuffer: END payload too small";
@@ -257,47 +312,84 @@ void PacketGroupBuffer::handleEnd(FrameGroup &group, const TempPacket &tp, uint3
     }
 
     if (!group.hasStart()) {
+    //    qDebug() << "    No START yet, storing in tempPackets";
         group.tempPackets.append(tp);
         return;
     }
 
     int relIdx = getRelativePacketIndex(packetSequence, group.startSequence);
+  //  qDebug() << "    relIdx:" << relIdx << "totalPackets:" << group.totalPackets;
+    
     if (relIdx != (group.totalPackets - 1)) {
-        // not the expected last packet for this frame -> ignore
+        qDebug() << "    relIdx != totalPackets-1, ignoring";
         return;
     }
 
-    if (group.received[relIdx]) return; // duplicate
+    if (relIdx >= group.received.size()) {
+        qWarning() << "    ERROR: relIdx" << relIdx << ">= received.size()" << group.received.size();
+        return;
+    }
+    
+    if (group.received[relIdx]) {
+        qDebug() << "    Duplicate END packet, ignoring";
+        return;
+    }
 
     QByteArray data = tp.payload.mid(4);
     group.packets[relIdx] = data;
     group.received[relIdx] = 1;
     group.packetsReceived++;
+    
+ //   qDebug() << "  handleEnd - END, packetsReceived:" << group.packetsReceived;
 }
 
 void PacketGroupBuffer::tryAssemble(FrameGroup &group)
 {
-    if (!group.isComplete()) return;
+    if (!group.isComplete()) {
+        qDebug() << "    Frame not complete, skipping assembly";
+        return;
+    }
+
+    // Отладка: вывести информацию о всех пакетах один раз
+    qDebug() << "    Assembling frame" << group.frameNumber << "size:" << group.frameSize;
+    for (int i = 0; i < group.totalPackets; ++i) {
+        const QByteArray &p = group.packets[i];
+       // qDebug() << "DBG packet[" << i << "] size=" << p.size() << "hex_prefix=" << p.left(8).toHex();
+    }
 
     QByteArray frame;
     frame.reserve(group.frameSize);
-
+    
     for (int i = 0; i < group.totalPackets; ++i) {
-        if (!group.received[i]) {
-            qWarning() << "PacketGroupBuffer: missing packet" << i << "for frame" << group.frameNumber;
-            return;
-        }
         const QByteArray &p = group.packets[i];
+        
         if (i == group.totalPackets - 1) {
+            // Последний пакет - учитываем возможное заполнение нулями
             int remaining = group.frameSize - frame.size();
             int toAppend = qMin(remaining, p.size());
-            if (toAppend > 0) frame.append(p.constData(), toAppend);
+            if (toAppend > 0) {
+                frame.append(p.constData(), toAppend);
+            //    qDebug() << "      Last packet: appended" << toAppend << "bytes, remaining capacity:" << remaining;
+            }
+            
+            // Если всё ещё не хватает, заполняем нулями
+            if (frame.size() < group.frameSize) {
+                int zerosNeeded = group.frameSize - frame.size();
+                frame.append(QByteArray(zerosNeeded, '\0'));
+                qDebug() << "      Added" << zerosNeeded << "zero bytes as padding";
+            }
         } else {
+            // Не последний пакет - добавляем целиком
             frame.append(p);
+           // qDebug() << "      Packet" << i << ": appended" << p.size() << "bytes";
         }
     }
 
+    qDebug() << "    Assembled size:" << frame.size() << "expected:" << group.frameSize;
+    
+    // Дополнительная проверка размера
     if (frame.size() != group.frameSize) {
+        qCritical() << "    Size mismatch! Actual:" << frame.size() << "Expected:" << group.frameSize;
         if (frame.size() < group.frameSize) {
             frame.append(QByteArray(group.frameSize - frame.size(), '\0'));
         } else {
@@ -305,6 +397,11 @@ void PacketGroupBuffer::tryAssemble(FrameGroup &group)
         }
     }
 
+    QByteArray firstBytes = frame.left(qMin(64, frame.size()));
+    qDebug() << "DBG assembled frame" << group.frameNumber 
+             << "size:" << frame.size() 
+             << "firstBytes(hex):" << firstBytes.toHex();
+    
     emit frameComplete(m_streamId, group.frameNumber, frame);
     m_completedCount++;
     m_groups.remove(group.frameNumber);

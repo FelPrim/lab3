@@ -8,6 +8,19 @@
 
 #pragma pack(push, 1)
 
+constexpr int START_PAYLOAD = DATA_PAYLOAD_SIZE - 8;
+constexpr int CONTINUE_PAYLOAD = DATA_PAYLOAD_SIZE - 4; 
+constexpr int END_PAYLOAD = DATA_PAYLOAD_SIZE - 4;
+constexpr int XOR_PAYLOAD = XOR_PACKET_DATA_SIZE;
+
+enum PacketType {
+    START_FRAME = 0x01,
+    CONTINUE_FRAME = 0x02,
+    END_FRAME = 0x03
+};
+
+
+
 // ROUTE_HEADER - 12 байт
 struct RouteHeader {
     uint32_t callId;

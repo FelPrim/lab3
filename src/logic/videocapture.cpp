@@ -5,6 +5,8 @@
 VideoCapture::VideoCapture(int deviceIndex, QObject *parent)
     : QThread(parent), m_deviceIndex(deviceIndex)
 {
+
+    m_frameIntervalMs = 1000 / DEFAULT_FPS; // 66 мс для 15 FPS
 }
 
 VideoCapture::~VideoCapture()
@@ -34,8 +36,11 @@ void VideoCapture::stopCapture()
 
 void VideoCapture::run()
 {
-    qDebug() << "VideoCapture: quick starting device" << m_deviceIndex;
+    qDebug() << "VideoCapture: quick starting device" << m_deviceIndex 
+             << "with target FPS:" << m_targetFps;
+    
     QThread::msleep(100);
+    
     // Быстрое открытие устройства
     try {
 #ifdef _WIN32
@@ -60,24 +65,24 @@ void VideoCapture::run()
         }
     }
 
-    // Быстрые базовые настройки (не блокирующие)
+    // Быстрые базовые настройки
     m_capture.set(cv::CAP_PROP_FRAME_WIDTH, DEFAULT_WIDTH);
     m_capture.set(cv::CAP_PROP_FRAME_HEIGHT, DEFAULT_HEIGHT);
-    m_capture.set(cv::CAP_PROP_FPS, m_fps);
+    m_capture.set(cv::CAP_PROP_FPS, m_targetFps);
     m_capture.set(cv::CAP_PROP_BUFFERSIZE, 1);
 
     double actualWidth = m_capture.get(cv::CAP_PROP_FRAME_WIDTH);
     double actualHeight = m_capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     double actualFps = m_capture.get(cv::CAP_PROP_FPS);
 
-    qDebug() << "Requested:" << DEFAULT_WIDTH << "x" << DEFAULT_HEIGHT << "@" << m_fps;
+    qDebug() << "Requested:" << DEFAULT_WIDTH << "x" << DEFAULT_HEIGHT << "@" << m_targetFps;
     qDebug() << "Actual:" << actualWidth << "x" << actualHeight << "@" << actualFps;
 
     // Если реальное разрешение маленькое, испустить предупреждение
     if (actualWidth < 320 || actualHeight < 240) {
         qWarning() << "Camera returned very small resolution:" 
-                << actualWidth << "x" << actualHeight
-                << "Camera may not support requested resolution.";
+                   << actualWidth << "x" << actualHeight
+                   << "Camera may not support requested resolution.";
     }
 
     // Минимальный прогрев - 2 кадра
@@ -89,44 +94,56 @@ void VideoCapture::run()
         QThread::msleep(10);
     }
 
-    qDebug() << "Starting fast capture loop for device" << m_deviceIndex;
+    qDebug() << "Starting capture loop for device" << m_deviceIndex 
+             << "with interval:" << m_frameIntervalMs << "ms";
     
-    // Основной цикл захвата
+    // Основной цикл захвата с контролем FPS
     cv::Mat frame;
     int frameCount = 0;
     QElapsedTimer fpsTimer;
+    QElapsedTimer frameTimer;
     fpsTimer.start();
-
+    
     while (m_running) {
+        frameTimer.restart();
+        
+        // Захват кадра
         if (!m_capture.read(frame) || frame.empty()) {
-            // Быстрая обработка ошибок - небольшая пауза и продолжаем
+            // Быстрая обработка ошибок
             QThread::msleep(5);
             continue;
         }
         
         frameCount++;
 
-        
         // Создаем QImage напрямую из данных кадра (без копирования)
         QImage image(frame.data, frame.cols, frame.rows, 
-                    frame.step, QImage::Format_BGR888);
+                     frame.step, QImage::Format_BGR888);
         
         // Критически важно: создаем копию, так как данные rgbFrame временные
 #ifndef TEST_DECODER
-    emit rawFrameReady(image.copy());
+        emit rawFrameReady(image.copy());
 #endif
 
+        // Отправляем кадр для кодирования
+        emit frameForEncodingReady(frame.clone());
 
-    emit frameForEncodingReady(frame.clone());
         // Периодический лог FPS (каждые 100 кадров)
         if (frameCount % 100 == 0) {
             double elapsed = fpsTimer.restart() / 1000.0;
             double currentFps = 100.0 / elapsed;
-            qDebug() << "Device" << m_deviceIndex << "FPS:" << currentFps;
+            qDebug() << "Device" << m_deviceIndex 
+                     << "FPS:" << currentFps 
+                     << "(target:" << m_targetFps << ")";
         }
 
-        // Небольшая пауза для контроля FPS
-        QThread::msleep(1);
+        // Контроль FPS: ждем, чтобы достичь целевого интервала
+        qint64 elapsed = frameTimer.elapsed();
+        if (elapsed < m_frameIntervalMs) {
+            QThread::msleep(m_frameIntervalMs - elapsed);
+        }
+        // Если elapsed >= m_frameIntervalMs, значит мы не успеваем 
+        // по таймингу, пропускаем паузу
     }
 
     m_capture.release();
@@ -163,19 +180,19 @@ QList<int> VideoCapture::getAvailableDevices()
             int attempts = 0;
             bool deviceValid = false;
             
-            while (attempts < 5 && timer.elapsed() < 1000) { // Увеличить таймаут до 1 секунды
+            while (attempts < 5 && timer.elapsed() < 1000) {
                 if (cap.read(testFrame) && !testFrame.empty()) {
                     deviceValid = true;
                     qDebug() << "Found device:" << i << "after" << attempts + 1 << "attempts";
                     break;
                 }
                 attempts++;
-                QThread::msleep(30); // Увеличить задержку между попытками
+                QThread::msleep(30);
             }
             
             // Важно: полностью освобождать устройство перед выходом
             cap.release();
-            QThread::msleep(50); // Дать время на освобождение устройства
+            QThread::msleep(50);
             
             if (deviceValid) {
                 devices.append(i);

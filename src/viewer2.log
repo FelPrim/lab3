@@ -1,0 +1,1364 @@
+Quick scanning for video devices...
+Found device: 0 after 1 attempts
+Found device: 1 after 1 attempts
+[ WARN:0@1.308] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.309] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.309] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.310] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.311] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.311] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.312] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@1.313] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+Quick scan completed. Found 2 devices
+Quick scanning for video devices...
+Found device: 0 after 1 attempts
+Found device: 1 after 1 attempts
+[ WARN:0@2.032] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.032] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.033] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.033] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.034] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.034] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.035] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+[ WARN:0@2.035] global cap.cpp:478 open VIDEOIO(DSHOW): backend is generally available but can't be used to capture by index
+Quick scan completed. Found 2 devices
+Available devices: QList(0, 1)
+Initializing MainWindow
+StreamManager created (NetworkFacade wrapper)
+StreamManager initialized
+UDP Socket local port: 62087
+UDPManager: Socket bound to port 62087
+StreamManager: setServerAddress "95.81.125.224" 23230
+StreamManager: connectToServer
+TCPManager: connecting to "95.81.125.224" : 23230
+MainWindow initialized successfully
+TCPManager: connected to server
+NetworkFacade: TCP connected to "95.81.125.224" : 23230
+Waiting for handshake start from server...
+StreamManager: network connected
+Connection status changed: true
+TCPManager: processing message type: "5"
+NetworkFacade: Server handshake start, connectionId: 6
+HandshakeService: Starting handshake for connection 6
+NetworkFacade: Handshake started for connection 6
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+HandshakeService: Handshake stopped
+HandshakeService: Handshake completed for connection 6
+NetworkFacade: Handshake completed for connection 6
+StreamManager: handshake completed, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+Join clicked with ID: "LBRSDA"
+=== MainWindow::onJoinPublicStreamRequested() START ===
+Stream ID: "LBRSDA"
+Joining stream, server ID: 1698825
+StreamManager: joinStream "LBRSDA"
+TCPManager: sent CLIENT_STREAM_JOIN streamId= 1698825
+NetworkFacade: Sending 10 NAT traversal packets for connection 6
+=== MainWindow::onJoinPublicStreamRequested() END ===
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+TCPManager: processing message type: "92"
+NetworkFacade: Server stream joined, id: 1698825
+PacketGroupBuffer constructor - streamId: 1698825
+  this: 0x24e0ae28f70
+NetworkManager created for stream: 1698825
+FecBuffer: PacketGroupBuffer pointer set for stream 1698825
+UDPManager: Registered NetworkManager for stream 1698825
+NetworkManager: Initialized for stream 1698825
+NetworkManager: Server address set to "95.81.125.224" : 23231
+NetworkFacade: Created NetworkManager for stream 1698825
+NetworkFacade: NetworkManager ready to receive stream 1698825
+=== Client Network State ===
+Connection ID: 6
+Calls: QList(0)
+Streams: QList(1698825)
+=== Call Details ===
+Call 0 -> Streams: QList()
+=== Stream Details ===
+Stream 1698825 -> Call: 0 , Role: "Viewer" , Status: "Inactive" - "Joined as viewer"
+=== Summary ===
+Owned Streams: 0 - QList()
+Joined Streams: 1 - QList(1698825)
+Active Streams: 0 - QList()
+Joined Calls: 0 - QList()
+=====================
+StreamManager: server stream joined - ID: 1698825
+=== StreamManager::onServerStreamJoined ===
+Stream ID: 1698825
+NetworkFacade: NetworkManager for stream 1698825 already exists
+NetworkManager created for incoming stream: 1698825
+=== MainWindow::onServerStreamJoined() START ===
+Stream ID: 1698825
+ViewerWidget not found for stream: 1698825
+Creating ViewerWidget with Display ID: "LBRSDA"
+=== VideoGridWidget::addViewerWidget() START ===
+Stream ID: 1698825 Display: "LBRSDA" Call ID: 0
+=== ViewerWidget::ViewerWidget() START ===
+Stream ID: 1698825 Display ID: "LBRSDA" Call ID: 0
+=== ViewerWidget::setupUI() START ===
+=== ViewerWidget::setupUI() END ===
+setupUI() completed
+ViewerWidget::setupConnections for "LBRSDA"
+setupConnections() completed
+=== ViewerWidget::ViewerWidget() END ===
+ViewerWidget created at: ViewerWidget(0x24e0a995040)
+=== VideoGridWidget::addViewerWidget() END ===
+Found ViewerWidget: ViewerWidget(0x24e0a995040)
+NetworkManager ptr: NetworkManager(0x24e0ae338e0)
+FrameBuffer constructed with capacity: 15
+[BufferedVideoDecoder] Created with buffer delay: 5 frames, capacity: 15
+VideoDecoder::initialize() in thread QThread(0x24e62a1a550, name = "Qt mainThread")
+? VideoDecoder optimized for low latency
+VideoDecoder initialized
+ViewerWidget connected to NetworkManager for stream: 1698825
+FrameBuffer::clear() called at address: 0x24e62a6f900 capacity: 15
+FrameBuffer::clear(): cleared 15 slots
+=== ViewerWidget::initialize() START ===
+Stream: "LBRSDA" ID: 1698825
+NetworkManager ptr: NetworkManager(0x24e0ae338e0)
+BufferedDecoder ptr: BufferedVideoDecoder(0x24e62a6f8f0)
+ViewerWidget initialized with BufferedVideoDecoder for stream: "LBRSDA"
+ViewerWidget: successfully joined stream 1698825
+ViewerWidget activated for stream: 1698825
+=== MainWindow::onServerStreamJoined() END ===
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+FecBuffer: Invalid packet type
+? UDPManager: No NetworkManager registered for stream 12345
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+? UDPManager: No NetworkManager registered for stream 12345
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+TCPManager: processing message type: "6"
+NetworkFacade: Server handshake end, connectionId: 6
+? UDPManager: No NetworkManager registered for stream 12345
+Got packet: 0
+PGB: recieved packet: 0  frame:  128
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 128 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 128 size: 11 firstBytes(hex): "00000001419b0032800cab"
+FrameBuffer: inserted frame 128 at index 8 size: 11 bytes
+[BufferedVideoDecoder] Decoding frame 128 (target: 128 , delay: 5 frames, latest: 128 )
+VideoDecoder: Skipping frame 128 - no SPS/PPS yet
+Got packet: 1
+PGB: recieved packet: 1  frame:  129
+Start. framesize: 1948
+    Storing START data, toCopy: 1179
+    Stored at index 0, packetsReceived: 1
+Got packet: 2
+PGB: recieved packet: 2  frame:  129
+    Assembling frame 129 size: 1948
+    Assembled size: 1948 expected: 1948
+DBG assembled frame 129 size: 1948 firstBytes(hex): "00000001419b202a8029fc57004e50d508f1f48c000202fb43c2290d4c3c000405e0e11486a616000202f851c1ef36e9772e977ff11e23c4788f11e23c4788f1"
+FrameBuffer: inserted frame 129 at index 9 size: 1948 bytes
+Got packet: 3
+PGB: recieved packet: 3  frame:  130
+Start. framesize: 353
+    Storing START data, toCopy: 353
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 130 size: 353
+    Assembled size: 353 expected: 353
+DBG assembled frame 130 size: 353 firstBytes(hex): "00000001419b402e8029fc57604185a8ddc025a1b70004dfec2b40030151d68e0d0006519cd203598210044225ab08b32203de1c08844b0e044225f8720306b9"
+FrameBuffer: inserted frame 130 at index 10 size: 353 bytes
+FrameBuffer: inserted frame 128 at index 8 size: 11 bytes
+FrameBuffer: inserted frame 129 at index 9 size: 1948 bytes
+FrameBuffer: inserted frame 130 at index 10 size: 353 bytes
+Got packet: 4
+FecBuffer: XOR packet received, NOT forwarding, sequence: 4
+Got packet: 5
+PGB: recieved packet: 5  frame:  131
+Start. framesize: 196
+    Storing START data, toCopy: 196
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 131 size: 196
+    Assembled size: 196 expected: 196
+DBG assembled frame 131 size: 196 firstBytes(hex): "00000001419b6032802b9c9c37dc58048396663939b81c040205a00730001803a6032ee66287f717fea2d6ae4803be272562bb29bb578986ee57573fde631a43"
+FrameBuffer: inserted frame 131 at index 11 size: 196 bytes
+Got packet: 6
+PGB: recieved packet: 6  frame:  132
+Start. framesize: 23
+    Storing START data, toCopy: 23
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 132 size: 23
+    Assembled size: 23 expected: 23
+DBG assembled frame 132 size: 23 firstBytes(hex): "00000001419b803280140f2f827f99f0069f349bc0180c"
+FrameBuffer: inserted frame 132 at index 12 size: 23 bytes
+Got packet: 7
+PGB: recieved packet: 7  frame:  133
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 133 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 133 size: 11 firstBytes(hex): "00000001419ba032800cab"
+FrameBuffer: inserted frame 133 at index 13 size: 11 bytes
+Got packet: 8
+PGB: recieved packet: 8  frame:  134
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 134 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 134 size: 11 firstBytes(hex): "00000001419bc032800cab"
+FrameBuffer: inserted frame 134 at index 14 size: 11 bytes
+FrameBuffer: inserted frame 131 at index 11 size: 196 bytes
+FrameBuffer: inserted frame 132 at index 12 size: 23 bytes
+FrameBuffer: inserted frame 133 at index 13 size: 11 bytes
+FrameBuffer: inserted frame 134 at index 14 size: 11 bytes
+Got packet: 9
+FecBuffer: XOR packet received, NOT forwarding, sequence: 9
+Got packet: 10
+PGB: recieved packet: 10  frame:  135
+Start. framesize: 65541
+    Storing START data, toCopy: 1179
+    Stored at index 0, packetsReceived: 1
+Got packet: 11
+PGB: recieved packet: 11  frame:  135
+Got packet: 12
+PGB: recieved packet: 12  frame:  135
+Got packet: 13
+PGB: recieved packet: 13  frame:  135
+Got packet: 14
+FecBuffer: XOR packet received, NOT forwarding, sequence: 14
+Got packet: 15
+PGB: recieved packet: 15  frame:  135
+Got packet: 16
+PGB: recieved packet: 16  frame:  135
+Got packet: 17
+PGB: recieved packet: 17  frame:  135
+Got packet: 18
+PGB: recieved packet: 18  frame:  135
+Got packet: 19
+FecBuffer: XOR packet received, NOT forwarding, sequence: 19
+Got packet: 20
+PGB: recieved packet: 20  frame:  135
+Got packet: 21
+PGB: recieved packet: 21  frame:  135
+Got packet: 22
+PGB: recieved packet: 22  frame:  135
+Got packet: 23
+PGB: recieved packet: 23  frame:  135
+Got packet: 24
+FecBuffer: XOR packet received, NOT forwarding, sequence: 24
+Got packet: 25
+PGB: recieved packet: 25  frame:  135
+Got packet: 26
+PGB: recieved packet: 26  frame:  135
+Got packet: 27
+PGB: recieved packet: 27  frame:  135
+Got packet: 28
+PGB: recieved packet: 28  frame:  135
+Got packet: 29
+FecBuffer: XOR packet received, NOT forwarding, sequence: 29
+Got packet: 30
+PGB: recieved packet: 30  frame:  135
+Got packet: 31
+PGB: recieved packet: 31  frame:  135
+Got packet: 32
+PGB: recieved packet: 32  frame:  135
+Got packet: 33
+PGB: recieved packet: 33  frame:  135
+Got packet: 34
+FecBuffer: XOR packet received, NOT forwarding, sequence: 34
+Got packet: 35
+PGB: recieved packet: 35  frame:  135
+Got packet: 36
+PGB: recieved packet: 36  frame:  135
+Got packet: 37
+PGB: recieved packet: 37  frame:  135
+Got packet: 38
+PGB: recieved packet: 38  frame:  135
+Got packet: 39
+FecBuffer: XOR packet received, NOT forwarding, sequence: 39
+Got packet: 40
+PGB: recieved packet: 40  frame:  135
+Got packet: 41
+PGB: recieved packet: 41  frame:  135
+Got packet: 42
+PGB: recieved packet: 42  frame:  135
+Got packet: 43
+PGB: recieved packet: 43  frame:  135
+Got packet: 44
+FecBuffer: XOR packet received, NOT forwarding, sequence: 44
+Got packet: 45
+PGB: recieved packet: 45  frame:  135
+Got packet: 46
+PGB: recieved packet: 46  frame:  135
+Got packet: 47
+PGB: recieved packet: 47  frame:  135
+Got packet: 48
+PGB: recieved packet: 48  frame:  135
+Got packet: 49
+FecBuffer: XOR packet received, NOT forwarding, sequence: 49
+Got packet: 50
+PGB: recieved packet: 50  frame:  135
+Got packet: 51
+PGB: recieved packet: 51  frame:  135
+Got packet: 52
+PGB: recieved packet: 52  frame:  135
+Got packet: 53
+PGB: recieved packet: 53  frame:  135
+Got packet: 54
+FecBuffer: XOR packet received, NOT forwarding, sequence: 54
+Got packet: 55
+PGB: recieved packet: 55  frame:  135
+Got packet: 56
+PGB: recieved packet: 56  frame:  135
+Got packet: 57
+PGB: recieved packet: 57  frame:  135
+Got packet: 58
+PGB: recieved packet: 58  frame:  135
+Got packet: 59
+FecBuffer: XOR packet received, NOT forwarding, sequence: 59
+Got packet: 60
+PGB: recieved packet: 60  frame:  135
+Got packet: 61
+PGB: recieved packet: 61  frame:  135
+Got packet: 62
+PGB: recieved packet: 62  frame:  135
+Got packet: 63
+PGB: recieved packet: 63  frame:  135
+Got packet: 64
+FecBuffer: XOR packet received, NOT forwarding, sequence: 64
+Got packet: 65
+PGB: recieved packet: 65  frame:  135
+Got packet: 66
+PGB: recieved packet: 66  frame:  135
+Got packet: 67
+PGB: recieved packet: 67  frame:  135
+Got packet: 68
+PGB: recieved packet: 68  frame:  135
+Got packet: 69
+FecBuffer: XOR packet received, NOT forwarding, sequence: 69
+Got packet: 70
+PGB: recieved packet: 70  frame:  135
+Got packet: 71
+PGB: recieved packet: 71  frame:  135
+Got packet: 72
+PGB: recieved packet: 72  frame:  135
+Got packet: 73
+PGB: recieved packet: 73  frame:  135
+Got packet: 74
+FecBuffer: XOR packet received, NOT forwarding, sequence: 74
+Got packet: 75
+PGB: recieved packet: 75  frame:  135
+Got packet: 76
+PGB: recieved packet: 76  frame:  135
+Got packet: 77
+PGB: recieved packet: 77  frame:  135
+Got packet: 78
+PGB: recieved packet: 78  frame:  135
+    Assembling frame 135 size: 65541
+    Assembled size: 65541 expected: 65541
+DBG assembled frame 135 size: 65541 firstBytes(hex): "000000016742c01eda0360f79b840000030004000003007a3c58ba800000000168ce1f2000000165888203a8318002000080f0340ff0647fa6aa8f52a790b838"
+FrameBuffer: inserted frame 135 at index 0 size: 65541 bytes
+FrameBuffer: inserted frame 135 at index 0 size: 65541 bytes
+Got packet: 79
+FecBuffer: XOR packet received, NOT forwarding, sequence: 79
+Got packet: 80
+PGB: recieved packet: 80  frame:  136
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 136 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 136 size: 11 firstBytes(hex): "00000001419a205a0032ac"
+FrameBuffer: inserted frame 136 at index 1 size: 11 bytes
+FrameBuffer: inserted frame 136 at index 1 size: 11 bytes
+Got packet: 81
+PGB: recieved packet: 81  frame:  137
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 137 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 137 size: 11 firstBytes(hex): "00000001419a407a0032ac"
+FrameBuffer: inserted frame 137 at index 2 size: 11 bytes
+FrameBuffer: inserted frame 137 at index 2 size: 11 bytes
+Got packet: 82
+PGB: recieved packet: 82  frame:  138
+Start. framesize: 20
+    Storing START data, toCopy: 20
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 138 size: 20
+    Assembled size: 20 expected: 20
+DBG assembled frame 138 size: 20 firstBytes(hex): "00000001419a6026807af17dd755002abf5944c0"
+FrameBuffer: inserted frame 138 at index 3 size: 20 bytes
+FrameBuffer: inserted frame 138 at index 3 size: 20 bytes
+Got packet: 613
+PGB: recieved packet: 613  frame:  233
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 233 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 233 size: 11 firstBytes(hex): "00000001419b0032800cab"
+FrameBuffer: inserted frame 233 at index 8 size: 11 bytes
+FrameBuffer: inserted frame 233 at index 8 size: 11 bytes
+Got packet: 614
+FecBuffer: XOR packet received, NOT forwarding, sequence: 614
+Got packet: 615
+PGB: recieved packet: 615  frame:  234
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 234 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 234 size: 11 firstBytes(hex): "00000001419b2032800cab"
+FrameBuffer: inserted frame 234 at index 9 size: 11 bytes
+FrameBuffer: inserted frame 234 at index 9 size: 11 bytes
+Got packet: 701
+PGB: recieved packet: 701  frame:  248
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 248 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 248 size: 11 firstBytes(hex): "00000001419b0032800cab"
+FrameBuffer: inserted frame 248 at index 8 size: 11 bytes
+FrameBuffer: inserted frame 248 at index 8 size: 11 bytes
+Got packet: 702
+PGB: recieved packet: 702  frame:  249
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 249 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 249 size: 11 firstBytes(hex): "00000001419b2032800cab"
+FrameBuffer: inserted frame 249 at index 9 size: 11 bytes
+FrameBuffer: inserted frame 249 at index 9 size: 11 bytes
+Got packet: 703
+PGB: recieved packet: 703  frame:  250
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 250 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 250 size: 11 firstBytes(hex): "00000001419b4032800cab"
+FrameBuffer: inserted frame 250 at index 10 size: 11 bytes
+FrameBuffer: inserted frame 250 at index 10 size: 11 bytes
+Got packet: 704
+FecBuffer: XOR packet received, NOT forwarding, sequence: 704
+FecBuffer: Group 140 can be recovered, attempting recovery
+FecBuffer: Recovering packet in group 140 missing index: 0
+PGB: recieved packet: 700  frame:  247
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 247 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 247 size: 11 firstBytes(hex): "00000001419ae032800cab"
+FrameBuffer: inserted frame 247 at index 7 size: 11 bytes
+NetworkManager: Packet recovered by FEC, sequence: 700
+FecBuffer: Successfully recovered packet - sequence: 700 type: 1
+FrameBuffer: inserted frame 247 at index 7 size: 11 bytes
+Got packet: 705
+PGB: recieved packet: 705  frame:  251
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 251 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 251 size: 11 firstBytes(hex): "00000001419b6032800cab"
+FrameBuffer: inserted frame 251 at index 11 size: 11 bytes
+FrameBuffer: inserted frame 251 at index 11 size: 11 bytes
+Got packet: 706
+PGB: recieved packet: 706  frame:  252
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 252 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 252 size: 11 firstBytes(hex): "00000001419b8032800cab"
+FrameBuffer: inserted frame 252 at index 12 size: 11 bytes
+FrameBuffer: inserted frame 252 at index 12 size: 11 bytes
+Got packet: 707
+PGB: recieved packet: 707  frame:  253
+Start. framesize: 107
+    Storing START data, toCopy: 107
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 253 size: 107
+    Assembled size: 107 expected: 107
+DBG assembled frame 253 size: 107 firstBytes(hex): "00000001419ba03680249c4757ddc04b754c817f5314bc9969813bbf2b023a9a9c28bfffc008a35d7fdf35ebcff83ef373d0f41dcd77c37d4c2817396b581839"
+FrameBuffer: inserted frame 253 at index 13 size: 107 bytes
+FrameBuffer: inserted frame 253 at index 13 size: 107 bytes
+Got packet: 708
+PGB: recieved packet: 708  frame:  254
+Start. framesize: 57
+    Storing START data, toCopy: 57
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 254 size: 57
+    Assembled size: 57 expected: 57
+DBG assembled frame 254 size: 57 firstBytes(hex): "00000001419bc03680249c9d5404b754a80488517fff801146baffbe6bd79ff07c021b96f7818397bb823ea6140172f777c477bdc572f57150"
+FrameBuffer: inserted frame 254 at index 14 size: 57 bytes
+FrameBuffer: inserted frame 254 at index 14 size: 57 bytes
+Got packet: 709
+FecBuffer: XOR packet received, NOT forwarding, sequence: 709
+Got packet: 710
+PGB: recieved packet: 710  frame:  255
+Start. framesize: 65622
+    Storing START data, toCopy: 1179
+    Stored at index 0, packetsReceived: 1
+Got packet: 711
+PGB: recieved packet: 711  frame:  255
+Got packet: 712
+PGB: recieved packet: 712  frame:  255
+Got packet: 713
+PGB: recieved packet: 713  frame:  255
+Got packet: 714
+FecBuffer: XOR packet received, NOT forwarding, sequence: 714
+Got packet: 715
+PGB: recieved packet: 715  frame:  255
+Got packet: 716
+PGB: recieved packet: 716  frame:  255
+Got packet: 717
+PGB: recieved packet: 717  frame:  255
+Got packet: 718
+PGB: recieved packet: 718  frame:  255
+Got packet: 719
+FecBuffer: XOR packet received, NOT forwarding, sequence: 719
+Got packet: 720
+PGB: recieved packet: 720  frame:  255
+Got packet: 721
+PGB: recieved packet: 721  frame:  255
+Got packet: 722
+PGB: recieved packet: 722  frame:  255
+Got packet: 723
+PGB: recieved packet: 723  frame:  255
+Got packet: 724
+FecBuffer: XOR packet received, NOT forwarding, sequence: 724
+Got packet: 725
+PGB: recieved packet: 725  frame:  255
+Got packet: 726
+PGB: recieved packet: 726  frame:  255
+Got packet: 727
+PGB: recieved packet: 727  frame:  255
+Got packet: 728
+PGB: recieved packet: 728  frame:  255
+Got packet: 729
+FecBuffer: XOR packet received, NOT forwarding, sequence: 729
+Got packet: 730
+PGB: recieved packet: 730  frame:  255
+Got packet: 731
+PGB: recieved packet: 731  frame:  255
+Got packet: 732
+PGB: recieved packet: 732  frame:  255
+Got packet: 733
+PGB: recieved packet: 733  frame:  255
+Got packet: 734
+FecBuffer: XOR packet received, NOT forwarding, sequence: 734
+Got packet: 735
+PGB: recieved packet: 735  frame:  255
+Got packet: 736
+PGB: recieved packet: 736  frame:  255
+Got packet: 737
+PGB: recieved packet: 737  frame:  255
+Got packet: 738
+PGB: recieved packet: 738  frame:  255
+Got packet: 739
+FecBuffer: XOR packet received, NOT forwarding, sequence: 739
+Got packet: 740
+PGB: recieved packet: 740  frame:  255
+Got packet: 741
+PGB: recieved packet: 741  frame:  255
+Got packet: 742
+PGB: recieved packet: 742  frame:  255
+Got packet: 743
+PGB: recieved packet: 743  frame:  255
+Got packet: 744
+FecBuffer: XOR packet received, NOT forwarding, sequence: 744
+Got packet: 745
+PGB: recieved packet: 745  frame:  255
+Got packet: 746
+PGB: recieved packet: 746  frame:  255
+Got packet: 747
+PGB: recieved packet: 747  frame:  255
+Got packet: 748
+PGB: recieved packet: 748  frame:  255
+Got packet: 749
+FecBuffer: XOR packet received, NOT forwarding, sequence: 749
+Got packet: 750
+PGB: recieved packet: 750  frame:  255
+Got packet: 751
+PGB: recieved packet: 751  frame:  255
+Got packet: 752
+PGB: recieved packet: 752  frame:  255
+Got packet: 753
+PGB: recieved packet: 753  frame:  255
+Got packet: 754
+FecBuffer: XOR packet received, NOT forwarding, sequence: 754
+Got packet: 755
+PGB: recieved packet: 755  frame:  255
+Got packet: 756
+PGB: recieved packet: 756  frame:  255
+Got packet: 757
+PGB: recieved packet: 757  frame:  255
+Got packet: 758
+PGB: recieved packet: 758  frame:  255
+Got packet: 759
+FecBuffer: XOR packet received, NOT forwarding, sequence: 759
+Got packet: 760
+PGB: recieved packet: 760  frame:  255
+Got packet: 761
+PGB: recieved packet: 761  frame:  255
+Got packet: 762
+PGB: recieved packet: 762  frame:  255
+Got packet: 763
+PGB: recieved packet: 763  frame:  255
+Got packet: 764
+FecBuffer: XOR packet received, NOT forwarding, sequence: 764
+Got packet: 765
+PGB: recieved packet: 765  frame:  255
+Got packet: 766
+PGB: recieved packet: 766  frame:  255
+Got packet: 767
+PGB: recieved packet: 767  frame:  255
+Got packet: 768
+PGB: recieved packet: 768  frame:  255
+Got packet: 769
+FecBuffer: XOR packet received, NOT forwarding, sequence: 769
+Got packet: 770
+PGB: recieved packet: 770  frame:  255
+Got packet: 771
+PGB: recieved packet: 771  frame:  255
+Got packet: 772
+PGB: recieved packet: 772  frame:  255
+Got packet: 773
+PGB: recieved packet: 773  frame:  255
+Got packet: 774
+FecBuffer: XOR packet received, NOT forwarding, sequence: 774
+Got packet: 775
+PGB: recieved packet: 775  frame:  255
+Got packet: 776
+PGB: recieved packet: 776  frame:  255
+Got packet: 777
+PGB: recieved packet: 777  frame:  255
+Got packet: 778
+PGB: recieved packet: 778  frame:  255
+    Assembling frame 255 size: 65622
+    Assembled size: 65622 expected: 65622
+DBG assembled frame 255 size: 65622 firstBytes(hex): "000000016742c01eda0360f79b840000030004000003007a3c58ba800000000168ce1f2000000165888203a8318002000080f0340ff0647fa6aa8f52a790b838"
+FrameBuffer: inserted frame 255 at index 0 size: 65622 bytes
+Got packet: 779
+FecBuffer: XOR packet received, NOT forwarding, sequence: 779
+FrameBuffer: inserted frame 255 at index 0 size: 65622 bytes
+Got packet: 780
+PGB: recieved packet: 780  frame:  256
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 256 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 256 size: 11 firstBytes(hex): "00000001419a205a0032ac"
+FrameBuffer: inserted frame 256 at index 1 size: 11 bytes
+FrameBuffer: inserted frame 256 at index 1 size: 11 bytes
+Got packet: 781
+PGB: recieved packet: 781  frame:  257
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 257 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 257 size: 11 firstBytes(hex): "00000001419a407a0032ac"
+FrameBuffer: inserted frame 257 at index 2 size: 11 bytes
+FrameBuffer: inserted frame 257 at index 2 size: 11 bytes
+Got packet: 782
+PGB: recieved packet: 782  frame:  258
+Start. framesize: 20
+    Storing START data, toCopy: 20
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 258 size: 20
+    Assembled size: 20 expected: 20
+DBG assembled frame 258 size: 20 firstBytes(hex): "00000001419a6026807af17dd755002abf5944c0"
+FrameBuffer: inserted frame 258 at index 3 size: 20 bytes
+FrameBuffer: inserted frame 258 at index 3 size: 20 bytes
+Got packet: 783
+PGB: recieved packet: 783  frame:  259
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 259 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 259 size: 11 firstBytes(hex): "00000001419a802a800cab"
+FrameBuffer: inserted frame 259 at index 4 size: 11 bytes
+FrameBuffer: inserted frame 259 at index 4 size: 11 bytes
+Got packet: 784
+FecBuffer: XOR packet received, NOT forwarding, sequence: 784
+Got packet: 785
+PGB: recieved packet: 785  frame:  260
+Start. framesize: 43
+    Storing START data, toCopy: 43
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 260 size: 43
+    Assembled size: 43 expected: 43
+DBG assembled frame 260 size: 43 firstBytes(hex): "00000001419aa02e802b9cdad40b7c955c07ef36f70137ddef021f2ddf008ef2f550d77d54027a21604f80"
+FrameBuffer: inserted frame 260 at index 5 size: 43 bytes
+FrameBuffer: inserted frame 260 at index 5 size: 43 bytes
+Got packet: 786
+PGB: recieved packet: 786  frame:  261
+Start. framesize: 57
+    Storing START data, toCopy: 57
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 261 size: 57
+    Assembled size: 57 expected: 57
+DBG assembled frame 261 size: 57 firstBytes(hex): "00000001419ac0328bcd7dcbd4a280443b8bf03f72f7500a8754e825dd6f055d522053c9ad402e1cb5bc02e3cb5dc31cdddd72f552751da260"
+FrameBuffer: inserted frame 261 at index 6 size: 57 bytes
+FrameBuffer: inserted frame 261 at index 6 size: 57 bytes
+Got packet: 787
+PGB: recieved packet: 787  frame:  262
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 262 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 262 size: 11 firstBytes(hex): "00000001419ae032800cab"
+FrameBuffer: inserted frame 262 at index 7 size: 11 bytes
+FrameBuffer: inserted frame 262 at index 7 size: 11 bytes
+Got packet: 788
+PGB: recieved packet: 788  frame:  263
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 263 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 263 size: 11 firstBytes(hex): "00000001419b0032800cab"
+FrameBuffer: inserted frame 263 at index 8 size: 11 bytes
+Got packet: 789
+FecBuffer: XOR packet received, NOT forwarding, sequence: 789
+FrameBuffer: inserted frame 263 at index 8 size: 11 bytes
+Got packet: 790
+PGB: recieved packet: 790  frame:  264
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 264 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 264 size: 11 firstBytes(hex): "00000001419b2032800cab"
+FrameBuffer: inserted frame 264 at index 9 size: 11 bytes
+FrameBuffer: inserted frame 264 at index 9 size: 11 bytes
+Got packet: 791
+PGB: recieved packet: 791  frame:  265
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 265 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 265 size: 11 firstBytes(hex): "00000001419b4032800cab"
+FrameBuffer: inserted frame 265 at index 10 size: 11 bytes
+FrameBuffer: inserted frame 265 at index 10 size: 11 bytes
+Got packet: 792
+PGB: recieved packet: 792  frame:  266
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 266 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 266 size: 11 firstBytes(hex): "00000001419b6032800cab"
+FrameBuffer: inserted frame 266 at index 11 size: 11 bytes
+FrameBuffer: inserted frame 266 at index 11 size: 11 bytes
+Got packet: 793
+PGB: recieved packet: 793  frame:  267
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 267 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 267 size: 11 firstBytes(hex): "00000001419b8032800cab"
+FrameBuffer: inserted frame 267 at index 12 size: 11 bytes
+Got packet: 794
+FecBuffer: XOR packet received, NOT forwarding, sequence: 794
+FrameBuffer: inserted frame 267 at index 12 size: 11 bytes
+Got packet: 795
+PGB: recieved packet: 795  frame:  268
+Start. framesize: 107
+    Storing START data, toCopy: 107
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 268 size: 107
+    Assembled size: 107 expected: 107
+DBG assembled frame 268 size: 107 firstBytes(hex): "00000001419ba03680249c4757ddc04b754c817f5314bc9969813bbf2b023a9a9c28bfffc008a35d7fdf35ebcff83ef373d0f41dcd77c37d4c2817396b581839"
+FrameBuffer: inserted frame 268 at index 13 size: 107 bytes
+FrameBuffer: inserted frame 268 at index 13 size: 107 bytes
+Got packet: 796
+PGB: recieved packet: 796  frame:  269
+Start. framesize: 57
+    Storing START data, toCopy: 57
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 269 size: 57
+    Assembled size: 57 expected: 57
+DBG assembled frame 269 size: 57 firstBytes(hex): "00000001419bc03680249c9d5404b754a80488517fff801146baffbe6bd79ff07c021b96f7818397bb823ea6140172f777c477bdc572f57150"
+FrameBuffer: inserted frame 269 at index 14 size: 57 bytes
+FrameBuffer: inserted frame 269 at index 14 size: 57 bytes
+Got packet: 797
+PGB: recieved packet: 797  frame:  270
+Start. framesize: 65620
+    Storing START data, toCopy: 1179
+    Stored at index 0, packetsReceived: 1
+Got packet: 798
+PGB: recieved packet: 798  frame:  270
+Got packet: 799
+FecBuffer: XOR packet received, NOT forwarding, sequence: 799
+Got packet: 800
+PGB: recieved packet: 800  frame:  270
+Got packet: 801
+PGB: recieved packet: 801  frame:  270
+Got packet: 802
+PGB: recieved packet: 802  frame:  270
+Got packet: 803
+PGB: recieved packet: 803  frame:  270
+Got packet: 804
+FecBuffer: XOR packet received, NOT forwarding, sequence: 804
+Got packet: 805
+PGB: recieved packet: 805  frame:  270
+Got packet: 806
+PGB: recieved packet: 806  frame:  270
+Got packet: 807
+PGB: recieved packet: 807  frame:  270
+Got packet: 808
+PGB: recieved packet: 808  frame:  270
+Got packet: 809
+FecBuffer: XOR packet received, NOT forwarding, sequence: 809
+Got packet: 810
+PGB: recieved packet: 810  frame:  270
+Got packet: 811
+PGB: recieved packet: 811  frame:  270
+Got packet: 812
+PGB: recieved packet: 812  frame:  270
+Got packet: 813
+PGB: recieved packet: 813  frame:  270
+Got packet: 814
+FecBuffer: XOR packet received, NOT forwarding, sequence: 814
+Got packet: 815
+PGB: recieved packet: 815  frame:  270
+Got packet: 816
+PGB: recieved packet: 816  frame:  270
+Got packet: 817
+PGB: recieved packet: 817  frame:  270
+Got packet: 818
+PGB: recieved packet: 818  frame:  270
+Got packet: 819
+FecBuffer: XOR packet received, NOT forwarding, sequence: 819
+Got packet: 820
+PGB: recieved packet: 820  frame:  270
+Got packet: 821
+PGB: recieved packet: 821  frame:  270
+Got packet: 822
+PGB: recieved packet: 822  frame:  270
+Got packet: 823
+PGB: recieved packet: 823  frame:  270
+Got packet: 824
+FecBuffer: XOR packet received, NOT forwarding, sequence: 824
+Got packet: 825
+PGB: recieved packet: 825  frame:  270
+Got packet: 826
+PGB: recieved packet: 826  frame:  270
+Got packet: 827
+PGB: recieved packet: 827  frame:  270
+Got packet: 828
+PGB: recieved packet: 828  frame:  270
+Got packet: 829
+FecBuffer: XOR packet received, NOT forwarding, sequence: 829
+Got packet: 830
+PGB: recieved packet: 830  frame:  270
+Got packet: 831
+PGB: recieved packet: 831  frame:  270
+Got packet: 832
+PGB: recieved packet: 832  frame:  270
+Got packet: 833
+PGB: recieved packet: 833  frame:  270
+Got packet: 834
+FecBuffer: XOR packet received, NOT forwarding, sequence: 834
+Got packet: 835
+PGB: recieved packet: 835  frame:  270
+Got packet: 836
+PGB: recieved packet: 836  frame:  270
+Got packet: 837
+PGB: recieved packet: 837  frame:  270
+Got packet: 838
+PGB: recieved packet: 838  frame:  270
+Got packet: 839
+FecBuffer: XOR packet received, NOT forwarding, sequence: 839
+Got packet: 840
+PGB: recieved packet: 840  frame:  270
+Got packet: 841
+PGB: recieved packet: 841  frame:  270
+Got packet: 842
+PGB: recieved packet: 842  frame:  270
+Got packet: 843
+PGB: recieved packet: 843  frame:  270
+Got packet: 844
+FecBuffer: XOR packet received, NOT forwarding, sequence: 844
+Got packet: 845
+PGB: recieved packet: 845  frame:  270
+Got packet: 846
+PGB: recieved packet: 846  frame:  270
+Got packet: 847
+PGB: recieved packet: 847  frame:  270
+Got packet: 848
+PGB: recieved packet: 848  frame:  270
+Got packet: 849
+FecBuffer: XOR packet received, NOT forwarding, sequence: 849
+Got packet: 850
+PGB: recieved packet: 850  frame:  270
+Got packet: 851
+PGB: recieved packet: 851  frame:  270
+Got packet: 852
+PGB: recieved packet: 852  frame:  270
+Got packet: 853
+PGB: recieved packet: 853  frame:  270
+Got packet: 854
+FecBuffer: XOR packet received, NOT forwarding, sequence: 854
+Got packet: 855
+PGB: recieved packet: 855  frame:  270
+Got packet: 856
+PGB: recieved packet: 856  frame:  270
+Got packet: 857
+PGB: recieved packet: 857  frame:  270
+Got packet: 858
+PGB: recieved packet: 858  frame:  270
+Got packet: 859
+FecBuffer: XOR packet received, NOT forwarding, sequence: 859
+Got packet: 860
+PGB: recieved packet: 860  frame:  270
+Got packet: 861
+PGB: recieved packet: 861  frame:  270
+Got packet: 862
+PGB: recieved packet: 862  frame:  270
+Got packet: 863
+PGB: recieved packet: 863  frame:  270
+Got packet: 864
+FecBuffer: XOR packet received, NOT forwarding, sequence: 864
+Got packet: 865
+PGB: recieved packet: 865  frame:  270
+Got packet: 866
+PGB: recieved packet: 866  frame:  270
+    Assembling frame 270 size: 65620
+    Assembled size: 65620 expected: 65620
+DBG assembled frame 270 size: 65620 firstBytes(hex): "000000016742c01eda0360f79b840000030004000003007a3c58ba800000000168ce1f200000016588840ea0c60008000203c0d03fc191fe9aaa3d4a9e42e0e0"
+FrameBuffer: inserted frame 270 at index 0 size: 65620 bytes
+FrameBuffer: inserted frame 270 at index 0 size: 65620 bytes
+ViewerWidget: Added frame 270 size: 65620 bytes to decoder for stream: "LBRSDA"
+Got packet: 867
+PGB: recieved packet: 867  frame:  271
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 271 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 271 size: 11 firstBytes(hex): "00000001419a205a0032ac"
+FrameBuffer: inserted frame 271 at index 1 size: 11 bytes
+FrameBuffer: inserted frame 271 at index 1 size: 11 bytes
+Got packet: 868
+PGB: recieved packet: 868  frame:  272
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 272 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 272 size: 11 firstBytes(hex): "00000001419a407a0032ac"
+FrameBuffer: inserted frame 272 at index 2 size: 11 bytes
+Got packet: 869
+FecBuffer: XOR packet received, NOT forwarding, sequence: 869
+FrameBuffer: inserted frame 272 at index 2 size: 11 bytes
+Got packet: 870
+PGB: recieved packet: 870  frame:  273
+Start. framesize: 20
+    Storing START data, toCopy: 20
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 273 size: 20
+    Assembled size: 20 expected: 20
+DBG assembled frame 273 size: 20 firstBytes(hex): "00000001419a6026807af17dd755002abf5944c0"
+FrameBuffer: inserted frame 273 at index 3 size: 20 bytes
+FrameBuffer: inserted frame 273 at index 3 size: 20 bytes
+Got packet: 871
+PGB: recieved packet: 871  frame:  274
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 274 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 274 size: 11 firstBytes(hex): "00000001419a802a800cab"
+FrameBuffer: inserted frame 274 at index 4 size: 11 bytes
+FrameBuffer: inserted frame 274 at index 4 size: 11 bytes
+Got packet: 872
+PGB: recieved packet: 872  frame:  275
+Start. framesize: 43
+    Storing START data, toCopy: 43
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 275 size: 43
+    Assembled size: 43 expected: 43
+DBG assembled frame 275 size: 43 firstBytes(hex): "00000001419aa02e802b9cdad40b7c955c07ef36f70137ddef021f2ddf008ef2f550d77d54027a21604f80"
+FrameBuffer: inserted frame 275 at index 5 size: 43 bytes
+FrameBuffer: inserted frame 275 at index 5 size: 43 bytes
+Got packet: 873
+PGB: recieved packet: 873  frame:  276
+Start. framesize: 57
+    Storing START data, toCopy: 57
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 276 size: 57
+    Assembled size: 57 expected: 57
+DBG assembled frame 276 size: 57 firstBytes(hex): "00000001419ac0328bcd7dcbd4a280443b8bf03f72f7500a8754e825dd6f055d522053c9ad402e1cb5bc02e3cb5dc31cdddd72f552751da260"
+FrameBuffer: inserted frame 276 at index 6 size: 57 bytes
+FrameBuffer: inserted frame 276 at index 6 size: 57 bytes
+Got packet: 874
+FecBuffer: XOR packet received, NOT forwarding, sequence: 874
+Got packet: 875
+PGB: recieved packet: 875  frame:  277
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 277 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 277 size: 11 firstBytes(hex): "00000001419ae032800cab"
+FrameBuffer: inserted frame 277 at index 7 size: 11 bytes
+FrameBuffer: inserted frame 277 at index 7 size: 11 bytes
+Got packet: 876
+PGB: recieved packet: 876  frame:  278
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 278 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 278 size: 11 firstBytes(hex): "00000001419b0032800cab"
+FrameBuffer: inserted frame 278 at index 8 size: 11 bytes
+FrameBuffer: inserted frame 278 at index 8 size: 11 bytes
+Got packet: 877
+PGB: recieved packet: 877  frame:  279
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 279 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 279 size: 11 firstBytes(hex): "00000001419b2032800cab"
+FrameBuffer: inserted frame 279 at index 9 size: 11 bytes
+FrameBuffer: inserted frame 279 at index 9 size: 11 bytes
+Got packet: 878
+PGB: recieved packet: 878  frame:  280
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 280 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 280 size: 11 firstBytes(hex): "00000001419b4032800cab"
+FrameBuffer: inserted frame 280 at index 10 size: 11 bytes
+FrameBuffer: inserted frame 280 at index 10 size: 11 bytes
+Got packet: 879
+FecBuffer: XOR packet received, NOT forwarding, sequence: 879
+Got packet: 880
+PGB: recieved packet: 880  frame:  281
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 281 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 281 size: 11 firstBytes(hex): "00000001419b6032800cab"
+FrameBuffer: inserted frame 281 at index 11 size: 11 bytes
+FrameBuffer: inserted frame 281 at index 11 size: 11 bytes
+Got packet: 881
+PGB: recieved packet: 881  frame:  282
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 282 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 282 size: 11 firstBytes(hex): "00000001419b8032800cab"
+FrameBuffer: inserted frame 282 at index 12 size: 11 bytes
+FrameBuffer: inserted frame 282 at index 12 size: 11 bytes
+Got packet: 882
+PGB: recieved packet: 882  frame:  283
+Start. framesize: 107
+    Storing START data, toCopy: 107
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 283 size: 107
+    Assembled size: 107 expected: 107
+DBG assembled frame 283 size: 107 firstBytes(hex): "00000001419ba03680249c4757ddc04b754c817f5314bc9969813bbf2b023a9a9c28bfffc008a35d7fdf35ebcff83ef373d0f41dcd77c37d4c2817396b581839"
+FrameBuffer: inserted frame 283 at index 13 size: 107 bytes
+FrameBuffer: inserted frame 283 at index 13 size: 107 bytes
+Got packet: 883
+PGB: recieved packet: 883  frame:  284
+Start. framesize: 57
+    Storing START data, toCopy: 57
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 284 size: 57
+    Assembled size: 57 expected: 57
+DBG assembled frame 284 size: 57 firstBytes(hex): "00000001419bc03680249c9d5404b754a80488517fff801146baffbe6bd79ff07c021b96f7818397bb823ea6140172f777c477bdc572f57150"
+FrameBuffer: inserted frame 284 at index 14 size: 57 bytes
+Got packet: 884
+FecBuffer: XOR packet received, NOT forwarding, sequence: 884
+FrameBuffer: inserted frame 284 at index 14 size: 57 bytes
+Got packet: 885
+PGB: recieved packet: 885  frame:  285
+Start. framesize: 65622
+    Storing START data, toCopy: 1179
+    Stored at index 0, packetsReceived: 1
+Got packet: 886
+PGB: recieved packet: 886  frame:  285
+Got packet: 887
+PGB: recieved packet: 887  frame:  285
+Got packet: 888
+PGB: recieved packet: 888  frame:  285
+Got packet: 889
+FecBuffer: XOR packet received, NOT forwarding, sequence: 889
+Got packet: 890
+PGB: recieved packet: 890  frame:  285
+Got packet: 891
+PGB: recieved packet: 891  frame:  285
+Got packet: 892
+PGB: recieved packet: 892  frame:  285
+Got packet: 893
+PGB: recieved packet: 893  frame:  285
+Got packet: 894
+FecBuffer: XOR packet received, NOT forwarding, sequence: 894
+Got packet: 895
+PGB: recieved packet: 895  frame:  285
+Got packet: 896
+PGB: recieved packet: 896  frame:  285
+Got packet: 897
+PGB: recieved packet: 897  frame:  285
+Got packet: 898
+PGB: recieved packet: 898  frame:  285
+Got packet: 899
+FecBuffer: XOR packet received, NOT forwarding, sequence: 899
+Got packet: 900
+PGB: recieved packet: 900  frame:  285
+Got packet: 901
+PGB: recieved packet: 901  frame:  285
+Got packet: 902
+PGB: recieved packet: 902  frame:  285
+Got packet: 903
+PGB: recieved packet: 903  frame:  285
+Got packet: 904
+FecBuffer: XOR packet received, NOT forwarding, sequence: 904
+Got packet: 905
+PGB: recieved packet: 905  frame:  285
+Got packet: 906
+PGB: recieved packet: 906  frame:  285
+Got packet: 907
+PGB: recieved packet: 907  frame:  285
+Got packet: 908
+PGB: recieved packet: 908  frame:  285
+Got packet: 909
+FecBuffer: XOR packet received, NOT forwarding, sequence: 909
+Got packet: 910
+PGB: recieved packet: 910  frame:  285
+Got packet: 911
+PGB: recieved packet: 911  frame:  285
+Got packet: 912
+PGB: recieved packet: 912  frame:  285
+Got packet: 913
+PGB: recieved packet: 913  frame:  285
+Got packet: 914
+FecBuffer: XOR packet received, NOT forwarding, sequence: 914
+Got packet: 915
+PGB: recieved packet: 915  frame:  285
+Got packet: 916
+PGB: recieved packet: 916  frame:  285
+Got packet: 917
+PGB: recieved packet: 917  frame:  285
+Got packet: 918
+PGB: recieved packet: 918  frame:  285
+Got packet: 919
+FecBuffer: XOR packet received, NOT forwarding, sequence: 919
+Got packet: 920
+PGB: recieved packet: 920  frame:  285
+Got packet: 921
+PGB: recieved packet: 921  frame:  285
+Got packet: 922
+PGB: recieved packet: 922  frame:  285
+Got packet: 923
+PGB: recieved packet: 923  frame:  285
+Got packet: 924
+FecBuffer: XOR packet received, NOT forwarding, sequence: 924
+Got packet: 925
+PGB: recieved packet: 925  frame:  285
+Got packet: 926
+PGB: recieved packet: 926  frame:  285
+Got packet: 927
+PGB: recieved packet: 927  frame:  285
+Got packet: 928
+PGB: recieved packet: 928  frame:  285
+Got packet: 929
+FecBuffer: XOR packet received, NOT forwarding, sequence: 929
+Got packet: 930
+PGB: recieved packet: 930  frame:  285
+Got packet: 931
+PGB: recieved packet: 931  frame:  285
+Got packet: 932
+PGB: recieved packet: 932  frame:  285
+Got packet: 933
+PGB: recieved packet: 933  frame:  285
+Got packet: 934
+FecBuffer: XOR packet received, NOT forwarding, sequence: 934
+Got packet: 935
+PGB: recieved packet: 935  frame:  285
+Got packet: 936
+PGB: recieved packet: 936  frame:  285
+Got packet: 937
+PGB: recieved packet: 937  frame:  285
+Got packet: 938
+PGB: recieved packet: 938  frame:  285
+Got packet: 939
+FecBuffer: XOR packet received, NOT forwarding, sequence: 939
+Got packet: 940
+PGB: recieved packet: 940  frame:  285
+Got packet: 941
+PGB: recieved packet: 941  frame:  285
+Got packet: 942
+PGB: recieved packet: 942  frame:  285
+Got packet: 943
+PGB: recieved packet: 943  frame:  285
+Got packet: 944
+FecBuffer: XOR packet received, NOT forwarding, sequence: 944
+Got packet: 945
+PGB: recieved packet: 945  frame:  285
+Got packet: 946
+PGB: recieved packet: 946  frame:  285
+Got packet: 947
+PGB: recieved packet: 947  frame:  285
+Got packet: 948
+PGB: recieved packet: 948  frame:  285
+Got packet: 949
+FecBuffer: XOR packet received, NOT forwarding, sequence: 949
+Got packet: 950
+PGB: recieved packet: 950  frame:  285
+Got packet: 951
+PGB: recieved packet: 951  frame:  285
+Got packet: 952
+PGB: recieved packet: 952  frame:  285
+Got packet: 953
+PGB: recieved packet: 953  frame:  285
+    Assembling frame 285 size: 65622
+    Assembled size: 65622 expected: 65622
+DBG assembled frame 285 size: 65622 firstBytes(hex): "000000016742c01eda0360f79b840000030004000003007a3c58ba800000000168ce1f2000000165888203a8318002000080f0340ff0647fa6aa8f52a790b838"
+FrameBuffer: inserted frame 285 at index 0 size: 65622 bytes
+FrameBuffer: inserted frame 285 at index 0 size: 65622 bytes
+Got packet: 954
+FecBuffer: XOR packet received, NOT forwarding, sequence: 954
+Got packet: 955
+PGB: recieved packet: 955  frame:  286
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 286 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 286 size: 11 firstBytes(hex): "00000001419a205a0032ac"
+FrameBuffer: inserted frame 286 at index 1 size: 11 bytes
+FrameBuffer: inserted frame 286 at index 1 size: 11 bytes
+Got packet: 956
+PGB: recieved packet: 956  frame:  287
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 287 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 287 size: 11 firstBytes(hex): "00000001419a407a0032ac"
+FrameBuffer: inserted frame 287 at index 2 size: 11 bytes
+FrameBuffer: inserted frame 287 at index 2 size: 11 bytes
+Got packet: 957
+PGB: recieved packet: 957  frame:  288
+Start. framesize: 20
+    Storing START data, toCopy: 20
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 288 size: 20
+    Assembled size: 20 expected: 20
+DBG assembled frame 288 size: 20 firstBytes(hex): "00000001419a6026807af17dd755002abf5944c0"
+FrameBuffer: inserted frame 288 at index 3 size: 20 bytes
+FrameBuffer: inserted frame 288 at index 3 size: 20 bytes
+Got packet: 958
+PGB: recieved packet: 958  frame:  289
+Start. framesize: 11
+    Storing START data, toCopy: 11
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 289 size: 11
+    Assembled size: 11 expected: 11
+DBG assembled frame 289 size: 11 firstBytes(hex): "00000001419a802a800cab"
+FrameBuffer: inserted frame 289 at index 4 size: 11 bytes
+Got packet: 959
+FecBuffer: XOR packet received, NOT forwarding, sequence: 959
+FrameBuffer: inserted frame 289 at index 4 size: 11 bytes
+Got packet: 960
+PGB: recieved packet: 960  frame:  290
+Start. framesize: 43
+    Storing START data, toCopy: 43
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 290 size: 43
+    Assembled size: 43 expected: 43
+DBG assembled frame 290 size: 43 firstBytes(hex): "00000001419aa02e802b9cdad40b7c955c07ef36f70137ddef021f2ddf008ef2f550d77d54027a21604f80"
+FrameBuffer: inserted frame 290 at index 5 size: 43 bytes
+FrameBuffer: inserted frame 290 at index 5 size: 43 bytes
+Got packet: 961
+PGB: recieved packet: 961  frame:  291
+Start. framesize: 57
+    Storing START data, toCopy: 57
+    Stored at index 0, packetsReceived: 1
+    Assembling frame 291 size: 57
+    Assembled size: 57 expected: 57
+DBG assembled frame 291 size: 57 firstBytes(hex): "00000001419ac0328bcd7dcbd4a280443b8bf03f72f7500a8754e825dd6f055d522053c9ad402e1cb5bc02e3cb5dc31cdddd72f552751da260"
+FrameBuffer: inserted frame 291 at index 6 size: 57 bytes
+FrameBuffer: inserted frame 291 at index 6 size: 57 bytes
+TCPManager: processing message type: "91"
+NetworkFacade: Server stream deleted, id: 1698825
+UDPManager: Unregistered NetworkManager for stream 1698825
+NetworkManager: Cleaned up for stream 1698825
+NetworkFacade: Removed NetworkManager for stream 1698825
+=== Client Network State ===
+Connection ID: 6
+Calls: QList(0)
+Streams: QList()
+=== Call Details ===
+Call 0 -> Streams: QList()
+=== Stream Details ===
+=== Summary ===
+Owned Streams: 0 - QList()
+Joined Streams: 0 - QList()
+Active Streams: 0 - QList()
+Joined Calls: 0 - QList()
+=====================
+StreamManager: server stream deleted - ID: 1698825
+MainWindow: server stream deleted - ID: 1698825
+FrameBuffer::clear() called at address: 0x24e62a6f900 capacity: 15
+FrameBuffer::clear(): cleared 15 slots
+ViewerWidget: left stream 1698825
+Removing viewer widget for stream: 1698825
+Viewer widget removed. Total widgets: 0
+NetworkManager: Cleaned up for stream 1698825
+NetworkManager: Destructor for stream 1698825
+Cleaning up ViewerWidget for stream: "LBRSDA"
+FrameBuffer::clear() called at address: 0x24e62a6f900 capacity: 15
+FrameBuffer::clear(): cleared 15 slots
+FrameBuffer::clear() called at address: 0x24e62a6f900 capacity: 15
+FrameBuffer::clear(): cleared 15 slots
+FrameBuffer::clear() called at address: 0x24e62a6f900 capacity: 15
+FrameBuffer::clear(): cleared 15 slots
+~FrameBuffer() at 0x24e62a6f900 capacity: 15
+BufferedVideoDecoder cleaned up
+Cleaning up MainWindow
+StreamManager: disconnectFromServer
+TCPManager: disconnected from server
+NetworkFacade: TCP disconnected
+StreamManager: network disconnected
+Connection status changed: false
+Connection status changed: false
+StreamManager cleanup
+StreamManager cleanup

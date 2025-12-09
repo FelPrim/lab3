@@ -25,7 +25,7 @@ public:
     int getCompletedCount() const { return m_completedCount; }
     int getLatestFrameNumber() const { return m_latestFrameNumber; }
     qint64 getLastActivityTime() const { return m_lastActivityTime; }
-
+    int getStreamId() const { return m_streamId; }
 signals:
     void frameComplete(int streamId, int frameNumber, const QByteArray &frameData);
     void frameDropped(int streamId, int frameNumber, const QString &reason); // НОВЫЙ СИГНАЛ
@@ -44,25 +44,17 @@ private:
         int totalPackets = 0;
         int packetsReceived = 0;
         qint64 creationTimeMs = 0;
-        qint64 lastUpdateTimeMs = 0; // НОВОЕ ПОЛЕ: время последнего обновления
-
+        qint64 lastUpdateTimeMs = 0;
+        
         QVector<QByteArray> packets; // index -> data (packet body without frameNumber/size prefix)
         QVector<char> received;      // index -> 0/1
         QList<TempPacket> tempPackets;
 
-        // В FrameGroup структуре:
-bool isStale(qint64 currentTime, qint64 maxAgeMs) const {
-    // Кадр считается устаревшим если:
-    // 1. Прошло слишком много времени с момента создания (даже если пакеты приходят)
-    // 2. И он не собран
-    if (isComplete()) return false;
-    return (currentTime - creationTimeMs) > maxAgeMs;
-}
-
         FrameGroup() : 
             creationTimeMs(QDateTime::currentMSecsSinceEpoch()),
             lastUpdateTimeMs(QDateTime::currentMSecsSinceEpoch()) 
-        {}
+        {   
+        }
         
         bool hasStart() const { return startSequence != std::numeric_limits<uint32_t>::max(); }
         bool isComplete() const { return totalPackets > 0 && packetsReceived == totalPackets; }
@@ -71,6 +63,13 @@ bool isStale(qint64 currentTime, qint64 maxAgeMs) const {
         }
         void updateLastActivity() {
             lastUpdateTimeMs = QDateTime::currentMSecsSinceEpoch();
+        }
+        bool isStale(qint64 currentTime, qint64 maxAgeMs) const {
+            // Кадр считается устаревшим если:
+            // 1. Прошло слишком много времени с момента создания (даже если пакеты приходят)
+            // 2. И он не собран
+            if (isComplete()) return false;
+            return (currentTime - creationTimeMs) > maxAgeMs;
         }
     };
 

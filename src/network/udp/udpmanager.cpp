@@ -125,8 +125,8 @@ void UDPManager::onPacketReceived()
         }
 
         // ДОБАВЬТЕ ЭТОТ ОТЛАДОЧНЫЙ ВЫВОД:
-        qDebug() << "📦 UDPManager: Received datagram from" << sender.toString() << ":" << senderPort 
-                 << "size:" << datagram.size();
+      //  qDebug() << "📦 UDPManager: Received datagram from" << sender.toString() << ":" << senderPort 
+       //          << "size:" << datagram.size();
 
         routePacket(datagram, sender, senderPort);
     }
@@ -147,15 +147,15 @@ void UDPManager::routePacket(const QByteArray &data, const QHostAddress &sender,
     int streamId = static_cast<int>(header.header.streamId);
     
     // ДОБАВЬТЕ ЭТОТ ОТЛАДОЧНЫЙ ВЫВОД:
-    qDebug() << "🔄 UDPManager: Routing packet - stream:" << streamId 
-             << "callId:" << header.header.callId 
-             << "size:" << data.size();
+   // qDebug() << "🔄 UDPManager: Routing packet - stream:" << streamId 
+   //          << "callId:" << header.header.callId 
+   //          << "size:" << data.size();
 
     QMutexLocker locker(&m_managersMutex);
     
     if (m_networkManagers.contains(streamId)) {
         NetworkManager *manager = m_networkManagers[streamId];
-        qDebug() << "✅ UDPManager: Found NetworkManager for stream" << streamId;
+      //  qDebug() << "✅ UDPManager: Found NetworkManager for stream" << streamId;
         
         QMetaObject::invokeMethod(manager, "processPacket", 
                           Qt::QueuedConnection,

@@ -355,6 +355,24 @@ void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
     if (!m_initialized) return;
     if (frameData.isEmpty()) return;
 
-    // Попытаемся декодировать всё — без строгой предварительной проверки NAL'ов
+        static bool gotSpsPps = false;
+    
+    // Проверяем, есть ли в этом кадре SPS/PPS
+    const uint8_t* data = reinterpret_cast<const uint8_t*>(frameData.constData());
+    for (int i = 0; i < frameData.size() - 5; i++) {
+        if (data[i] == 0x00 && data[i+1] == 0x00 && 
+            data[i+2] == 0x00 && data[i+3] == 0x01) {
+            uint8_t nal_type = data[i+4] & 0x1F;
+            if (nal_type == 7 || nal_type == 8) {
+                gotSpsPps = true;
+                qDebug() << "VideoDecoder: Got SPS/PPS in frame" << frameNumber;
+            }
+        }
+    }
+    
+    if (!gotSpsPps) {
+        qDebug() << "VideoDecoder: Skipping frame" << frameNumber << "- no SPS/PPS yet";
+        return;
+    }
     decodeFrameInternal(frameData, frameNumber);
 }
