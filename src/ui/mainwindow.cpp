@@ -558,6 +558,8 @@ void MainWindow::onStreamerDisconnectRequested(int deviceIndex)
 {
     qDebug() << "Streamer disconnect requested for device:" << deviceIndex;
 
+    StreamerWidget* widget = m_videoGrid->findStreamerWidget(deviceIndex);
+    
     // Удаляем streamer widget из grid
     m_videoGrid->removeStreamerWidget(deviceIndex);
 
@@ -565,15 +567,10 @@ void MainWindow::onStreamerDisconnectRequested(int deviceIndex)
     m_usedDevices.removeAll(deviceIndex);
     
     // Уведомляем StreamManager об остановке стрима
-    if (m_streamManager) {
-        // Здесь нужно найти streamId по deviceIndex
-        // Временная реализация - ищем через виджет
-        StreamerWidget* widget = m_videoGrid->findStreamerWidget(deviceIndex);
-        if (widget && widget->getStreamId() != 0) {
-            uint32_t streamId = widget->getStreamId();
-            qDebug() << "Notifying stream manager to delete stream:" << streamId;
-            m_streamManager->deleteStream(streamId);
-        }
+    if (m_streamManager && widget && widget->getStreamId() != 0) {
+        uint32_t streamId = widget->getStreamId();
+        qDebug() << "Notifying stream manager to delete stream:" << streamId;
+        m_streamManager->deleteStream(streamId);
     }
 
     qDebug() << "Device" << deviceIndex << "disconnected and removed. Total used devices:" << m_usedDevices.size();

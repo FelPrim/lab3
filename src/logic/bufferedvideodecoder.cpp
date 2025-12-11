@@ -3,7 +3,6 @@
 #include <QDebug>
 #include <QCryptographicHash>
 #include "../video_defaults.h"
-
 #define TESTING_NETCODE
 #undef TESTING_NETCODE
 
@@ -160,35 +159,33 @@ void BufferedVideoDecoder::processNextFrame()
 
 void BufferedVideoDecoder::onDecoderError(const QString &message)
 {
-    // Логируем ошибку
-    qDebug() << "[BufferedVideoDecoder] Decoder error for frame"
-             << m_lastAttemptedFrame << ":" << message;
+    qDebug() << "[BufferedVideoDecoder] Decoder error:" << message 
+             << "lastAttemptedFrame =" << m_lastAttemptedFrame;
 
-    // Форвардим внешний сигнал об ошибке
+    // Форвардим внешний сигнал об ошибке (необязательно, но удобно для UI)
     emit errorOccurred(message);
 
-    // Сбрасываем busy-флаг, иначе декодирование остановится навсегда
-    m_decoderBusy = false;
-
-    // Решаем, как обходить проблемный кадр:
-    // Вариант A (безопасный): помечаем кадр как "последний декодированный",
-    // чтобы не пытаться декодировать его снова:
-    if (m_lastAttemptedFrame > m_lastDecodedFrame) {
-        m_lastDecodedFrame = m_lastAttemptedFrame;
+    // Если возможно — удаляем проблемный кадр из буфера, чтобы не пытаться декодировать снова
+    if (m_lastAttemptedFrame >= 0) {
+        if (m_buffer.hasFrame(m_lastAttemptedFrame)) {
+            m_buffer.removeFrame(m_lastAttemptedFrame);
+#ifdef TESTING_NETCODE
+            qDebug() << "[BufferedVideoDecoder] Removed bad frame" << m_lastAttemptedFrame << "from buffer";
+#endif
+        }
+        // Помечаем его как "пропущенный/последний декодированный", чтобы не пытаться снова
+        if (m_lastAttemptedFrame > m_lastDecodedFrame) {
+            m_lastDecodedFrame = m_lastAttemptedFrame;
+        }
     }
 
-    // Вариант B (если FrameBuffer поддерживает удаление) — удалить кадр из буфера,
-    // чтобы релизнуть память и не пытаться снова:
-    // if (m_lastAttemptedFrame >= 0) {
-    //     m_buffer.removeFrame(m_lastAttemptedFrame);
-    // }
-
+    // Сбрасываем флаг занятости декодера — чтобы можно было продолжать
+    m_decoderBusy = false;
     m_lastAttemptedFrame = -1;
 
-    // Попытаться декодировать дальше
+    // Попробовать декодировать следующий кадр
     processNextFrame();
 }
-
 
 void BufferedVideoDecoder::onFrameDecoded(const QImage &image, int frameNumber)
 {

@@ -52,4 +52,5 @@ private:
     AVPixelFormat m_sws_in_fmt = AV_PIX_FMT_NONE;
     int m_sws_out_w = 0;
     int m_sws_out_h = 0;
+    
 };

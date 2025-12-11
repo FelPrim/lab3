@@ -322,3 +322,45 @@ FrameBuffer::~FrameBuffer()
     
     // Векторы очистятся автоматически при разрушении объекта
 }
+
+void FrameBuffer::removeFrame(int frameNumber)
+{
+    QMutexLocker locker(&m_mutex);
+
+    if (m_capacity == 0) return;
+    if (m_maxFrame == -1) return;
+    if (frameNumber < m_minFrame || frameNumber > m_maxFrame) return;
+
+    int idx = getBufferIndex(frameNumber);
+    if (idx < 0 || idx >= m_capacity) return;
+
+    if (m_frameNumbers[idx] != frameNumber) return;
+
+    // Удаляем слот
+    m_frameNumbers[idx] = -1;
+    m_buffer[idx].clear();
+
+    // Обновляем границы окна (найдём новые min/max по оставшимся слотам)
+    int newMin = std::numeric_limits<int>::max();
+    int newMax = std::numeric_limits<int>::min();
+    for (int i = 0; i < m_capacity; ++i) {
+        if (m_frameNumbers[i] != -1) {
+            newMin = std::min(newMin, m_frameNumbers[i]);
+            newMax = std::max(newMax, m_frameNumbers[i]);
+        }
+    }
+
+    if (newMax == std::numeric_limits<int>::min()) {
+        // Буфер пуст
+        m_minFrame = 0;
+        m_maxFrame = -1;
+    } else {
+        m_minFrame = newMin;
+        m_maxFrame = newMax;
+    }
+
+#ifdef TESTING_NETCODE
+    qDebug() << "FrameBuffer: removed frame" << frameNumber
+             << "new min/max:" << m_minFrame << m_maxFrame;
+#endif
+}

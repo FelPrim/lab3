@@ -204,6 +204,7 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
         }
     } guard(m_busy);
 
+    bool producedFrame = false;
     // Преобразуем данные в Annex-B формат если необходимо
     QByteArray packetData = convertToAnnexBIfNeeded(frameData);
     if (packetData.isEmpty()) {
@@ -356,6 +357,7 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
             // Создаем копию, так как img ссылается на данные, которые мы скоро освободим
             QImage imgCopy = img.copy();
             emit frameDecoded(imgCopy, frameNumber);
+            producedFrame = true;
         }
 
         // Освобождаем выделенную память
@@ -363,6 +365,12 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
         
         // Сбрасываем фрейм для следующей итерации
         av_frame_unref(m_dec_frame);
+    }
+
+    if (!producedFrame) {
+        QString msg = QString("VideoDecoder: no output frames produced for frame %1").arg(frameNumber);
+        qDebug() << msg;
+        emit errorOccurred(msg);
     }
 }
 

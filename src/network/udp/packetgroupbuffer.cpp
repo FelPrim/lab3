@@ -121,7 +121,7 @@ void PacketGroupBuffer::addPacket(const NetworkPacket &packet)
         qWarning() << "PacketGroupBuffer: can't parse frameNumber";
         return;
     }
-    qDebug() << "PGB: recieved packet:" << packetSequence << " frame: " << frameNumber; //<< " payload.left(40): " << payload.left(40).toHex();
+  //  qDebug() << "PGB: recieved packet:" << packetSequence << " frame: " << frameNumber; //<< " payload.left(40): " << payload.left(40).toHex();
     // Prepare temp packet
     TempPacket tp;
     tp.packetSequence = packetSequence;
@@ -309,7 +309,7 @@ void PacketGroupBuffer::handleContinue(FrameGroup &group, const TempPacket &tp, 
     }
     
     if (group.received[relIdx]) {
-        qDebug() << "    Duplicate packet, ignoring";
+   //     qDebug() << "    Duplicate packet, ignoring";
         return;
     }
 
@@ -415,7 +415,7 @@ void PacketGroupBuffer::tryAssemble(FrameGroup &group)
         }
     }
 
-    qDebug() << "    Assembled size:" << frame.size() << "expected:" << group.frameSize;
+ //   qDebug() << "    Assembled size:" << frame.size() << "expected:" << group.frameSize;
     
     // Дополнительная проверка размера
     if (frame.size() != group.frameSize) {
@@ -453,7 +453,7 @@ void PacketGroupBuffer::cleanupOldFrames()
     while (m_groups.size() > maxFrames && !keys.isEmpty()) {
         int k = keys.takeFirst();
         m_groups.remove(k);
-        qDebug() << "PacketGroupBuffer: dropped old frame" << k << "(by count)";
+     //   qDebug() << "PacketGroupBuffer: dropped old frame" << k << "(by count)";
         emit frameDropped(m_streamId, k, "buffer_limit_exceeded");
     }
 }

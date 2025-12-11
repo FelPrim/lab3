@@ -34,8 +34,10 @@ public:
     
     // Статистика заполнения
     int filledSlotsCount() const;
+    void removeFrame(int frameNumber);
 
-private:
+private:  
+
     // Возвращает индекс в m_buffer для заданного номера кадра
     int getBufferIndex(int frameNumber) const;
     

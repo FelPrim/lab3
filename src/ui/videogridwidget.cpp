@@ -77,7 +77,7 @@ void VideoGridWidget::addStreamerWidget(int deviceIndex)
         m_gridLayout->setContentsMargins(10, 10, 10, 10);
         m_container->setLayout(m_gridLayout);
     }
-    
+
     m_streamerWidgets.append(widget);
     connectStreamerWidget(widget);
     
@@ -129,8 +129,17 @@ void VideoGridWidget::removeStreamerWidget(int deviceIndex)
         if (m_streamerWidgets[i]->getDeviceIndex() == deviceIndex) {
             StreamerWidget *widget = m_streamerWidgets.takeAt(i);
             disconnectStreamerWidget(widget);
+            
+            // ВАЖНО: Удаляем виджет из layout ПЕРЕД deleteLater
+            if (m_gridLayout) {
+                m_gridLayout->removeWidget(widget);
+            }
+            
             widget->deleteLater();
+            
+            // Обновляем layout БЕЗ удаленного виджета
             updateLayout();
+            
             qDebug() << "Streamer widget removed. Total widgets:" << getTotalWidgetCount();
             return;
         }
@@ -147,8 +156,17 @@ void VideoGridWidget::removeViewerWidget(uint32_t streamId)
         if (m_viewerWidgets[i]->getStreamId() == streamId) {
             ViewerWidget *widget = m_viewerWidgets.takeAt(i);
             disconnectViewerWidget(widget);
+            
+            // ВАЖНО: Удаляем виджет из layout ПЕРЕД deleteLater
+            if (m_gridLayout) {
+                m_gridLayout->removeWidget(widget);
+            }
+            
             widget->deleteLater();
+            
+            // Обновляем layout БЕЗ удаленного виджета
             updateLayout();
+            
             qDebug() << "Viewer widget removed. Total widgets:" << getTotalWidgetCount();
             return;
         }
