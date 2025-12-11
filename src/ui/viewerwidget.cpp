@@ -7,6 +7,9 @@
 #include <QDebug>
 #include "../video_defaults.h"
 
+#define TESTING_NETCODE
+#include <QThread>
+#undef TESTING_NETCODE
 const QString ViewerWidget::PLACEHOLDER_TEXT = "Waiting for video stream...";
 const QString ViewerWidget::STATUS_ACTIVE = "● Connected";
 const QString ViewerWidget::STATUS_INACTIVE = "● Disconnected";
@@ -199,8 +202,8 @@ void ViewerWidget::initialize()
 
     setActive(true);
     updateStatus();
-    connect(m_networkManager, &NetworkManager::frameAssembled,
-        m_bufferedDecoder, &BufferedVideoDecoder::addFrame);
+   // connect(m_networkManager, &NetworkManager::frameAssembled,
+   //     m_bufferedDecoder, &BufferedVideoDecoder::addFrame);
     qDebug() << "ViewerWidget initialized with BufferedVideoDecoder for stream:" << m_displayId;
 }
 
@@ -351,7 +354,22 @@ void ViewerWidget::onFrameAssembled(int streamId, int frameNumber, const QByteAr
         qWarning() << "Received frame but bufferedDecoder is null for stream:" << m_displayId;
         return;
     }
-
+//#ifdef TESTING_NETCODE
+//    const int BUF_SIZE = 4000;
+//    int copyLen = qMin<int>(frameData.size(), BUF_SIZE - 1); // оставляем 1 байт под '\0'
+//    char buffer[BUF_SIZE];
+//    if (copyLen > 0) {
+//        memcpy(buffer, frameData.constData(), copyLen);
+//    }
+//    buffer[copyLen] = '\0';
+//    printf("ViewerWidget: RECVD (size=%d, shown=%d): %s\n",
+//           static_cast<int>(frameData.size()), copyLen, buffer);
+//    qDebug() << "ViewerWidget::onFrameAssembled thread:" << QThread::currentThread()
+//         << "decoder thread:" << (m_bufferedDecoder ? m_bufferedDecoder->thread() : nullptr)
+//         << "networkmanager thread:" << (m_networkManager->thread());
+//
+//
+//#endif
     m_bufferedDecoder->addFrame(streamId, frameNumber, frameData);
 
     if (frameNumber % 30 == 0) {

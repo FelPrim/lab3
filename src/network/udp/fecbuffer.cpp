@@ -58,7 +58,6 @@ bool FecBuffer::addPacket(const NetworkPacket &packet)
     
     uint32_t packetSequence = header.header.packetSequence;
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "Got packet:" << packetSequence;
     // Шаг 1: Проверка на слишком старый пакет
     if (!shouldProcessPacket(packetSequence, currentTime)) {
         qDebug() << "FecBuffer: Ignoring too old packet, sequence:" << packetSequence;
@@ -102,7 +101,7 @@ bool FecBuffer::addPacket(const NetworkPacket &packet)
     
     // Шаг 3: Проверка на дубликат
     if (position < group.received.size() && group.received[position]) {
-        qDebug() << "FecBuffer: Duplicate packet, ignoring. Sequence:" << packetSequence;
+   //     qDebug() << "FecBuffer: Duplicate packet, ignoring. Sequence:" << packetSequence;
         return false;
     }
     
@@ -173,8 +172,8 @@ bool FecBuffer::addPacket(const NetworkPacket &packet)
         //    qDebug() << "FecBuffer: Forwarding data packet to PacketGroupBuffer, sequence:" 
        //              << packetSequence;
         } else {
-            qDebug() << "FecBuffer: XOR packet received, NOT forwarding, sequence:" 
-                     << packetSequence;
+           // qDebug() << "FecBuffer: XOR packet received, NOT forwarding, sequence:" 
+           //          << packetSequence;
         }
         
         // Шаг 7: Проверяем возможность восстановления

@@ -33,6 +33,7 @@ signals:
 
 private slots:
     void onFrameDecoded(const QImage &image, int frameNumber);
+    void onDecoderError(const QString &message);
 
 private:
     void processNextFrame();
@@ -42,6 +43,7 @@ private:
     VideoDecoder m_decoder;
     int m_targetFps = 0;
     int m_bufferDelayFrames = 0;  // Задержка в кадрах
+    int m_lastAttemptedFrame = -1; 
     int m_lastDecodedFrame = -1;
     bool m_decoderBusy = false;
 };

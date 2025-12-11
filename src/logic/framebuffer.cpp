@@ -2,9 +2,12 @@
 #include "framebuffer.h"
 #include <QDebug>
 #include <algorithm>
+#include <QCryptographicHash>
 
+#define TESTING_NETCODE
+#undef TESTING_NETCODE
 FrameBuffer::FrameBuffer(int capacity)
-    : m_capacity(qMax(1, capacity))
+    : m_capacity(qMax(30, capacity))
 {
     m_buffer.resize(m_capacity);
     m_frameNumbers.resize(m_capacity);
@@ -104,6 +107,11 @@ int FrameBuffer::getBufferIndex(int frameNumber) const
 
 void FrameBuffer::insertFrame(int frameNumber, const QByteArray &frameData)
 {
+#ifdef TESTING_NETCODE
+    QByteArray sha = QCryptographicHash::hash(frameData, QCryptographicHash::Sha256);
+    qDebug() << "FrameBuffer: frame" << frameNumber
+           << "size:" << frameData.size() << "sha256:" << sha.toHex().left(64);
+#endif
     QMutexLocker locker(&m_mutex);
 
     if (m_capacity == 0) return;
@@ -113,15 +121,17 @@ void FrameBuffer::insertFrame(int frameNumber, const QByteArray &frameData)
         m_minFrame = m_maxFrame = frameNumber;
     } else {
         if (frameNumber > m_maxFrame) {
-            // Сохраняем старый минимальный, чтобы при продвижении очистить вытесненные слоты
             int oldMin = m_minFrame;
 
             m_maxFrame = frameNumber;
-            m_minFrame = m_maxFrame - m_capacity + 1;
-            if (m_minFrame < 0) m_minFrame = 0;
+            // Рассчитываем кандидата на новую m_minFrame (когда окно "переполнится")
+            int candidateMin = m_maxFrame - m_capacity + 1;
+            if (candidateMin < 0) candidateMin = 0;
 
-            // Очистим слоты для фреймов, которые выпали из буфера (oldMin .. m_minFrame-1)
-            if (m_minFrame > oldMin) {
+            // Не уменьшаем m_minFrame — оно может только увеличиваться, когда окно действительно "съезжает"
+            if (candidateMin > m_minFrame) {
+                m_minFrame = candidateMin;
+                // Очистим слоты для фреймов, которые выпали из буфера (oldMin .. m_minFrame-1)
                 for (int f = oldMin; f < m_minFrame; ++f) {
                     int idx = getBufferIndex(f);
                     if (idx >= 0 && idx < m_capacity) {
@@ -130,7 +140,9 @@ void FrameBuffer::insertFrame(int frameNumber, const QByteArray &frameData)
                     }
                 }
             }
+            // В противном случае m_minFrame остаётся старым (буфер ещё не переполнился)
         }
+
         // Игнорируем слишком старые фреймы
         else if (frameNumber < m_minFrame) {
             return;
@@ -145,8 +157,8 @@ void FrameBuffer::insertFrame(int frameNumber, const QByteArray &frameData)
     m_buffer[index] = frameData;
     m_frameNumbers[index] = frameNumber;
 
-    qDebug() << "FrameBuffer: inserted frame" << frameNumber << "at index" << index
-             << "size:" << frameData.size() << "bytes";
+   // qDebug() << "FrameBuffer: inserted frame" << frameNumber << "at index" << index
+   //          << "size:" << frameData.size() << "bytes";
 }
 
 bool FrameBuffer::getFrame(int frameNumber, QByteArray &out) const

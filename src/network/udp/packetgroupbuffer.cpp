@@ -4,7 +4,10 @@
 #include <algorithm>
 #include <cassert>
 #include "network_packet.h"
+#include <QCryptographicHash>
 
+#define TESTING_NETCODE
+#undef TESTING_NETCODE
 
 PacketGroupBuffer::PacketGroupBuffer(int streamId, QObject *parent)
     : QObject(parent), m_streamId(streamId)
@@ -86,7 +89,7 @@ void PacketGroupBuffer::addPacket(const NetworkPacket &packet)
    // qDebug() << "PacketGroupBuffer::addPacket - START";
    // qDebug() << "  streamId:" << m_streamId;
     
-    if (m_groups.size() >= DEFAULT_FPS*DEFAULT_BUFFERSECONDS) {
+    if (m_groups.size() >= DEFAULT_FPS*10) {
         qDebug() << "  Buffer full, cleaning up oldest incomplete frame";
         cleanupOldestIncompleteFrame();
         qDebug() << "  call end";
@@ -182,7 +185,15 @@ void PacketGroupBuffer::handleStart(FrameGroup &group, const TempPacket &tp, uin
     }
 
     int frameSize = extractFrameSize(tp.payload, 4);
-    qDebug() << "Start. framesize:" << frameSize;
+   // qDebug() << "Start. framesize:" << frameSize;
+
+    //#ifdef TESTING_NETCODE
+    //    assert(tp.payload.size() < 1188);
+    //    char buffer[1201];
+    //    memcpy(buffer, tp.payload.constData()+8, tp.payload.size()-8);
+    //    buffer[tp.payload.size()-8] = '\0';
+    //    printf("PacketGroupBuffer: %s\n", buffer);
+    //#endif
 
    // qDebug() << "    frameSize:" << frameSize;
     if (frameSize <= 0) {
@@ -216,11 +227,11 @@ void PacketGroupBuffer::handleStart(FrameGroup &group, const TempPacket &tp, uin
     // store START payload into index 0 (trim padding if frame smaller)
     if (firstDataSize > 0) {
         int toCopy = qMin(firstDataSize, frameSize); // if whole frame fits into START
-        qDebug() << "    Storing START data, toCopy:" << toCopy;
+    //    qDebug() << "    Storing START data, toCopy:" << toCopy;
         group.packets[0] = tp.payload.mid(8, toCopy);
         group.received[0] = 1;
         group.packetsReceived = 1;
-        qDebug() << "    Stored at index 0, packetsReceived:" << group.packetsReceived;
+   //     qDebug() << "    Stored at index 0, packetsReceived:" << group.packetsReceived;
     }
 
     // place any previously stored temp packets
@@ -270,6 +281,14 @@ void PacketGroupBuffer::handleContinue(FrameGroup &group, const TempPacket &tp, 
         return;
     }
 
+  //  #ifdef TESTING_NETCODE
+  //      assert(tp.payload.size() < 1188);
+  //      char buffer[1201];
+  //      memcpy(buffer, tp.payload.constData()+4, tp.payload.size()-4);
+  //      buffer[tp.payload.size()-4] = '\0';
+  //      printf("PacketGroupBuffer: %s\n", buffer);
+  //  #endif
+
     if (!group.hasStart()) {
     //    qDebug() << "    No START yet, storing in tempPackets";
         group.tempPackets.append(tp);
@@ -311,6 +330,14 @@ void PacketGroupBuffer::handleEnd(FrameGroup &group, const TempPacket &tp, uint3
         return;
     }
 
+   // #ifdef TESTING_NETCODE
+   //     assert(tp.payload.size() < 1188);
+   //     char buffer[1201];
+   //     memcpy(buffer, tp.payload.constData()+4, tp.payload.size()-4);
+   //     buffer[tp.payload.size()-4] = '\0';
+   //     printf("PacketGroupBuffer: %s\n", buffer);
+   // #endif
+
     if (!group.hasStart()) {
     //    qDebug() << "    No START yet, storing in tempPackets";
         group.tempPackets.append(tp);
@@ -351,10 +378,13 @@ void PacketGroupBuffer::tryAssemble(FrameGroup &group)
     }
 
     // Отладка: вывести информацию о всех пакетах один раз
-    qDebug() << "    Assembling frame" << group.frameNumber << "size:" << group.frameSize;
+  //  qDebug() << "    Assembling frame" << group.frameNumber << "size:" << group.frameSize;
     for (int i = 0; i < group.totalPackets; ++i) {
         const QByteArray &p = group.packets[i];
-       // qDebug() << "DBG packet[" << i << "] size=" << p.size() << "hex_prefix=" << p.left(8).toHex();
+        // Вывод размеров и первых 16 байт в hex — поможет увидеть нестыковки/нулевые байты
+   //     QByteArray pref = p.left(16);
+   //     qDebug() << QString("      packet[%1] size=%2 Content=%3")
+   //                 .arg(i).arg(p.size()).arg(QString(pref));
     }
 
     QByteArray frame;
@@ -397,12 +427,18 @@ void PacketGroupBuffer::tryAssemble(FrameGroup &group)
         }
     }
 
-    QByteArray firstBytes = frame.left(qMin(64, frame.size()));
-    qDebug() << "DBG assembled frame" << group.frameNumber 
-             << "size:" << frame.size() 
-             << "firstBytes(hex):" << firstBytes.toHex();
+   // QByteArray firstBytes = frame.left(qMin(64, frame.size()));
+    //qDebug() << "DBG assembled frame" << group.frameNumber 
+    //         << "size:" << frame.size() ;
+         //    << "firstBytes(hex):" << firstBytes.toHex();
     
     emit frameComplete(m_streamId, group.frameNumber, frame);
+    #ifdef TESTING_NETCODE
+    //    int firstNull = frame.indexOf('\0');
+    //    qDebug() << "DBG assembled frame" << group.frameNumber << "firstNullIndex=" << firstNull;
+    QByteArray sha = QCryptographicHash::hash(frame, QCryptographicHash::Sha256);
+    qDebug() << "PacketGroupBuffer: sha256:" << sha.toHex().left(64);
+    #endif
     m_completedCount++;
     m_groups.remove(group.frameNumber);
 }

@@ -145,7 +145,7 @@ void UDPManager::routePacket(const QByteArray &data, const QHostAddress &sender,
     cast_from_nbe(header);
     
     int streamId = static_cast<int>(header.header.streamId);
-    
+  //  qDebug() << "Packet:" << static_cast<int>(header.header.packetSequence);
     // ДОБАВЬТЕ ЭТОТ ОТЛАДОЧНЫЙ ВЫВОД:
    // qDebug() << "🔄 UDPManager: Routing packet - stream:" << streamId 
    //          << "callId:" << header.header.callId 

@@ -62,7 +62,7 @@ private slots:
 private:
     // Основные методы
     void processPacketNewProtocol(const QByteArray &data);
-    void sendPacketNewProtocol(const char *data, const uint32_t size, PacketType type);
+    void sendPacketNewProtocol(const char *data, const uint32_t size, PacketType type, int count);
     
     // Статистика
     void updateSendStats(int packets, int bytes);

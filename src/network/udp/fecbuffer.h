@@ -20,7 +20,7 @@ public:
     
     void setPacketGroupBuffer(PacketGroupBuffer* packetGroupBuffer);
     bool addPacket(const NetworkPacket &packet);
-    void cleanup(qint64 maxAgeMs = 1000);
+    void cleanup(qint64 maxAgeMs = 10000);
     
     // Статистика
     int getRecoveredCount() const { return m_recoveredCount; }

@@ -8,6 +8,10 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
 }
+#include <QCryptographicHash>
+
+#define TESTING_NETCODE
+#undef TESTING_NETCODE
 
 static QString ffmpegErrStr(int errnum) {
     char buf[256] = {0};
@@ -187,7 +191,11 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
         qDebug() << "VideoDecoder: busy, skipping frame" << frameNumber;
         return;
     }
-
+#ifdef TESTING_NETCODE
+    QByteArray sha = QCryptographicHash::hash(frameData, QCryptographicHash::Sha256);
+    qDebug() << "VideoDecoder: frame" << frameNumber
+           << "size:" << frameData.size() << "sha256:" << sha.toHex().left(64);
+#endif
     struct BusyGuard {
         std::atomic<bool>& busy;
         BusyGuard(std::atomic<bool>& b) : busy(b) {}
@@ -200,6 +208,7 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
     QByteArray packetData = convertToAnnexBIfNeeded(frameData);
     if (packetData.isEmpty()) {
         qDebug() << "VideoDecoder: packet data is empty after conversion";
+        emit errorOccurred(QString("VideoDecoder: packet data empty for frame %1").arg(frameNumber));
         return;
     }
 
@@ -224,14 +233,17 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
     // Отправляем пакет в декодер
     int ret = avcodec_send_packet(m_dec_ctx, pkt);
     if (ret < 0) {
+        QString err = ffmpegErrStr(ret);
         qDebug() << "VideoDecoder: avcodec_send_packet failed for frame" << frameNumber 
-                 << "error:" << ffmpegErrStr(ret);
-        
+                 << "error:" << err;
+        emit errorOccurred(QString("VideoDecoder: avcodec_send_packet failed for frame %1: %2")
+                           .arg(frameNumber).arg(err));
         // Освобождаем память пакета
         av_freep(&pkt->data);
         av_packet_free(&pkt);
         return;
     }
+
 
     // Освобождаем пакет после отправки (декодер делает внутреннюю копию)
     av_freep(&pkt->data);
@@ -245,11 +257,15 @@ void VideoDecoder::decodeFrameInternal(const QByteArray &frameData, int frameNum
         }
         
         if (ret < 0) {
+            QString err = ffmpegErrStr(ret);
             qDebug() << "VideoDecoder: avcodec_receive_frame failed for frame" << frameNumber
-                     << "error:" << ffmpegErrStr(ret);
+                     << "error:" << err;
+            emit errorOccurred(QString("VideoDecoder: avcodec_receive_frame failed for frame %1: %2")
+                               .arg(frameNumber).arg(err));
             av_frame_unref(m_dec_frame);
             break;
         }
+
 
         // Получаем параметры декодированного фрейма
         int in_w = m_dec_frame->width;
@@ -355,24 +371,6 @@ void VideoDecoder::decodeFrame(const QByteArray &frameData, int frameNumber)
     if (!m_initialized) return;
     if (frameData.isEmpty()) return;
 
-        static bool gotSpsPps = false;
-    
-    // Проверяем, есть ли в этом кадре SPS/PPS
-    const uint8_t* data = reinterpret_cast<const uint8_t*>(frameData.constData());
-    for (int i = 0; i < frameData.size() - 5; i++) {
-        if (data[i] == 0x00 && data[i+1] == 0x00 && 
-            data[i+2] == 0x00 && data[i+3] == 0x01) {
-            uint8_t nal_type = data[i+4] & 0x1F;
-            if (nal_type == 7 || nal_type == 8) {
-                gotSpsPps = true;
-                qDebug() << "VideoDecoder: Got SPS/PPS in frame" << frameNumber;
-            }
-        }
-    }
-    
-    if (!gotSpsPps) {
-        qDebug() << "VideoDecoder: Skipping frame" << frameNumber << "- no SPS/PPS yet";
-        return;
-    }
+    // Попытаемся декодировать всё — без строгой предварительной проверки NAL'ов
     decodeFrameInternal(frameData, frameNumber);
 }
