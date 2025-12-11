@@ -570,7 +570,10 @@ void StreamerWidget::onServerStreamStart(uint32_t streamId)
     
     if (m_streamState == State_StreamCreated) {
         setStreamState(State_StreamActive);
+        m_sendingPackets = true;  // Теперь можно отправлять пакеты
         qDebug() << "Stream started - now sending packets for:" << m_displayId;
+        
+        setViewersStatus(true);  // Это обновит UI
     } else {
         qWarning() << "Cannot start stream - wrong state:" << m_streamState;
     }
@@ -585,7 +588,11 @@ void StreamerWidget::onServerStreamEnd(uint32_t streamId)
     
     if (m_streamState == State_StreamActive) {
         setStreamState(State_StreamCreated); // Возвращаемся в состояние без отправки пакетов
+        m_sendingPackets = false;
         qDebug() << "Stream ended - stopped sending packets for:" << m_displayId;
+        
+        // ОПОВЕЩАЕМ ОБ ОТКЛЮЧЕНИИ ПОСЛЕДНЕГО КЛИЕНТА
+        setViewersStatus(false);  // Это обновит UI
     }
 }
 

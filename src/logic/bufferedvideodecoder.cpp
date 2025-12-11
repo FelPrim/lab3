@@ -17,7 +17,7 @@ BufferedVideoDecoder::BufferedVideoDecoder(int width, int height, int fps,
     // Устанавливаем задержку
     if (bufferDelayFrames < 0) {
         // Автоматический расчет: задержка = 1/3 от размера буфера
-        m_bufferDelayFrames = DEFAULT_BUFFERSECONDS*DEFAULT_FPS;
+        m_bufferDelayFrames = m_buffer.capacity() / 3;
         m_bufferDelayFrames = qMax(1, m_bufferDelayFrames);  // Минимум 1 кадр
     } else {
         m_bufferDelayFrames = qMax(0, bufferDelayFrames);

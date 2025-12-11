@@ -70,6 +70,14 @@ void VideoGridWidget::addStreamerWidget(int deviceIndex)
     }
 
     StreamerWidget *widget = new StreamerWidget(deviceIndex, m_container);
+    
+    if (!m_gridLayout) {
+        m_gridLayout = new QGridLayout(m_container);
+        m_gridLayout->setSpacing(10);
+        m_gridLayout->setContentsMargins(10, 10, 10, 10);
+        m_container->setLayout(m_gridLayout);
+    }
+    
     m_streamerWidgets.append(widget);
     connectStreamerWidget(widget);
     
@@ -77,20 +85,19 @@ void VideoGridWidget::addStreamerWidget(int deviceIndex)
     qDebug() << "Streamer widget added. Total widgets:" << getTotalWidgetCount();
 }
 
+// videogridwidget.cpp - исправленный addViewerWidget
 void VideoGridWidget::addViewerWidget(uint32_t streamId, const QString& displayId, uint32_t callId)
 {
     qDebug() << "=== VideoGridWidget::addViewerWidget() START ===";
     qDebug() << "Stream ID:" << streamId << "Display:" << displayId << "Call ID:" << callId;
     
-    // Используем findViewerWidget для проверки существования
     if (findViewerWidget(streamId)) {
         qWarning() << "ViewerWidget already exists for stream:" << streamId;
         return;
     }
     
     // Создаем виджет
-    ViewerWidget* viewerWidget = new ViewerWidget(streamId, displayId, callId, m_container); // m_container вместо this
-    qDebug() << "ViewerWidget created at:" << viewerWidget;
+    ViewerWidget* viewerWidget = new ViewerWidget(streamId, displayId, callId, m_container);
     
     // НЕ вызываем initialize() здесь!
     
@@ -102,17 +109,14 @@ void VideoGridWidget::addViewerWidget(uint32_t streamId, const QString& displayI
         m_container->setLayout(m_gridLayout);
     }
     
-    // Добавляем в layout (автоматически разместится в следующей свободной ячейке)
-    int count = m_streamerWidgets.size() + m_viewerWidgets.size();
-    int row = count / 2; // пример: 2 колонки
-    int col = count % 2;
-    m_gridLayout->addWidget(viewerWidget, row, col);
-    
-    // Сохраняем указатель
+    // ВАЖНО: НЕ добавляем в layout здесь! Только сохраняем указатель
     m_viewerWidgets.append(viewerWidget);
     
     // Подключаем сигналы
     connectViewerWidget(viewerWidget);
+    
+    // Обновляем layout - ВСЕ виджеты будут переразмещены в applyLayout
+    updateLayout();
     
     qDebug() << "=== VideoGridWidget::addViewerWidget() END ===";
 }
